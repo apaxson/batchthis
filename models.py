@@ -69,9 +69,7 @@ def setActiveFermenter(sender,instance,**kwargs):
     fermenters = instance.fermenter.all()
     for fermenter in fermenters:
         if fermenter.status != fermenter.STATUS_ACTIVE:
-            print("Fermenter " + fermenter.name + " with status " + fermenter.status)
             fermenter.status = fermenter.STATUS_ACTIVE
-            print("Changing status to " + fermenter.STATUS_ACTIVE)
             fermenter.save()
 
 class BatchTest(models.Model):
