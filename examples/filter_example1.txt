@@ -24,3 +24,15 @@ AttributeError: 'QuerySet' object has no attribute 'value'
 >>> batch1.notes.all()
 <QuerySet [<BatchNote: 02/29/20-20:01 This is my note.  Things are going well.>]>
 >>> 
+>>> batch1 = Batch.objects.all()[0]
+>>> batch1
+<Batch: Test Mead Batch>
+>>> batch1.fermenter.all()
+<QuerySet [<Fermenter: Goliath (33gal)>]>
+>>> batch1.fermenter.all()[0].status
+'Clean/Ready'
+>>> ferms = Fermenter.objects.filter(status=Fermenter.STATUS_ACTIVE)
+>>> ferms
+<QuerySet [<Fermenter: Goliath (33gal)>]>
+>>> Fermenter.objects.filter(status=Fermenter.STATUS_ACTIVE).count()
+1
