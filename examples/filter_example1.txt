@@ -36,3 +36,21 @@ AttributeError: 'QuerySet' object has no attribute 'value'
 <QuerySet [<Fermenter: Goliath (33gal)>]>
 >>> Fermenter.objects.filter(status=Fermenter.STATUS_ACTIVE).count()
 1
+
+
+>>> batch = Batch.objects.get(pk=1)
+>>> batch
+<Batch: Test Mead Batch>
+>>> batch.tests.all()
+<QuerySet [<BatchTest: 02/29/20-20:14 pH>, <BatchTest: 02/29/20-20:17 Specific Gravity>, <BatchTest: 02/29/20-20:20 SO2>, <BatchTest: 03/07/20-18:04 pH>]>
+>>> phtests = batch.tests.filter(type__name__contains='pH')
+>>> phtests
+<QuerySet [<BatchTest: 02/29/20-20:14 pH>, <BatchTest: 03/07/20-18:04 pH>]>
+>>> for value in phtests:
+...   print(value.value)
+...
+3.56
+3.77
+>>>
+
+

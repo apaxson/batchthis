@@ -1,6 +1,9 @@
 from django.shortcuts import render
 from django.http import HttpResponse
-from batchthis.models import Batch, Fermenter
+from batchthis.models import Batch, Fermenter, BatchTestType
+from django.shortcuts import get_object_or_404
+from .forms import BatchTestForm
+
 # Create your views here.
 
 def index(request):
@@ -18,4 +21,19 @@ def index(request):
     }
     return render(request,'index.html',context=context)
 
+def batch(request, pk):
 
+    batch = get_object_or_404(Batch,pk=pk)
+    testTypes = BatchTestType.objects.all()
+    fermenters = batch.fermenter.all()
+
+    context = {
+        "batch": batch,
+        "testTypes": testTypes,
+        "fermenters": fermenters
+    }
+    return render(request, 'batch.html', context=context)
+
+def batchTest(request):
+    form = BatchTestForm
+    return render(request,"addTest.html", {'form':form})
