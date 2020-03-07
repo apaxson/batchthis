@@ -35,5 +35,8 @@ def batch(request, pk):
     return render(request, 'batch.html', context=context)
 
 def batchTest(request):
+    #TODO Clean up Test Form
     form = BatchTestForm
     return render(request,"addTest.html", {'form':form})
+
+#TODO Add Note Form
