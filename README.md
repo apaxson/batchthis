@@ -15,3 +15,4 @@ Working on now:
 Future:
 * Import recipes from Beersmith
 * Inventory Tracking??
+* Wine tools and formulae (i.e. SO2 charts, Brix/Gravity conversions, etc)
