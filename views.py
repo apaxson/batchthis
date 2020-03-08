@@ -34,9 +34,19 @@ def batch(request, pk):
     }
     return render(request, 'batch.html', context=context)
 
-def batchTest(request):
-    #TODO Clean up Test Form
-    form = BatchTestForm
+def batchTest(request, pk=None):
+    if request.method == 'GET':
+        if pk:
+            form = BatchTestForm()
+            form.fields['batch'].queryset = Batch.objects.filter(pk=pk)
+            form.initial = {'batch':pk}
+            # We have a batchID.  Let's auto assign the batch to the note
+        else:
+            form = BatchTestForm()
+            # We don't have a batchID.  Only show active batches
+            form.fields['batch'].queryset = Batch.objects.filter(active=True)
+    else:
+        form = BatchTestForm()
     return render(request,"addTest.html", {'form':form})
 
 #TODO Add Note Form

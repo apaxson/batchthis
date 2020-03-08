@@ -76,7 +76,7 @@ class BatchTest(models.Model):
     def __str__(self):
         fmt = "%m/%d/%y-%H:%M"
         return self.datetime.strftime(fmt) + " " + self.type.name
-    datetime = models.DateTimeField(auto_now_add=True)
+    datetime = models.DateTimeField(auto_now=True)
     type = models.ForeignKey(BatchTestType, on_delete=models.SET("_del"))
     value = models.FloatField()
     description = models.CharField(max_length=250, blank=True)
