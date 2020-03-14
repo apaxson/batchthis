@@ -5,5 +5,6 @@ urlpatterns = [
     path('', views.index, name='index'),
     path('addTest', views.batchTest, name='addTest'),
     path('batch/<int:pk>', views.batch, name='batch'),
-    path('batch/<int:pk>/addTest', views.batchTest, name='addDetailTest')
+    path('batch/<int:pk>/addTest', views.batchTest, name='addDetailTest'),
+    path('batch/<int:pk>/batchGraphs', views.batchGraphs, name='batchGraphs')
 ]

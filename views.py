@@ -3,6 +3,7 @@ from django.http import HttpResponse
 from batchthis.models import Batch, Fermenter, BatchTestType
 from django.shortcuts import get_object_or_404
 from .forms import BatchTestForm
+import json
 
 # Create your views here.
 
@@ -50,3 +51,28 @@ def batchTest(request, pk=None):
     return render(request,"addTest.html", {'form':form})
 
 #TODO Add Note Form
+
+def batchGraphs(request, pk):
+    # Capture each type of test.  No need to show graphs on tests not performed
+    batch = Batch.objects.get(pk=pk)
+    tests = batch.tests.all()
+
+    # Build data var for chart data
+    testGroup = {}
+    for test in tests:
+        if not test.type.name in testGroup.keys():
+            testGroup[test.type.name] = {}
+            testGroup[test.type.name]['shortid'] = test.type.shortid
+            testGroup[test.type.name]['dates'] = []
+            testGroup[test.type.name]['values'] = []
+
+        date_format = "%m/%d/%y"
+        strdate = test.datetime.strftime(date_format)
+        testGroup[test.type.name]['dates'].append(strdate)
+        testGroup[test.type.name]['values'].append(test.value)
+
+    print(testGroup)
+    context = {"tests": testGroup,
+               "testTypes": testGroup.keys()
+               }
+    return render(request, "batchGraphs.html", context)

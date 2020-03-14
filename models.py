@@ -2,7 +2,7 @@ from django.db import models
 from datetime import datetime
 from django.dispatch import receiver
 from django.db.models.signals import post_save
-
+from django.utils.text import slugify
 
 
 # Create your models here.
@@ -38,7 +38,14 @@ class BatchNoteType(models.Model):
 class BatchTestType(models.Model):
     def __str__(self):
         return self.name
+
+    def save(self,*args,**kwargs):
+        if not self.shortid:
+            self.shortid = slugify(self.name)
+        super(BatchTestType,self).save(*args,**kwargs)
+
     name = models.CharField(max_length = 25)
+    shortid = models.SlugField(unique=True)
 
 class Batch(models.Model):
 
@@ -76,6 +83,7 @@ class BatchTest(models.Model):
     def __str__(self):
         fmt = "%m/%d/%y-%H:%M"
         return self.datetime.strftime(fmt) + " " + self.type.name
+
     datetime = models.DateTimeField(auto_now=True)
     type = models.ForeignKey(BatchTestType, on_delete=models.SET("_del"))
     value = models.FloatField()
@@ -83,10 +91,13 @@ class BatchTest(models.Model):
     units = models.ForeignKey(Unit, on_delete=models.SET("_del"))
     batch = models.ForeignKey(Batch, blank=True, on_delete=models.CASCADE, related_name="tests")
 
+
+
 class BatchNote(models.Model):
     def __str__(self):
         fmt = "%m/%d/%y-%H:%M"
         return self.date.strftime(fmt) + " " + self.text[:50]
+
     text = models.TextField()
     date = models.DateTimeField(auto_now_add=True)
     notetype = models.ForeignKey(BatchNoteType,on_delete=models.SET("_del"))

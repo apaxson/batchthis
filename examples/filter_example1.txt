@@ -54,3 +54,30 @@ AttributeError: 'QuerySet' object has no attribute 'value'
 >>>
 
 
+
+
+
+>>> from batchthis.models import Batch, BatchTest, BatchTestType
+>>> b1 = Batch.objects.get(pk=1)
+>>> tests = b1.tests.all()
+>>> tests
+<QuerySet [<BatchTest: 02/29/20-20:14 pH>, <BatchTest: 02/29/20-20:17 Specific Gravity>, <BatchTest: 02/29/20-20:20 SO2>, <BatchTest: 03/07/20-18:04 pH>]>
+>>> tests[0].type
+<BatchTestType: pH>
+>>> tests[0].type.name
+'pH'
+>>> tests.values('type__name').distinct()
+<QuerySet [{'type__name': 'pH'}, {'type__name': 'Specific Gravity'}, {'type__name': 'SO2'}]>
+>>> testTypes = tests.values('type').distinct()
+>>> testTypes
+<QuerySet [{'type': 1}, {'type': 2}, {'type': 3}]>
+
+>>> for typeid in testTypes:
+...   print(b1.tests.filter(type__id=typeid['type']))
+...
+<QuerySet [<BatchTest: 02/29/20-20:14 pH>, <BatchTest: 03/07/20-18:04 pH>]>
+<QuerySet [<BatchTest: 02/29/20-20:17 Specific Gravity>]>
+<QuerySet [<BatchTest: 02/29/20-20:20 SO2>]>
+
+
+
