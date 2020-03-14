@@ -1,5 +1,5 @@
-from django.shortcuts import render
-from django.http import HttpResponse
+from django.shortcuts import render, reverse
+from django.http import HttpResponse, HttpResponseRedirect
 from batchthis.models import Batch, Fermenter, BatchTestType
 from django.shortcuts import get_object_or_404
 from .forms import BatchTestForm
@@ -47,7 +47,9 @@ def batchTest(request, pk=None):
             # We don't have a batchID.  Only show active batches
             form.fields['batch'].queryset = Batch.objects.filter(active=True)
     else:
-        form = BatchTestForm()
+        form = BatchTestForm(request.POST)
+        form.save()
+        return HttpResponseRedirect(reverse('batch', kwargs={'pk': pk}))
     return render(request,"addTest.html", {'form':form})
 
 #TODO Add Note Form
