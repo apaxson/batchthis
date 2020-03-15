@@ -11,6 +11,7 @@ class Unit(models.Model):
         return self.label
     identifier = models.CharField(max_length=10, help_text="Enter the unit identifier, i.e. 'mgL' or 'ph'")
     label = models.CharField(max_length=25, null=True, help_text="Enter abbreviation label of the measured unit, i.e. 'mg/L'")
+    name = models.CharField(max_length=25, null=True, help_text="Descriptive Name of the measuring unit.")
 
 @receiver(post_save,sender=Unit)
 def print_unit_save(sender,instance,**kwargs):
@@ -93,7 +94,24 @@ class BatchTest(models.Model):
     units = models.ForeignKey(Unit, on_delete=models.SET("_del"))
     batch = models.ForeignKey(Batch, blank=True, on_delete=models.CASCADE, related_name="tests")
 
+class BatchAdditionItem(models.Model):
+    # Sulfites, Acids, Hops, Nutrients, Fruit, etc
+    # Creating a model, rather than typing, so reports can be made on which batches used a specific item
+    def __str__(self):
+        if self.lotid:
+            return self.name + " (" + self.lotid + ")"
+        else:
+            return self.name
+    name = models.CharField(max_length=50, help_text="Name of this addition item.")
+    maker = models.CharField(max_length=50, blank=True, help_text="Name of the company who made this item.")
+    lotid = models.CharField(max_length=20, blank=True, help_text="The lot or batch id of this item.  Useful when looking for batches made with bad Lot")
 
+class BatchAddition(models.Model):
+    name = models.ForeignKey(BatchAdditionItem, on_delete=models.SET("_del"))
+    description = models.CharField(max_length=250, blank=True, help_text="Add a brief description of this Addition item and why")
+    units = models.ForeignKey(Unit, on_delete=models.SET("_del"))
+    amount = models.FloatField()
+    batch = models.ForeignKey(Batch, blank=True, on_delete=models.CASCADE, related_name="additions")
 
 class BatchNote(models.Model):
     def __str__(self):

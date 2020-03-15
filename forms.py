@@ -1,5 +1,5 @@
 from django.forms import ModelForm
-from .models import BatchTest, BatchNote
+from .models import BatchTest, BatchNote, BatchAddition
 
 class BatchTestForm(ModelForm):
     class Meta:
@@ -9,4 +9,9 @@ class BatchTestForm(ModelForm):
 class BatchNoteForm(ModelForm):
     class Meta:
         model = BatchNote
+        fields = "__all__"
+
+class BatchAdditionForm(ModelForm):
+    class Meta:
+        model = BatchAddition
         fields = "__all__"

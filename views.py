@@ -2,7 +2,7 @@ from django.shortcuts import render, reverse
 from django.http import HttpResponse, HttpResponseRedirect
 from batchthis.models import Batch, Fermenter, BatchTestType
 from django.shortcuts import get_object_or_404
-from .forms import BatchTestForm, BatchNoteForm
+from .forms import BatchTestForm, BatchNoteForm, BatchAdditionForm
 
 
 # Create your views here.
@@ -71,6 +71,21 @@ def batchTest(request, pk=None):
         form.save()
         return HttpResponseRedirect(reverse('batch', kwargs={'pk': pk}))
     return render(request,"addTest.html", {'form':form})
+
+def batchAddition(request, pk=None):
+    if request.method == 'GET':
+        form = BatchAdditionForm()
+        if pk:
+            form.fields['batch'].queryset = Batch.objects.filter(pk=pk)
+            form.initial = {'batch':pk}
+        else:
+            form.fields['batch'].queryset = Batch.objects.filter(active=True)
+    else:
+        form = BatchAdditionForm(request.POST)
+        form.save()
+        return HttpResponseRedirect(reverse('batch', kwargs={'pk': pk}))
+    return render(request, "addAddon.html", {'form': form})
+
 
 def batchNote(request, pk=None):
     if request.method == 'GET':
