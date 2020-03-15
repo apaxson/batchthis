@@ -82,7 +82,7 @@ def batchNote(request, pk=None):
             form = BatchNoteForm()
             form.fields['batch'].queryset = Batch.objects.all()
     else:
-        form = BatchTestForm(request.POST)
+        form = BatchNoteForm(request.POST)
         form.save()
         return HttpResponseRedirect(reverse('batch', kwargs={'pk':pk}))
     return render(request, "addNote.html", {'form':form})
