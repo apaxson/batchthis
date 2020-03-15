@@ -106,7 +106,6 @@ def batchGraphs(request, pk):
         testGroup[test.type.name]['dates'].append(strdate)
         testGroup[test.type.name]['values'].append(test.value)
 
-    print(testGroup)
     context = {"tests": testGroup,
                "testTypes": testGroup.keys()
                }
