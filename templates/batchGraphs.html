@@ -26,13 +26,13 @@
                 </div>
             </div>
         </div>
+        <!-- TODO Add timestamp to nodes, but keep date for labels -->
         <script>
             var ctxLoc = '{{ value.shortid }}Chart';
             var chartDataLoc = '{{ value.shortid }}_data';
             var chartData = document.getElementById(chartDataLoc).textContent;
             var label_val = {{ value.dates|safe }};
             var data_val = {{ value.values }};
-            console.log(chartDataLoc + "\n" + chartData.dates)
 
             var ctx = document.getElementById(ctxLoc).getContext('2d')
             var chart = new Chart(ctx, {
@@ -40,7 +40,7 @@
                 data: {
                     labels: label_val,
                     datasets: [{
-                        label: "{{ test }} Data",
+                        label: "{{test}} Data",
                         data: data_val,
                         lineTension: 0.3,
                       backgroundColor: "rgba(78, 115, 223, 0.05)",
@@ -55,6 +55,9 @@
                       pointBorderWidth: 2,
                         }]
                 },
+                options: {responsive:true,
+                maintainAspectRatio: false
+                }
             });
         </script>
         {% endfor %}

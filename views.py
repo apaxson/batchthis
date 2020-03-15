@@ -33,9 +33,21 @@ def batch(request, pk):
     thirdSugarBreak = round(batch.startingGravity-((batch.startingGravity-batch.estimatedEndGravity)/3),3)
     thirdSugarBreakPercent = round((batch.startingGravity-thirdSugarBreak)/(batch.startingGravity-batch.estimatedEndGravity)*100)
 
+    gravityChart = {}
+    for test in gravity_tests:
+        if not "dates" in gravityChart.keys():
+            gravityChart["shortid"] = "specific-gravity"
+            gravityChart["dates"] = []
+            gravityChart["values"] = []
+        strfmt = "%m/%d/%y"
+        gravityChart["dates"].append(test.datetime.strftime(strfmt))
+        gravityChart["values"].append(test.value)
+
     context = {
         "batch": batch,
         "percentComplete": percent_complete,
+        "gravityChart": gravityChart,
+        "gravityTests": gravity_tests,
         "testTypes": testTypes,
         "fermenters": fermenters,
         "thirdSugarBreak": thirdSugarBreak,
