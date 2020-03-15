@@ -11,6 +11,8 @@ Working on now:
 * Fermenter workflow and maintenance
 * Batch tracking and testing
 * Graphing of tests
+* Detailed note taking/journaling (Taste Notes, Fermentation Notes, etc)
+* Addition Tracking (nutrients, adjuncts, fruits, O2, etc)
 
 Future:
 * Import recipes from Beersmith
