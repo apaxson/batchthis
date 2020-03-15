@@ -18,3 +18,4 @@ Future:
 * Wine tools and formulae (i.e. SO2 charts, Brix/Gravity conversions, etc)
 
 ![](screenshots/batch_detail_preAlpha.png)
+![](screenshots/batch_graph_preAlpha.png)
