@@ -2,7 +2,7 @@ from django.shortcuts import render, reverse
 from django.http import HttpResponse, HttpResponseRedirect
 from batchthis.models import Batch, Fermenter, BatchTestType
 from django.shortcuts import get_object_or_404
-from .forms import BatchTestForm
+from .forms import BatchTestForm, BatchNoteForm
 
 
 # Create your views here.
@@ -72,7 +72,20 @@ def batchTest(request, pk=None):
         return HttpResponseRedirect(reverse('batch', kwargs={'pk': pk}))
     return render(request,"addTest.html", {'form':form})
 
-#TODO Add Note Form
+def batchNote(request, pk=None):
+    if request.method == 'GET':
+        if pk:
+            form = BatchNoteForm()
+            form.fields['batch'].queryset = Batch.objects.filter(pk=pk)
+            form.initial = {'batch':pk}
+        else:
+            form = BatchNoteForm()
+            form.fields['batch'].queryset = Batch.objects.all()
+    else:
+        form = BatchTestForm(request.POST)
+        form.save()
+        return HttpResponseRedirect(reverse('batch', kwargs={'pk':pk}))
+    return render(request, "addNote.html", {'form':form})
 
 def batchGraphs(request, pk):
     # Capture each type of test.  No need to show graphs on tests not performed
