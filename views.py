@@ -3,7 +3,7 @@ from django.http import HttpResponse, HttpResponseRedirect
 from batchthis.models import Batch, Fermenter, BatchTestType
 from django.shortcuts import get_object_or_404
 from .forms import BatchTestForm
-import json
+
 
 # Create your views here.
 
@@ -27,11 +27,19 @@ def batch(request, pk):
     batch = get_object_or_404(Batch,pk=pk)
     testTypes = BatchTestType.objects.all()
     fermenters = batch.fermenter.all()
+    gravity_tests = batch.tests.filter(type__shortid='specific-gravity')
+    current_gravity = gravity_tests[len(gravity_tests)-1].value
+    percent_complete = round((batch.startingGravity-current_gravity)/(batch.startingGravity-batch.estimatedEndGravity)*100)
+    thirdSugarBreak = round(batch.startingGravity-((batch.startingGravity-batch.estimatedEndGravity)/3),3)
+    thirdSugarBreakPercent = round((batch.startingGravity-thirdSugarBreak)/(batch.startingGravity-batch.estimatedEndGravity)*100)
 
     context = {
         "batch": batch,
+        "percentComplete": percent_complete,
         "testTypes": testTypes,
-        "fermenters": fermenters
+        "fermenters": fermenters,
+        "thirdSugarBreak": thirdSugarBreak,
+        "thirdSugarBreakPercent": thirdSugarBreakPercent
     }
     return render(request, 'batch.html', context=context)
 

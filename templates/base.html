@@ -17,6 +17,32 @@
 
   <!-- Custom styles for this template-->
   <link href="{% static 'batchthis/css/sb-admin-2.min.css' %}" rel="stylesheet">
+  <!-- Progress Bar markup.  TODO: Add to CSS File -->
+  <style>
+    .bar-step {
+    position:absolute;
+	margin-top:-20px;
+	z-index:1;
+    font-size:12px;
+}
+
+.label-txt {
+    float: left;
+}
+
+.label-line {
+    float: right;
+    background: #000;
+    height:50px;
+	width:1px;
+    margin-left: 5px;
+}
+
+.label-percent {
+    float: right;
+    margin-left: 5px;
+}
+</style>
   </head>
 
 <body id="page-top">

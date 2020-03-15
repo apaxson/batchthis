@@ -93,6 +93,16 @@
                 <!-- Card Body -->
             <!-- TODO add progress chart based on expected final gravity, and Gravity Chart -->
                 <div class="card-body">
+                    <h4 class="small font-weight-bold">Current Completion <span class="float-right">{{percentComplete}}%</span></h4>
+                    <div class="progress mb-4">
+                        <div class="bar-step" style="left: {{thirdSugarBreakPercent}}%">
+                            <div class="label-txt">1/3 Sugar Break</div>
+                            <div class="label-percent">{{thirdSugarBreak}}</div>
+                        <div class="label-line"></div>
+                        </div>
+	                    <div class="progress-bar progress-bar-success" style="width: {{ percentComplete }}%;">{{ percentComplete }}</div>
+   </div>
+</div>
                   <div class="chart-area">
                     <canvas id="myAreaChart"></canvas>
                   </div>

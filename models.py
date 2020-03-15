@@ -64,6 +64,8 @@ class Batch(models.Model):
     active = models.BooleanField(default=True)
     # Using the 'related_name' on batches, applies that name on the other side for "Fermenter.batch"
     fermenter = models.ManyToManyField(Fermenter, blank=True, related_name='batch')
+    startingGravity = models.FloatField()
+    estimatedEndGravity = models.FloatField()
 
     def complete(self):
         self.enddate = datetime.now()
