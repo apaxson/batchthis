@@ -8,11 +8,26 @@ from django.utils.text import slugify
 # Create your models here.
 class Unit(models.Model):
     def __str__(self):
-        return self.label
+        return self.name
+    TEMPERATURE = 0
+    CONCENTRATION = 1
+    WEIGHT = 2
+    PH = 3
+    TIME = 4
+    VOLUME = 5
+    CATEGORIES = (
+        (TEMPERATURE, ("Temperature")),
+        (CONCENTRATION, ("Concentration/Density")),
+        (WEIGHT, ("Weight/Mass")),
+        (PH, ("pH")),
+        (TIME, ("Timing")),
+        (VOLUME, ("Volume"))
+    )
     identifier = models.CharField(max_length=10, help_text="Enter the unit identifier, i.e. 'mgL' or 'ph'")
     label = models.CharField(max_length=25, null=True, help_text="Enter abbreviation label of the measured unit, i.e. 'mg/L'")
     name = models.CharField(max_length=25, null=True, help_text="Descriptive Name of the measuring unit.")
-
+    category = models.SmallIntegerField(choices = CATEGORIES, null=False)
+# TODO: Add Unit Categories in Objects
 @receiver(post_save,sender=Unit)
 def print_unit_save(sender,instance,**kwargs):
     print("Received save from a Unit: " + instance.label + "\n" + str(kwargs))

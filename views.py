@@ -11,14 +11,20 @@ def index(request):
 
     top_batches = Batch.objects.all()[:5]
     total_batch_count = Batch.objects.all().count()
-    active_batch_count = Batch.objects.filter(active=True).count()
+    active_batches = Batch.objects.filter(active=True)
+    active_batch_count = len(active_batches)
     active_fermenters = Fermenter.objects.filter(status=Fermenter.STATUS_ACTIVE)
+    active_fermenters_count = len(active_fermenters)
+    total_volume = 0
+    for batch in active_batches:
+        total_volume += batch.size
 
     context = {
         'top_batches': top_batches,
         'total_batch_count': total_batch_count,
         'active_batch_count': active_batch_count,
-        'active_fermenters': active_fermenters
+        'active_fermenters_count': active_fermenters_count,
+        'total_volume': total_volume
     }
     return render(request,'index.html',context=context)
 
