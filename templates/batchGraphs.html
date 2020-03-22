@@ -8,25 +8,30 @@
     <script src="{% static 'batchthis/vendor/chart.js/Chart.min.js' %}"></script>
         <!-- Content Column -->
         {# Loop through each type of test for graphing #}
-        {% for test,value in tests.items %}
-        <div class="col-lg-6 mb-4">
+        {% if not tests %}
+        No Data Found
+        {% else %}
+            {% for test,value in tests.items %}
+            <div class="col-lg-6 mb-4">
 
-            <!-- {{ test }} Graph -->
-            <div class="card shadow mb-4">
-                <div class="card-header py-3">
-                    <h6 class="m-0 font-weight-bold text-primary">{{ test }}</h6>
-                </div>
-                <div class="card-body">
-                    <div class="chart-area">
-                    <canvas id="{{ value.shortid }}Chart"></canvas>
-                    {% with value.shortid|add:"_data" as data_var %}
-                    {{ value|json_script:data_var }}
-                    {% endwith %}
-                  </div>
+                <!-- {{ test }} Graph -->
+                <div class="card shadow mb-4">
+                    <div class="card-header py-3">
+                        <h6 class="m-0 font-weight-bold text-primary">{{ test }}</h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="chart-area">
+                        <canvas id="{{ value.shortid }}Chart"></canvas>
+                        {% with value.shortid|add:"_data" as data_var %}
+                        {{ value|json_script:data_var }}
+                        {% endwith %}
+                      </div>
+                    </div>
                 </div>
             </div>
-        </div>
+            {% endfor %}
         <!-- TODO Add timestamp to nodes, but keep date for labels -->
+        {% endif %}
         <script>
             var ctxLoc = '{{ value.shortid }}Chart';
             var chartDataLoc = '{{ value.shortid }}_data';
@@ -60,7 +65,6 @@
                 }
             });
         </script>
-        {% endfor %}
     </div>
 </div>
 
