@@ -16,6 +16,7 @@ Working on now:
 
 Future:
 * Import recipes from Beersmith
+* Workflow Engine - Task assignment for Batch/Fermenter Maintenance or Next Steps
 * Inventory Tracking??
 * Wine tools and formulae (i.e. SO2 charts, Brix/Gravity conversions, etc)
 
