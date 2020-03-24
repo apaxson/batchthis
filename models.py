@@ -63,6 +63,25 @@ class BatchTestType(models.Model):
     name = models.CharField(max_length = 25)
     shortid = models.SlugField(unique=True)
 
+class BatchStyle(models.Model):
+    def __str__(self):
+        return self.name
+    name = models.CharField(max_length=30)
+
+class BatchCategory(models.Model):
+    def __str__(self):
+        if self.bjcp_code:
+            return self.name + " (" + self.bjcp_code + ")"
+        else:
+            return self.name
+
+    class Meta:
+        verbose_name_plural = "batch categories"
+
+    name = models.CharField(max_length=30)
+    style = models.ForeignKey(BatchStyle, on_delete=models.CASCADE)
+    bjcp_code = models.CharField(max_length=3)
+
 class Batch(models.Model):
 
     def __str__(self):
@@ -82,6 +101,7 @@ class Batch(models.Model):
     fermenter = models.ManyToManyField(Fermenter, blank=True, related_name='batch')
     startingGravity = models.FloatField()
     estimatedEndGravity = models.FloatField()
+    category = models.ForeignKey(BatchCategory, on_delete=models.SET("_del"), blank=True, null=True)
 
     def complete(self):
         self.enddate = datetime.now()
