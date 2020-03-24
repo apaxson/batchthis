@@ -21,6 +21,7 @@ def index(request):
 
     context = {
         'active_batches': active_batches,
+        'active_fermenters': active_fermenters,
         'top_batches': top_batches,
         'total_batch_count': total_batch_count,
         'active_batch_count': active_batch_count,
