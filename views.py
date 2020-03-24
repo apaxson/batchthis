@@ -20,6 +20,7 @@ def index(request):
         total_volume += batch.size
 
     context = {
+        'active_batches': active_batches,
         'top_batches': top_batches,
         'total_batch_count': total_batch_count,
         'active_batch_count': active_batch_count,

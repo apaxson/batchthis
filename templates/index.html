@@ -110,7 +110,34 @@
                 </div>
                 <!-- Card Body -->
                 <div class="card-body">
-                  TODO: Top Batch Listing
+                  <table class="table">
+                    <thead>
+                      <tr>
+                        <th scope="col">Batch#</th>
+                        <th scope="col">Name</th>
+                        <th scope="col">Start</th>
+                        <th scope="col">Type</th>
+                        <th scope="col">Size (G)</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                    {% if active_batches %}
+                      {% for batch in active_batches %}
+                      <tr>
+                        <td>{{ batch.pk }}</td>
+                        <td>{{ batch.name }}</td>
+                        <td>{{ batch.startdate|date:"m/d/y" }}</td>
+                        <td>{{ batch.category }}</td>
+                        <td>{{ batch.size }}</td>
+                      </tr>
+                      {% endfor %}
+                    {% else %}
+                      <tr>
+                        <td colspan=5>No Active Batches</td>
+                      </tr>
+                    {% endif %}
+                    </tbody>
+                  </table>
                 </div>
               </div>
             </div>
@@ -133,7 +160,7 @@
                 </div>
                 <!-- Card Body -->
                 <div class="card-body">
-                  TODO: Active Fermenter Listing
+                  TODO: Fermenters
                 </div>
               </div>
             </div>
