@@ -163,11 +163,11 @@
                       </tr>
                     </thead>
                     <tbody>
-                    {% if active_fermenters %}
-                      {% for fermenter in active_fermenters %}
+                    {% if fermenter_detail %}
+                      {% for fermenter,detail in fermenter_detail.items %}
                       <tr>
-                        <td><a href="fermenter/{{fermenter.pk}}">{{ fermenter.name }}</a></td>
-                        <td>{{ fermenter.used_size }}</td>
+                        <td><a href="fermenter/{{fermenter.pk}}">{{ fermenter }}</a></td>
+                        <td>{{ detail.size }}</td>
                       </tr>
                       {% endfor %}
                     {% else %}

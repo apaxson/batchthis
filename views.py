@@ -19,6 +19,11 @@ def index(request):
     for batch in active_batches:
         total_volume += batch.size
 
+    fermenter_detail = {}
+    for fermenter in active_fermenters:
+        fermenter_batch = fermenter.batch.filter(active=True)
+        if not fermenter.name in fermenter_detail.keys():
+            fermenter_detail[fermenter.name] = {'batch': fermenter_batch[0].name, 'size': fermenter_batch[0].size}
     context = {
         'active_batches': active_batches,
         'active_fermenters': active_fermenters,
@@ -26,7 +31,8 @@ def index(request):
         'total_batch_count': total_batch_count,
         'active_batch_count': active_batch_count,
         'active_fermenters_count': active_fermenters_count,
-        'total_volume': total_volume
+        'total_volume': total_volume,
+        'fermenter_detail': fermenter_detail
     }
     return render(request,'index.html',context=context)
 
@@ -39,7 +45,7 @@ def batch(request, pk):
     current_gravity = batch.startingGravity
     if len(gravity_tests) > 0:
         # We have gravity tests.  Get the latest
-        current_gravity = gravity_tests[-1].value
+        current_gravity = gravity_tests[len(gravity_tests)-1].value
     percent_complete = round((batch.startingGravity-current_gravity)/(batch.startingGravity-batch.estimatedEndGravity)*100)
     thirdSugarBreak = round(batch.startingGravity-((batch.startingGravity-batch.estimatedEndGravity)/3),3)
     thirdSugarBreakPercent = round((batch.startingGravity-thirdSugarBreak)/(batch.startingGravity-batch.estimatedEndGravity)*100)

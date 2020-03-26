@@ -111,9 +111,11 @@ class Batch(models.Model):
 # set it active
 @receiver(post_save,sender=Batch)
 def setActiveFermenter(sender,instance,**kwargs):
+    print("Setting Fermenter status")
     fermenters = instance.fermenter.all()
     for fermenter in fermenters:
-        if fermenter.status != fermenter.STATUS_ACTIVE:
+        print("Checking fermenter: " + fermenter.name + ". Current status: " + fermenter.status)
+        if fermenter.status != Fermenter.STATUS_ACTIVE:
             fermenter.status = fermenter.STATUS_ACTIVE
             fermenter.save()
 
