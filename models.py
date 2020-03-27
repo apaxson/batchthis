@@ -1,7 +1,7 @@
 from django.db import models
 from datetime import datetime
 from django.dispatch import receiver
-from django.db.models.signals import post_save
+from django.db.models.signals import post_save, m2m_changed
 from django.utils.text import slugify
 
 
@@ -109,12 +109,10 @@ class Batch(models.Model):
 
 # If a batch is saved on a fermenter that isn't currently active,
 # set it active
-@receiver(post_save,sender=Batch)
+@receiver(m2m_changed,sender=Batch.fermenter.through)
 def setActiveFermenter(sender,instance,**kwargs):
-    print("Setting Fermenter status")
     fermenters = instance.fermenter.all()
     for fermenter in fermenters:
-        print("Checking fermenter: " + fermenter.name + ". Current status: " + fermenter.status)
         if fermenter.status != Fermenter.STATUS_ACTIVE:
             fermenter.status = fermenter.STATUS_ACTIVE
             fermenter.save()
