@@ -20,6 +20,11 @@ Future:
 * Inventory Tracking??
 * Wine tools and formulae (i.e. SO2 charts, Brix/Gravity conversions, etc)
 
+Main Dashboard:
 ![](screenshots/batch_dashbboard_preAlpha.png)
+
+Batch Details Page
 ![](screenshots/batch_detail_preAlpha.png)
+
+Batch Test Report
 ![](screenshots/batch_graph_preAlpha.png)

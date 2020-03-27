@@ -112,6 +112,7 @@
                         <th scope="col">Name</th>
                         <th scope="col">Start</th>
                         <th scope="col">Type</th>
+                        <th scope="col">Style</th>
                         <th scope="col">Size (G)</th>
                       </tr>
                     </thead>
@@ -123,6 +124,7 @@
                         <td><a href="batch/{{batch.pk}}">{{ batch.name }}</a></td>
                         <td>{{ batch.startdate|date:"m/d/y" }}</td>
                         <td>{{ batch.category }}</td>
+                        <td>{{ batch.category.style }} </td>
                         <td>{{ batch.size }}</td>
                       </tr>
                       {% endfor %}
