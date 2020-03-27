@@ -129,6 +129,23 @@ class BatchTest(models.Model):
     units = models.ForeignKey(Unit, on_delete=models.SET("_del"))
     batch = models.ForeignKey(Batch, blank=True, on_delete=models.CASCADE, related_name="tests")
 
+# If a batch is saved with a Starting Gravity, add that test
+@receiver(post_save,sender=Batch)
+def addGravityTest(sender,instance,**kwarts):
+    print("Adding Gravity")
+    if instance.startingGravity:
+        gravTest = BatchTest()
+        testType = BatchTestType.objects.filter(shortid='specific-gravity')[0]
+        gravTest.type = testType
+        gravTest.value = instance.startingGravity
+        gravTest.description = "Auto created from new batch."
+        gravTest.datetime = datetime.now()
+        unit = Unit.objects.filter(name__contains="specific")[0]
+        gravTest.units = unit
+        gravTest.batch = instance
+        print("Saving gravity")
+        gravTest.save()
+
 class BatchAdditionItem(models.Model):
     # Sulfites, Acids, Hops, Nutrients, Fruit, etc
     # Creating a model, rather than typing, so reports can be made on which batches used a specific item
