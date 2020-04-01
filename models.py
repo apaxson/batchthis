@@ -82,6 +82,10 @@ class BatchCategory(models.Model):
     style = models.ForeignKey(BatchStyle, on_delete=models.CASCADE)
     bjcp_code = models.CharField(max_length=3)
 
+class ActivityLog(models.Model):
+    datetime = models.DateTimeField()
+    text = models.TextField()
+
 class Batch(models.Model):
 
     def __str__(self):
@@ -102,6 +106,7 @@ class Batch(models.Model):
     startingGravity = models.FloatField()
     estimatedEndGravity = models.FloatField()
     category = models.ForeignKey(BatchCategory, on_delete=models.SET("_del"), blank=True, null=True)
+    activity = models.ManyToManyField(ActivityLog, related_name='batch')
 
     def complete(self):
         self.enddate = datetime.now()
@@ -122,7 +127,7 @@ class BatchTest(models.Model):
         fmt = "%m/%d/%y-%H:%M"
         return self.datetime.strftime(fmt) + " " + self.type.name
 
-    datetime = models.DateTimeField(auto_now=True)
+    datetime = models.DateTimeField(auto_now=False)
     type = models.ForeignKey(BatchTestType, on_delete=models.SET("_del"))
     value = models.FloatField()
     description = models.CharField(max_length=250, blank=True)
@@ -174,3 +179,38 @@ class BatchNote(models.Model):
     date = models.DateTimeField(auto_now_add=True)
     notetype = models.ForeignKey(BatchNoteType,on_delete=models.SET("_del"))
     batch = models.ForeignKey(Batch, on_delete=models.CASCADE,related_name="notes")
+
+@receiver(post_save,sender=BatchNote)
+@receiver(post_save,sender=BatchAddition)
+@receiver(post_save,sender=BatchTest)
+@receiver(post_save,sender=Batch)
+def addActivity(sender,instance,created=False,**kwargs):
+    text = None
+    batch = None
+    date = datetime.now()
+    if sender.__name__ == "Batch":
+        batch = instance
+        if created:
+            text = "Batch Created"
+        else:
+            text = "Batch Modified"
+    if sender.__name__ == "BatchNote":
+        batch = instance.batch
+        if created:
+            text = "Added ["+instance.notetype.name+"] :: " + instance.text
+    if sender.__name__ == "BatchAddition":
+        batch = instance.batch
+        if created:
+            text = "Added " + instance.name.name + ":" + str(instance.amount) + " " + instance.units.name
+        else:
+            text = "Updated " + instance.name.name
+    if sender.__name__ == "BatchTest":
+        batch = instance.batch
+        if created:
+            text = "Added " + instance.type.name + ":" + str(instance.value) + " " + instance.units.name
+        else:
+            text = "Updated " + instance.type.name
+    if text:
+        log = ActivityLog(datetime=date,text=text)
+        log.save()
+        batch.activity.add(log)
