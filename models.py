@@ -176,7 +176,7 @@ class BatchNote(models.Model):
         return self.date.strftime(fmt) + " " + self.text[:50]
 
     text = models.TextField()
-    date = models.DateTimeField(auto_now_add=True)
+    date = models.DateTimeField(auto_now_add=False)
     notetype = models.ForeignKey(BatchNoteType,on_delete=models.SET("_del"))
     batch = models.ForeignKey(Batch, on_delete=models.CASCADE,related_name="notes")
 

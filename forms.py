@@ -24,7 +24,7 @@ class BatchNoteForm(ModelForm):
         fields = "__all__"
 
     def __init__(self,*args,**kwargs):
-        super().__init(*args,**kwargs)
+        super().__init__(*args,**kwargs)
         self.fields["date"].widget = DateTimeWidget()
         self.fields["date"].input_formats = ["%Y-%m-%dT%H:%M", "%Y-%m-%d %H:%M"]
 

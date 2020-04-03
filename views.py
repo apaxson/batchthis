@@ -115,11 +115,14 @@ def batchAddition(request, pk=None):
 def batchNote(request, pk=None, noteType=None):
     if request.method == 'GET':
         form = BatchNoteForm()
+        form.initial = {}
         if pk:
             form.fields['batch'].queryset = Batch.objects.filter(pk=pk)
-            form.initial = {'batch':pk}
+            form.initial['batch'] = pk
         if noteType:
-            form.fields['notetype'].queryset = BatchNoteType.objects.filter(name=noteType)
+            noteTypes = BatchNoteType.objects.filter(name=noteType)
+            form.fields['notetype'].queryset = noteTypes
+            form.initial['notetype'] = noteTypes[0].pk
         else:
             form.fields['batch'].queryset = Batch.objects.all()
     else:

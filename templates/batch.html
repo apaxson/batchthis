@@ -23,7 +23,7 @@
                         <div class="dropdown-menu dropdown-menu-right shadow animated--fade-in"
                              aria-labelledby="dropdownMenuLink">
                             <a class="dropdown-item" href="#">Edit</a>
-                            <a class="dropdown-item" href="#">Activity Log</a>
+                            <a class="dropdown-item" href="{{ batch.id }}/activity">Activity Log</a>
                             <div class="dropdown-divider"></div>
                             <div class="dropdown-header">Batch Actions:</div>
                             <a class="dropdown-item" href="{{ batch.id }}/addTest">Add Test</a>
@@ -188,7 +188,7 @@
                         </a>
                         <div class="dropdown-menu dropdown-menu-right shadow animated--fade-in"
                              aria-labelledby="dropdownMenuLink">
-                            <a class="dropdown-item" href="#">Add Log Entry</a>
+                            <a class="dropdown-item" href="{{ batch.id }}/addNote/Fermentation%20Note">Add Log Entry</a>
                         </div>
                     </div>
                 </div>
@@ -228,7 +228,7 @@
                         </a>
                         <div class="dropdown-menu dropdown-menu-right shadow animated--fade-in"
                              aria-labelledby="dropdownMenuLink">
-                            <a class="dropdown-item" href="#">Add Note</a>
+                            <a class="dropdown-item" href="{{ batch.id }}/addNote/General%20Note">Add Note</a>
                         </div>
                     </div>
                 </div>
