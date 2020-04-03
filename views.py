@@ -1,6 +1,6 @@
 from django.shortcuts import render, reverse
 from django.http import HttpResponse, HttpResponseRedirect
-from batchthis.models import Batch, Fermenter, BatchTestType
+from batchthis.models import Batch, Fermenter, BatchTestType, BatchNoteType
 from django.shortcuts import get_object_or_404
 from .forms import BatchTestForm, BatchNoteForm, BatchAdditionForm
 
@@ -49,6 +49,9 @@ def batch(request, pk):
     percent_complete = round((batch.startingGravity-current_gravity)/(batch.startingGravity-batch.estimatedEndGravity)*100)
     thirdSugarBreak = round(batch.startingGravity-((batch.startingGravity-batch.estimatedEndGravity)/3),3)
     thirdSugarBreakPercent = round((batch.startingGravity-thirdSugarBreak)/(batch.startingGravity-batch.estimatedEndGravity)*100)
+    ferm_notes = batch.notes.filter(notetype__name='Fermentation Note')
+    gen_notes = batch.notes.filter(notetype__name='General Note')
+    taste_notes = batch.notes.filter(notetype__name='Tasting Note')
 
     gravityChart = {}
     for test in gravity_tests:
@@ -70,7 +73,10 @@ def batch(request, pk):
         "thirdSugarBreak": thirdSugarBreak,
         "thirdSugarBreakPercent": thirdSugarBreakPercent,
         "startingGravity": batch.startingGravity,
-        "endingGravity": batch.estimatedEndGravity
+        "endingGravity": batch.estimatedEndGravity,
+        "gennotes": gen_notes,
+        "fermnotes": ferm_notes,
+        "tastenotes": taste_notes
     }
     return render(request, 'batch.html', context=context)
 
@@ -106,20 +112,31 @@ def batchAddition(request, pk=None):
     return render(request, "addAddon.html", {'form': form})
 
 
-def batchNote(request, pk=None):
+def batchNote(request, pk=None, noteType=None):
     if request.method == 'GET':
+        form = BatchNoteForm()
         if pk:
-            form = BatchNoteForm()
             form.fields['batch'].queryset = Batch.objects.filter(pk=pk)
             form.initial = {'batch':pk}
+        if noteType:
+            form.fields['notetype'].queryset = BatchNoteType.objects.filter(name=noteType)
         else:
-            form = BatchNoteForm()
             form.fields['batch'].queryset = Batch.objects.all()
     else:
         form = BatchNoteForm(request.POST)
         form.save()
         return HttpResponseRedirect(reverse('batch', kwargs={'pk':pk}))
     return render(request, "addNote.html", {'form':form})
+
+def activity(request, pk=None):
+    print("Getting activity for batch " + str(pk))
+    batch = Batch.objects.get(pk=pk)
+    activity = batch.activity.all().order_by('datetime')
+    print("Found " + str(len(activity)) + " entries in activity")
+    context = {
+        'activity': activity
+    }
+    return render(request, "activity.html", context=context)
 
 def batchGraphs(request, pk):
     # Capture each type of test.  No need to show graphs on tests not performed
