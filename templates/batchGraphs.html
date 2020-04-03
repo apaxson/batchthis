@@ -29,9 +29,6 @@
                     </div>
                 </div>
             </div>
-            {% endfor %}
-        <!-- TODO Add timestamp to nodes, but keep date for labels -->
-        {% endif %}
         <script>
             var ctxLoc = '{{ value.shortid }}Chart';
             var chartDataLoc = '{{ value.shortid }}_data';
@@ -65,6 +62,9 @@
                 }
             });
         </script>
+        {% endfor %}
+        <!-- TODO Add timestamp to nodes, but keep date for labels -->
+        {% endif %}
     </div>
 </div>
 
