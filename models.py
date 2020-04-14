@@ -28,9 +28,21 @@ class Unit(models.Model):
     name = models.CharField(max_length=25, null=True, help_text="Descriptive Name of the measuring unit.")
     category = models.SmallIntegerField(choices = CATEGORIES, null=False)
 # TODO: Add Unit Categories in Objects
-@receiver(post_save,sender=Unit)
-def print_unit_save(sender,instance,**kwargs):
-    print("Received save from a Unit: " + instance.label + "\n" + str(kwargs))
+
+class RecipeFermentable(models.Model):
+    name = models.CharField(max_length=75)
+    version = models.IntegerField()
+    type = models.CharField(max_length=30) #TODO Refactor into it's own class/relation
+
+
+class Recipe(models.Model):
+    name = models.CharField(max_length=75)
+    version = models.IntegerField()
+    type = models.CharField(max_length=30)
+    brewer = models.CharField(max_length=30)
+    batchSize = models.FloatField() #in Liters
+    source = models.CharField(max_length=50) #Where did the recipe come from
+    pairing = models.CharField(max_length=250) # Textfield listing various foods.  TODO: Refactor
 
 class Fermenter(models.Model):
     STATUS_ACTIVE = 'In Use'
@@ -107,6 +119,7 @@ class Batch(models.Model):
     estimatedEndGravity = models.FloatField()
     category = models.ForeignKey(BatchCategory, on_delete=models.SET("_del"), blank=True, null=True)
     activity = models.ManyToManyField(ActivityLog, related_name='batch')
+    recipe = models.ForeignKey(Recipe, on_delete=models.SET_NULL(), null=True, blank=True)
 
     def complete(self):
         self.enddate = datetime.now()
@@ -201,15 +214,15 @@ def addActivity(sender,instance,created=False,**kwargs):
     if sender.__name__ == "BatchAddition":
         batch = instance.batch
         if created:
-            text = "Added " + instance.name.name + ":" + str(instance.amount) + " " + instance.units.name
+            text = "Added [" + instance.name.name + "] :: " + str(instance.amount) + " " + instance.units.name
         else:
-            text = "Updated " + instance.name.name
+            text = "Updated [" + instance.name.name + "]"
     if sender.__name__ == "BatchTest":
         batch = instance.batch
         if created:
-            text = "Added " + instance.type.name + ":" + str(instance.value) + " " + instance.units.name
+            text = "Added [" + instance.type.name + "] :: " + str(instance.value) + " " + instance.units.name
         else:
-            text = "Updated " + instance.type.name
+            text = "Updated [" + instance.type.name + "]"
     if text:
         log = ActivityLog(datetime=date,text=text)
         log.save()
