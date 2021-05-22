@@ -119,7 +119,7 @@ class Batch(models.Model):
     estimatedEndGravity = models.FloatField()
     category = models.ForeignKey(BatchCategory, on_delete=models.SET("_del"), blank=True, null=True)
     activity = models.ManyToManyField(ActivityLog, related_name='batch')
-    recipe = models.ForeignKey(Recipe, on_delete=models.SET_NULL(), null=True, blank=True)
+    recipe = models.ForeignKey(Recipe, on_delete=models.SET("_del"), null=True, blank=True)
 
     def complete(self):
         self.enddate = datetime.now()
