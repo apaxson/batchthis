@@ -1,0 +1,2 @@
+django>=3.0
+django_measurement>=3.2

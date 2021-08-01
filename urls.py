@@ -14,4 +14,5 @@ urlpatterns = [
     path('batch/<int:pk>/batchGraphs', views.batchGraphs, name='batchGraphs'),
     path('batch/<int:pk>/activity', views.activity, name="batchActivity")
     #TODO: Add Fermenter Page/Template
+    #TODO: Add Recipe Import Page/Template
 ]
