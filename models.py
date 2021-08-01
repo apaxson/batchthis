@@ -1,5 +1,5 @@
 """
-  Copyright 2021 Aaron Paxson (apax)
+  Copyright 2021 Stones River Meadery (aaron@stonesrivermead.com)
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
