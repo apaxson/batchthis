@@ -1,3 +1,19 @@
+"""
+  Copyright 2021 Aaron Paxson (apax)
+
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.
+"""
+
 from django.db import models
 from datetime import datetime
 from django.dispatch import receiver
@@ -28,6 +44,8 @@ class Unit(models.Model):
     name = models.CharField(max_length=25, null=True, help_text="Descriptive Name of the measuring unit.")
     category = models.SmallIntegerField(choices = CATEGORIES, null=False)
 # TODO: Add Unit Categories in Objects
+
+# TODO: Add User Roles/Permissions
 
 class RecipeFermentable(models.Model):
     name = models.CharField(max_length=75)
