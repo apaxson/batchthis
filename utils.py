@@ -13,8 +13,15 @@
    See the License for the specific language governing permissions and
    limitations under the License.
 """
+import re
 
 class Utils:
+    def strToIntFormat(str):
+        # Pull out int + metric.  i.e. "100ml" will return (100,'ml')
+        p = re.compile("([\d]*)([\w\W]*)")
+        data = p.match(str).groups()
+        return int(data[0]),data[1].strip()
+
     def sgToBrix(sg):
         brix = (((182.4601 * sg -775.6821) * sg +1262.7794) * sg - 669.5622)
         return brix
@@ -55,27 +62,60 @@ class Utils:
                 return yeastPotential, remainingSugar + endSG
         return abv,endSG
 
-
     def dilution(startConcentration=None, startVolume=None, endConcentration=None, endVolume=None):
-        # Check if we have the proper variables to solve for
+        # Check if we have the proper variables/formatting to solve for
+        # Based on C1V1 = C2V2
         varCount = 0
-        if startConcentration: varCount +=1
-        if endConcentration: varCount +=1
-        if startVolume: varCount +=1
-        if endVolume: varCount +=1
+        endConcentrationStr = ''
+        startConcentrationStr = ''
+        endVolumeStr = ''
+        startVolumeStr = ''
+        if startConcentration:
+            varCount +=1
+            if isinstance(startConcentration,str):
+                startConcentration,startConcentrationStr = Utils.strToIntFormat(startConcentration)
+        if endConcentration:
+            varCount +=1
+            if isinstance(endConcentration,str):
+                endConcentration,endConcentrationStr = Utils.strToIntFormat(endConcentration)
+        if startVolume:
+            varCount +=1
+            if isinstance(startVolume,str):
+                startVolume,startVolumeStr = Utils.strToIntFormat(startVolume)
+        if endVolume:
+            varCount +=1
+            if isinstance(endVolume,str):
+                endVolume,endVolumeStr = Utils.strToIntFormat(endVolume)
         if varCount != 3:
             #TODO Raise Exception
             print("Wrong var count.  Need 3 to solve")
             return None
+
         if not startConcentration:
+            if endVolumeStr != startVolumeStr:
+                #TODO Raise Exception
+                print("start and end volume units do not match")
+                return None
             startConcentration = (endConcentration * endVolume) / startVolume
-            return startConcentration
+            return str(startConcentration) + endConcentrationStr
         if not endConcentration:
+            if endVolumeStr != startVolumeStr:
+                #TODO Raise Exception
+                print("start and end volume units do not match")
+                return None
             endConcentration = (startConcentration * startVolume) / endVolume
-            return endConcentration
+            return str(endConcentration) + startConcentrationStr
         if not startVolume:
+            if endConcentrationStr != startConcentrationStr:
+                #TODO Raise Exception
+                print("start and end concentration units do not match")
+                return None
             startVolume = (endConcentration * endVolume) / startConcentration
-            return startVolume
+            return str(startVolume) + endVolumeStr
         if not endVolume:
+            if endConcentrationStr != startConcentrationStr:
+                #TODO Raise Exception
+                print("start and end concentration units do not match")
+                return None
             endVolume = (startConcentration * startVolume) / endConcentration
-            return endVolume
+            return str(endVolume) + startVolumeStr
