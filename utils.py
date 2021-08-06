@@ -15,6 +15,14 @@
 """
 import re
 
+class InvalidUnitsException(Exception):
+    # Used when there is a mismatch in units
+    pass
+
+class InvalidArguments(Exception):
+    # Used when the wrong arguments are used
+    pass
+
 class Utils:
     def strToIntFormat(str):
         # Pull out int + metric.  i.e. "100ml" will return (100,'ml')
@@ -87,35 +95,25 @@ class Utils:
             if isinstance(endVolume,str):
                 endVolume,endVolumeStr = Utils.strToIntFormat(endVolume)
         if varCount != 3:
-            #TODO Raise Exception
-            print("Wrong var count.  Need 3 to solve")
-            return None
+            raise InvalidArguments
 
         if not startConcentration:
             if endVolumeStr != startVolumeStr:
-                #TODO Raise Exception
-                print("start and end volume units do not match")
-                return None
+                raise InvalidUnitsException
             startConcentration = (endConcentration * endVolume) / startVolume
             return str(startConcentration) + endConcentrationStr
         if not endConcentration:
             if endVolumeStr != startVolumeStr:
-                #TODO Raise Exception
-                print("start and end volume units do not match")
-                return None
+                raise InvalidUnitsException
             endConcentration = (startConcentration * startVolume) / endVolume
             return str(endConcentration) + startConcentrationStr
         if not startVolume:
             if endConcentrationStr != startConcentrationStr:
-                #TODO Raise Exception
-                print("start and end concentration units do not match")
-                return None
+                raise InvalidUnitsException
             startVolume = (endConcentration * endVolume) / startConcentration
             return str(startVolume) + endVolumeStr
         if not endVolume:
             if endConcentrationStr != startConcentrationStr:
-                #TODO Raise Exception
-                print("start and end concentration units do not match")
-                return None
+                raise InvalidUnitsException
             endVolume = (startConcentration * startVolume) / endConcentration
             return str(endVolume) + startVolumeStr
