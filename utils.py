@@ -43,6 +43,9 @@ class Utils:
         Determines the estimated ABV based on starting sugar, ending sugar, and yeast potential
         Needs a starting SG or a starting Brix
 
+        Updated using new formula from Ritchie Products Ltd, (Zymurgy, Summer 1995, vol. 18, no. 2)
+        -Michael L. Hall’s article Brew by the Numbers: Add Up What’s in Your Beer, and Designing Great Beers by Daniels.
+
         :param startBrix: int
         :param endBrix: int
         :param startSG: float
@@ -59,12 +62,13 @@ class Utils:
                 endSG = Utils.brixToSg(endBrix)
             else:
                 endSG = 1.000
-        abv = (startSG - endSG) * 131.25
+        #abv = (startSG - endSG) * 131.25
+        abv = (76.08 * (startSG-endSG) / (1.775-startSG)) * (endSG / 0.794)
         if yeastPotential:
             if abv<yeastPotential:
                 return abv,endSG
             else:
-                gravityPointABV = 0.13124999999998554 #calculated ABV per gravity point (.001)
+                gravityPointABV = 0.12379669224609573 #calculated ABV per gravity point (.001)
                 remainingABV = abv-yeastPotential
                 remainingSugar = ((remainingABV/gravityPointABV)*.001) #convert to gravity points
                 return yeastPotential, remainingSugar + endSG
