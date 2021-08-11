@@ -74,6 +74,15 @@ class Utils:
                 return yeastPotential, remainingSugar + endSG
         return abv,endSG
 
+    def refractometerCorrection(startSG=None,startBrix=None,currentSG=None,currentBrix=None):
+        # from Petr Novotny, "Revisiting The Refractometer", Zymurgy Issue July/Aug 2017
+        if not startBrix:
+            startBrix = Utils.sgToBrix(startSG)
+        if not currentBrix:
+            currentBrix = Utils.sgToBrix(currentSG)
+        currentGravity = -0.002349*startBrix + 0.006276*currentBrix + 1
+        return currentGravity
+
     def dilution(startConcentration=None, startVolume=None, endConcentration=None, endVolume=None):
         # Check if we have the proper variables/formatting to solve for
         # Based on C1V1 = C2V2
