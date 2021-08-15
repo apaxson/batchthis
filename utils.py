@@ -81,7 +81,8 @@ class Utils:
         if not currentBrix:
             currentBrix = Utils.sgToBrix(currentSG)
         currentGravity = -0.002349*startBrix + 0.006276*currentBrix + 1
-        return currentGravity
+        abv = Utils.potentialABV(startBrix=startBrix,endBrix=currentBrix)
+        return currentGravity,abv[0]
 
     def dilution(startConcentration=None, startVolume=None, endConcentration=None, endVolume=None):
         # Check if we have the proper variables/formatting to solve for
@@ -110,6 +111,7 @@ class Utils:
         if varCount != 3:
             raise InvalidArguments
 
+        #TODO Use units to do self-conversions rather than requiring same units in params
         if not startConcentration:
             if endVolumeStr != startVolumeStr:
                 raise InvalidUnitsException

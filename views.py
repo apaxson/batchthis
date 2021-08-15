@@ -2,7 +2,8 @@ from django.shortcuts import render, reverse
 from django.http import HttpResponse, HttpResponseRedirect
 from batchthis.models import Batch, Fermenter, BatchTestType, BatchNoteType
 from django.shortcuts import get_object_or_404
-from .forms import BatchTestForm, BatchNoteForm, BatchAdditionForm
+from .forms import BatchTestForm, BatchNoteForm, BatchAdditionForm, RefractometerCorrectionForm
+from batchthis.utils import Utils
 
 
 # Create your views here.
@@ -140,6 +141,35 @@ def activity(request, pk=None):
         'activity': activity
     }
     return render(request, "activity.html", context=context)
+
+def refractometerCorrection(request):
+    form = RefractometerCorrectionForm()
+    result = (0,0)
+    if request.method == "POST":
+        form = RefractometerCorrectionForm(request.POST)
+        params = {}
+        if form.is_valid():
+            # Calculate Correction
+            startData = form.cleaned_data['startData']
+            startUnit = form.cleaned_data['startUnit']
+            currentData = form.cleaned_data['currentData']
+            currentUnit = form.cleaned_data['currentUnit']
+            if startUnit == 'sg':
+                params['startSG'] = startData
+            else:
+                params['startBrix'] = startData
+            if currentUnit == 'sg':
+                params['currentSG'] = currentData
+            else:
+                params['currentBrix'] = currentData
+            result = Utils.refractometerCorrection(**params)
+
+    context = {
+        'form': form,
+        'sg': '%.3f' % result[0], # Format SG to normal readable notation
+        'abv': round(result[1],1)
+    }
+    return render(request, 'util.refractometer.html', context)
 
 def batchGraphs(request, pk):
     # Capture each type of test.  No need to show graphs on tests not performed

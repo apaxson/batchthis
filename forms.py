@@ -32,3 +32,19 @@ class BatchAdditionForm(ModelForm):
     class Meta:
         model = BatchAddition
         fields = "__all__"
+        
+class RefractometerCorrectionForm(forms.Form):
+    unitChoices = (
+        ('sg', "Specific Gravity"),
+        ('bx', "Brix")
+    )
+    startData = forms.FloatField(help_text="Enter starting measurement",
+                                 label="Starting Measurement",
+                                 initial=0.0)
+    startUnit = forms.ChoiceField(choices=unitChoices, help_text="Choose starting unit type of measurement",
+                                  label="Starting Measurement Unit")
+    currentData = forms.FloatField(help_text="Enter current measurement",
+                                   label="Current Measurement",
+                                   initial=0.0)
+    currentUnit = forms.ChoiceField(choices=unitChoices, help_text="Choose current unit type of measurement",
+                                    label="Current Measurement Unit")

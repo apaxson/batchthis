@@ -12,7 +12,8 @@ urlpatterns = [
     path('batch/<int:pk>/addNote/<str:noteType>', views.batchNote, name='addDetailNoteType'),
     path('batch/<int:pk>/addAddon', views.batchAddition, name="addDetailAddon"),
     path('batch/<int:pk>/batchGraphs', views.batchGraphs, name='batchGraphs'),
-    path('batch/<int:pk>/activity', views.activity, name="batchActivity")
+    path('batch/<int:pk>/activity', views.activity, name="batchActivity"),
+    path('utils/refractometerCorrection', views.refractometerCorrection, name="refractometerCorrection")
     #TODO: Add Fermenter Page/Template
     #TODO: Add Recipe Import Page/Template
 ]
