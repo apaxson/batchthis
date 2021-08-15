@@ -143,7 +143,7 @@ def activity(request, pk=None):
     return render(request, "activity.html", context=context)
 
 def refractometerCorrection(request):
-    form = RefractometerCorrectionForm()
+    form = RefractometerCorrectionForm(initial={'startUnit': 'bx','currentUnit': 'bx'})
     result = (0,0)
     if request.method == "POST":
         form = RefractometerCorrectionForm(request.POST)
