@@ -37,6 +37,9 @@ def index(request):
     }
     return render(request,'index.html',context=context)
 
+def batchListing(request):
+    return render(request,'batches.html')
+
 def batch(request, pk):
 
     batch = get_object_or_404(Batch,pk=pk)

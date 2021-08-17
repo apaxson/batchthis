@@ -46,11 +46,15 @@
   </head>
 
 <body id="page-top">
-
   <!-- Page Wrapper -->
+  {% if not user.is_authenticated %}
+  {% block login %}
+  <div><p>Forbidden.  Please <a href="user/login">Login</a></p></div>
+  {% endblock %}
+  {% endif %}
+  {% if user.is_authenticated %}
   <div id="wrapper">
     {% include 'sidebar.html' %}
-
     <!-- Content Wrapper -->
     <div id="content-wrapper" class="d-flex flex-column">
 
@@ -88,11 +92,12 @@
         <div class="modal-body">Select "Logout" below if you are ready to end your current session.</div>
         <div class="modal-footer">
           <button class="btn btn-secondary" type="button" data-dismiss="modal">Cancel</button>
-          <a class="btn btn-primary" href="login.html">Logout</a>
+          <a class="btn btn-primary" href="user/logout/">Logout</a>
         </div>
       </div>
     </div>
   </div>
+  {% endif %}
 
   <!-- Bootstrap core JavaScript-->
   <script src="{% static 'batchthis/vendor/jquery/jquery.min.js' %}"></script>
