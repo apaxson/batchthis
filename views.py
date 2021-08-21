@@ -35,7 +35,7 @@ def index(request):
         'total_volume': total_volume,
         'fermenter_detail': fermenter_detail
     }
-    return render(request,'index.html',context=context)
+    return render(request,'batchthis/index.html',context=context)
 
 def batchListing(request):
     return render(request,'batches.html')

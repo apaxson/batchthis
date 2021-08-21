@@ -1,6 +1,7 @@
 from django.urls import path, include
 from . import views
 
+
 urlpatterns = [
     path('', views.index, name='index'),
     path('addTest', views.batchTest, name='addTest'),
@@ -15,7 +16,6 @@ urlpatterns = [
     path('batch/<int:pk>/batchGraphs', views.batchGraphs, name='batchGraphs'),
     path('batch/<int:pk>/activity', views.activity, name="batchActivity"),
     path('utils/refractometerCorrection', views.refractometerCorrection, name="refractometerCorrection"),
-    path('user/', include('django.contrib.auth.urls'))
     #TODO: Add Fermenter Page/Template
     #TODO: Add Recipe Import Page/Template
 ]
