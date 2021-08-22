@@ -38,7 +38,7 @@ def index(request):
     return render(request,'batchthis/index.html',context=context)
 
 def batchListing(request):
-    return render(request,'batches.html')
+    return render(request,'batchthis/batches.html')
 
 def batch(request, pk):
 
@@ -82,7 +82,7 @@ def batch(request, pk):
         "fermnotes": ferm_notes,
         "tastenotes": taste_notes
     }
-    return render(request, 'batch.html', context=context)
+    return render(request, 'batchthis/batch.html', context=context)
 
 def batchTest(request, pk=None):
     if request.method == 'GET':
@@ -99,7 +99,7 @@ def batchTest(request, pk=None):
         form = BatchTestForm(request.POST)
         form.save()
         return HttpResponseRedirect(reverse('batch', kwargs={'pk': pk}))
-    return render(request,"addTest.html", {'form':form})
+    return render(request,"batchthis/addTest.html", {'form':form})
 
 def batchAddition(request, pk=None):
     if request.method == 'GET':
@@ -113,7 +113,7 @@ def batchAddition(request, pk=None):
         form = BatchAdditionForm(request.POST)
         form.save()
         return HttpResponseRedirect(reverse('batch', kwargs={'pk': pk}))
-    return render(request, "addAddon.html", {'form': form})
+    return render(request, "batchthis/addAddon.html", {'form': form})
 
 
 def batchNote(request, pk=None, noteType=None):
@@ -133,7 +133,7 @@ def batchNote(request, pk=None, noteType=None):
         form = BatchNoteForm(request.POST)
         form.save()
         return HttpResponseRedirect(reverse('batch', kwargs={'pk':pk}))
-    return render(request, "addNote.html", {'form':form})
+    return render(request, "batchthis/addNote.html", {'form':form})
 
 def activity(request, pk=None):
     print("Getting activity for batch " + str(pk))
@@ -143,7 +143,7 @@ def activity(request, pk=None):
     context = {
         'activity': activity
     }
-    return render(request, "activity.html", context=context)
+    return render(request, "batchthis/activity.html", context=context)
 
 def refractometerCorrection(request):
     form = RefractometerCorrectionForm(initial={'startUnit': 'bx','currentUnit': 'bx'})
@@ -172,7 +172,7 @@ def refractometerCorrection(request):
         'sg': '%.3f' % result[0], # Format SG to normal readable notation
         'abv': round(result[1],1)
     }
-    return render(request, 'util.refractometer.html', context)
+    return render(request, 'batchthis/util.refractometer.html', context)
 
 def batchGraphs(request, pk):
     # Capture each type of test.  No need to show graphs on tests not performed
@@ -196,4 +196,4 @@ def batchGraphs(request, pk):
     context = {"tests": testGroup,
                "testTypes": testGroup.keys()
                }
-    return render(request, "batchGraphs.html", context)
+    return render(request, "batchthis/batchGraphs.html", context)
