@@ -4,6 +4,7 @@ from batchthis.models import Batch, Fermenter, BatchTestType, BatchNoteType
 from django.shortcuts import get_object_or_404
 from .forms import BatchTestForm, BatchNoteForm, BatchAdditionForm, RefractometerCorrectionForm
 from batchthis.utils import Utils
+from django.contrib.auth.decorators import login_required
 
 
 # Create your views here.
@@ -37,8 +38,14 @@ def index(request):
     }
     return render(request,'batchthis/index.html',context=context)
 
+@login_required
 def batchListing(request):
-    return render(request,'batchthis/batches.html')
+    batches = Batch.objects.all()
+
+    context = {
+        'batches': batches
+    }
+    return render(request,'batchthis/batches.html', context=context)
 
 def batch(request, pk):
 

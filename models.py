@@ -20,6 +20,8 @@ from django.dispatch import receiver
 from django.db.models.signals import post_save, m2m_changed
 from django.utils.text import slugify
 
+#TODO Refactor "fermenter" to generic "Vessel" and add "Vessel use" to be 'fermenter','aging','serving',etc.
+#TODO add "Packaging" to identify how the batch was finished
 
 # Create your models here.
 class Unit(models.Model):
@@ -61,6 +63,9 @@ class Recipe(models.Model):
     batchSize = models.FloatField() #in Liters
     source = models.CharField(max_length=50) #Where did the recipe come from
     pairing = models.CharField(max_length=250) # Textfield listing various foods.  TODO: Refactor
+    estOG = models.FloatField()
+    estFG = models.FloatField()
+    estABV = models.FloatField()
 
 class Fermenter(models.Model):
     STATUS_ACTIVE = 'In Use'
@@ -138,6 +143,9 @@ class Batch(models.Model):
     category = models.ForeignKey(BatchCategory, on_delete=models.SET("_del"), blank=True, null=True)
     activity = models.ManyToManyField(ActivityLog, related_name='batch')
     recipe = models.ForeignKey(Recipe, on_delete=models.SET("_del"), null=True, blank=True)
+    # TODO Add additional objects
+    aging_vessel = None
+    packaging = None
 
     def complete(self):
         self.enddate = datetime.now()
