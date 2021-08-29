@@ -48,26 +48,7 @@ class Unit(models.Model):
 # TODO: Add Unit Categories in Objects
 
 # TODO: Add User Roles/Permissions
-
-class RecipeFermentable(models.Model):
-    name = models.CharField(max_length=75)
-    version = models.IntegerField()
-    type = models.CharField(max_length=30) #TODO Refactor into it's own class/relation
-
-
-class Recipe(models.Model):
-    name = models.CharField(max_length=75)
-    version = models.IntegerField()
-    type = models.CharField(max_length=30)
-    brewer = models.CharField(max_length=30)
-    batchSize = models.FloatField() #in Liters
-    source = models.CharField(max_length=50) #Where did the recipe come from
-    pairing = models.CharField(max_length=250) # Textfield listing various foods.  TODO: Refactor
-    estOG = models.FloatField()
-    estFG = models.FloatField()
-    estABV = models.FloatField()
-
-class Fermenter(models.Model):
+class Vessel(models.Model):
     STATUS_ACTIVE = 'In Use'
     STATUS_READY = "Clean/Ready"
     STATUS_DIRTY = "Needs Cleaning"
@@ -80,6 +61,38 @@ class Fermenter(models.Model):
     used_size = models.IntegerField(blank=True, null=True)
     used_size_units = models.ForeignKey(Unit, blank=True, null=True,related_name="fermenter_used_size_units", on_delete=models.SET("_del"))
     status = models.CharField(max_length=15, default=STATUS_READY)
+
+class RecipeFermentable(models.Model):
+    name = models.CharField(max_length=75)
+    version = models.IntegerField()
+    type = models.CharField(max_length=30) #TODO Refactor into it's own class/relation
+
+
+class Recipe(models.Model):
+    name = models.CharField(max_length=75)
+    dateCreated = models.DateField()
+    dateUpdated = models.DateField()
+    version = models.IntegerField()
+    type = models.CharField(max_length=30)
+    brewer = models.CharField(max_length=30)
+    batchSize = models.FloatField() #in Liters
+    source = models.CharField(max_length=50) #Where did the recipe come from
+    pairing = models.CharField(max_length=250) # Textfield listing various foods.  TODO: Refactor
+    notes = models.TextField()
+    estOG = models.FloatField()
+    estFG = models.FloatField()
+    estABV = models.FloatField()
+
+class Fermenter(Vessel):
+    pass
+
+class AgingTank(Vessel):
+    pass
+
+class Barrel(Vessel):
+    id = models.CharField(max_length=20) #Barcode / rfid / etc
+    toastLevel = models.CharField(max_length=25)
+
 
 class BatchNoteType(models.Model):
     def __str__(self):
