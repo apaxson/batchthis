@@ -90,7 +90,7 @@ class AgingTank(Vessel):
     pass
 
 class Barrel(Vessel):
-    id = models.CharField(max_length=20) #Barcode / rfid / etc
+    serial = models.CharField(max_length=20) #Barcode / rfid / etc
     toastLevel = models.CharField(max_length=25)
 
 
