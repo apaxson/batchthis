@@ -1,0 +1,36 @@
+
+
+BUGS:
+* When entering a QuantityUnit, it does not remember the unit you entered.
+    * defaults to 'base_units'
+    * conversion gets hairy.  Not consistent between saves/edits
+
+7/17/23
+* Create Form page for Fermentables - DONE
+  * Link page to edit recipe - DONE
+  * Save data - DONE
+* Create Form page for Adjuncts
+  * Link page to edit recipe
+* Create Form page for Yeasts
+  * Link page to edit recipe
+* Create a recipe view page.  Link to edit page to edit.
+* Use select2 plugin to allow filtering ajax type
+  * https://github.com/theatlantic/django-select2-forms
+* SET UP METRIC vs IMPERIAL conversions/views
+    * personal preference setting - https://www.youtube.com/watch?v=WNvZ_d5VDKQ
+        * Create new app called "userpreferences "
+* Django-Pint - store/remember selected unit when entered
+* Django-Pint - Auto calculate existing field data form based on unit selected
+* Auto-Calculate specific gravity/brix based on water/fermentables
+* Auto-Calculate ABV based on yeast and SG/Brix
+
+
+
+
+NEATO
+* PDB
+    * use pdb to do traces on variables in Django
+      import pdb
+      pdb.set_trace()
+    * It will stop execution and give you a shell to load variables
+    * use 'c' to continue

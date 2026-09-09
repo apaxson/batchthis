@@ -1,0 +1,165 @@
+{% extends 'batchthis/base.html' %}
+{% block content %}
+{% include 'batchthis/topbar.html' %}
+{% load crispy_forms_tags %}
+{% load static %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col">
+            {% if form.errors %}
+            <div class = "alert alert-warning" role="alert">
+                  {{ form.errors }}
+            </div>
+            {% endif %}
+            <form method="POST" class="post-form" id="recipeform" categories-url="{% url 'categoryFilterByStyle' %}">
+                {% csrf_token %}
+                <div class = "form-row">
+                    <div class="form-group col-md-12 col-mb-0">
+                        {{ form.recipe_name|as_crispy_field }}
+                    </div>
+                </div>
+                <div class = "form-row">
+                    <div class = "form-group col-md-3 col-mb-0">
+                        {{ form.date_created|as_crispy_field }}
+                    </div>
+                    <div class = "form-group col-md-3 col-mb-0">
+                        {{ form.estOG|as_crispy_field }}
+                    </div>
+                    <div class = "form-group col-md-3 col-mb-0">
+                        {{ form.estFG|as_crispy_field }}
+                    </div>
+                    <div class = "form-group col-md-3 col-mb-0">
+                        {{ form.estABV|as_crispy_field }}
+                    </div>
+                </div>
+
+                <div class="form-group row">
+                    <div class = "col-md-6 col-mb-0">
+                        <div class = "form-group row">
+                            <div class = "col-md-8 col-mb-0">
+                                {{ form.batch_size|as_crispy_field }}
+                            </div>
+                            <div class = "col-md-4 col-mb-0">
+                                {{ form.size_units|as_crispy_field }}
+                            </div>
+                        </div>
+                        <div class = "form-group row">
+                            <div class = "col-md-6 col-mb-0">
+                                {{ form.style|as_crispy_field }}
+                            </div>
+                            <div class = "col-md-6 col-mb-0">
+                                {{ form.category|as_crispy_field }}
+                            </div>
+                        </div>
+                    </div>
+                    <div class = "col-md-6 col-mb-0">
+                                    {{ form.notes|as_crispy_field }}
+                    </div>
+                </div>
+                {{ fermentable_set.management_form }}
+                <div id="fermentable_form_set">
+                    {% for fermentable_form in fermentable_set %}
+                    <div id="fermentable_form" class = "form-group row border-left-primary">
+                        <div class = "col-md-4 col-mb-0">
+                            {{ fermentable_form.fermentable|as_crispy_field }}
+                        </div>
+                        <div class = "col-md-2 col-mb-0">
+                            {{ fermentable_form.amount_metric|as_crispy_field }}
+                        </div>
+                        <div class = "col-md-2 col-mb-0">
+                            {{ fermentable_form.amount_unit|as_crispy_field }}
+                        </div>
+                        <div class = "col-md-2 col-mb-0">
+                            {{ fermentable_form.intended_use|as_crispy_field }}
+                        </div>
+                        <div class = "col-md-2 col-mb-0">
+                            {{ fermentable_form.is_fermentable|as_crispy_field }}
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                <input type="button" class="btn btn-secondary" value = "Add Fermentable" id="addFermentableFormButton">
+                {{ adjunct_set.management_form }}
+                <div id="adjunct_form_set">
+                    {% for adjunct_form in adjunct_set %}
+                    <div id="adjunct_form" class = "form-group row border-left-success">
+                        <div class = "col-md-4 col-mb-0">
+                            {{ adjunct_form.adjunct|as_crispy_field }}
+                        </div>
+                        <div class = "col-md-2 col-mb-0">
+                            {{ adjunct_form.amount_metric|as_crispy_field }}
+                        </div>
+                        <div class = "col-md-2 col-mb-0">
+                            {{ adjunct_form.time_to_add|as_crispy_field }}
+                        </div>
+                        <div class = "col-md-2 col-mb-0">
+                            {{ adjunct_form.amount_is_weight|as_crispy_field }}
+                        </div>
+                        <!--<div class = "col-md-2 col-mb-0">
+                            adjunct_form.recipe_notes|as_crispy_field
+                        </div>-->
+                    </div>
+                    {% endfor %}
+                </div>
+                <input type="button" class="btn btn-secondary" value = "Add Adjunct" id="addAdjunctFormButton">
+                {{ yeast_set.management_form }}
+                <div id="yeast_form_set">
+                    {% for yeast_form in yeast_set %}
+                    <div id="yeast_form" class = "form-group row border-left-warning">
+                        <div class = "col-md-4 col-mb-0">
+                            {{ yeast_form.yeast|as_crispy_field }}
+                        </div>
+                        <div class = "col-md-2 col-mb-0">
+                            {{ yeast_form.amount_metric|as_crispy_field }}
+                        </div>
+
+                    </div>
+                    {% endfor %}
+                </div>
+                <input type="button" class="btn btn-secondary" value = "Add Yeast" id="addYeastFormButton">
+
+                <div class="form-group row mt-5">
+                        <button type="submit" class="btn btn-primary btn-user btn-block">Save</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+  <script>
+    $("#id_style").change(function () {
+      var url = $("#recipeform").attr("categories-url");
+      var styleId = $(this).val();
+
+      $.ajax({                       // initialize an AJAX request
+        url: url,                    // set the url of the request (= localhost:8000/hr/ajax/load-cities/)
+        data: {
+          'style': styleId       // add the country id to the GET parameters
+        },
+        success: function (data) {   // `data` is the return of the `load_cities` view function
+          $("#id_category").html(data);  // replace the contents of the city input with the data that came from the server
+        }
+      });
+
+    });
+  </script>
+  <script>
+      $('#addFermentableFormButton').click(function () {
+      var fermFormTotal = $('#id_ferm-TOTAL_FORMS').val();
+      $('#fermentable_form').clone().prop("id", "ferm_form_" + fermFormTotal).appendTo("#fermentable_form_set");
+      $('#id_ferm-TOTAL_FORMS').val(parseInt(fermFormTotal) + 1);
+      });
+
+      $('#addAdjunctFormButton').click(function () {
+      var adjFormTotal = $('#id_adj-TOTAL_FORMS').val();
+      $('#adjunct_form').clone().prop("id", "adjunct_form_" + adjFormTotal).appendTo("#adjunct_form_set");
+      $('#id_adj-TOTAL_FORMS').val(parseInt(adjFormTotal) + 1);
+      });
+
+      $('#addYeastFormButton').click(function () {
+      var yeastFormTotal = $('#id_yeast-TOTAL_FORMS').val();
+      $('#yeast_form').clone().prop("id", "yeast_form_" + yeastFormTotal).appendTo("#yeast_form_set");
+      $('#id_yeast-TOTAL_FORMS').val(parseInt(yeastFormTotal) +1);
+      })
+  </script>
+{% endblock %}

@@ -1,0 +1,78 @@
+{% extends 'batchthis/base.html' %}
+{% block content %}
+{% include 'batchthis/topbar.html' %}
+{% load crispy_forms_tags %}
+{% load static %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col">
+            {% if form.errors %}
+            <div class="alert alert-warning" role="alert">
+                {{ form.errors }}
+            </div>
+            {% endif %}
+            <form method="POST" class="post-form" id="recipeform">
+                {% csrf_token %}
+                {{ adjunct_set.management_form }}
+                <div id="adjunct_form_set">
+                    {% for adjunct_form in adjunct_set %}
+                    <div id="adjunct_form" class = "form-group row border-left-primary">
+                        <div class = "col-md-2 col-mb-0">
+                            {{ adjunct_form.adjunct_id|as_crispy_field }}
+                        </div>
+                        {% comment %}
+                        <div class = "col-md-2 col-mb-0">
+                            {{ adjunct_form.amount_weight|as_crispy_field }}
+                        </div>
+                        <div class = "col-md-2 col-mb-0">
+                            {{ adjunct_form.amount_volume|as_crispy_field }}
+                        </div>
+                        {% endcomment %}
+                        <div class = "col-md-2 col-mb-0">
+                            {{ adjunct_form.amount|as_crispy_field }}
+                        </div>
+                        <div class = "col-md-2 col-mb-0">
+                            {{ adjunct_form.intended_use_id|as_crispy_field }}
+                        </div>
+                        <div class = "col-md-2 col-mb-0">
+                            {{ adjunct_form.time_to_add|as_crispy_field }}
+                        </div>
+                        <div class = "col-md-2 col-mb-0">
+                            {{ adjunct_form.recipe_notes|as_crispy_field }}
+                        </div>
+                        <div class = "col-md-1 col-mb-0">
+                            Remove Item {{ adjunct_form.DELETE }}
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                <input type="button" class="btn btn-secondary" value = "Add Adjunct" id="addAdjunctFormButton">
+                <button type="submit" class="btn btn-primary">Save</button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+      $('#addAdjunctFormButton').click(function () {
+      var adjFormTotal = $('#id_form-TOTAL_FORMS').val();
+      var newFormTotal = parseInt(adjFormTotal)+1
+      var div_id = "form_" + newFormTotal;
+      $('#adjunct_form').clone().prop("id", div_id).appendTo("#adjunct_form_set");
+      var newDiv = document.getElementById("#"+div_id);
+      $('#id_form-TOTAL_FORMS').val(newFormTotal);
+      var newSelector = document.querySelector("#"+div_id);
+      let formRegex = /form-(\d){1}-/g;
+      var newFormId = newFormTotal-1
+      newSelector.innerHTML = newSelector.innerHTML.replace(formRegex, `form-${newFormId}-`)
+      $(`#id_form-${newFormId}-amount_weight_0`).attr('value',"");
+      $(`#id_form-${newFormId}-amount_volume_0`).attr('value',"");
+      document.getElementById(`id_form-${newFormId}-adjunct_id`).selectedIndex = -1
+      document.getElementById(`id_form-${newFormId}-intended_use_id`).selectedIndex = -1
+
+
+      });
+
+
+</script>
+{% endblock %}

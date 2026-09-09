@@ -1,0 +1,17 @@
+{% extends 'batchthis/base.html' %}
+{% block content %}
+{% include 'batchthis/topbar.html' %}
+{% load crispy_forms_tags %}
+
+<div class="container-fluid">
+            <form method="POST" class="post-form form-group">
+                {% csrf_token %}
+                {{ form|crispy }}
+                <button type="submit" class="save btn btn-default">Calculate</button>
+            </form>
+            <div style="font-size: 140%">
+                SG: {{ sg }}
+                ABV: {{ abv }}%
+            </div>
+</div>
+{% endblock %}

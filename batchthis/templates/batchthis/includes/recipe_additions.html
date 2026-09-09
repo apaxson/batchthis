@@ -1,0 +1,240 @@
+ {% load crispy_forms_tags %}
+           <!--
+            <div id="fermentable_form_set">
+                {% for fermentable_form in fermentable_set %}
+                <div id="fermentable_form" class = "form-group row border-left-primary">
+                    <div class = "col-md-4 col-mb-0">
+                        {{ fermentable_form.fermentable|as_crispy_field }}
+                    </div>
+                    <div class = "col-md-2 col-mb-0">
+                        {{ fermentable_form.amount_metric|as_crispy_field }}
+                    </div>
+                    <div class = "col-md-2 col-mb-0">
+                        {{ fermentable_form.amount_unit|as_crispy_field }}
+                    </div>
+                    <div class = "col-md-2 col-mb-0">
+                        {{ fermentable_form.intended_use|as_crispy_field }}
+                    </div>
+                    <div class = "col-md-2 col-mb-0">
+                        {{ fermentable_form.is_fermentable|as_crispy_field }}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            <input type="button" class="btn btn-secondary" value = "Add Fermentable" id="addFermentableFormButton">
+            -->
+
+
+            <!-- Content Row - Fermentables-->
+
+            <div class="row">
+
+                <div class="col-xl-12 col-lg-12">
+                    <div class="card shadow mb-4">
+                        <!-- Fermentable Card Header - Dropdown -->
+                        <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                            <h6 class="m-0 font-weight-bold text-primary">Fermentables</h6>
+                            <div class="dropdown no-arrow">
+                                <a class="dropdown-toggle" href="#" role="button" id="dropdownMenuLink"
+                                   data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                    <i class="fas fa-ellipsis-v fa-sm fa-fw text-gray-400"></i>
+                                </a>
+                                <div class="dropdown-menu dropdown-menu-right shadow animated--fade-in"
+                                     aria-labelledby="dropdownMenuLink">
+                                    <div class="dropdown-header">Actions:</div>
+                                    <a class="dropdown-item" href="editFermentables">Add/Edit Fermentables</a>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- Fermentable Card Body -->
+                        <div class="card-body">
+                            <table class="table">
+                                <thead>
+                                <tr>
+                                    <th scope="col">Name</th>
+                                    <th scope="col">Type</th>
+                                    <th scope="col">Amount</th>
+                                    <th scope="col">Intended Use</th>
+                                    <th scope="col">Fermentable?</th>
+                                    <th scope="col">Notes</th>
+                                </tr>
+                                </thead>
+                                <tbody>
+                                {% if not fermentables %}
+                                <tr>
+                                    <td colspan="6">No Fermentables</td>
+                                </tr>
+                                {% else %}
+                                {% for fermentable in fermentables %}
+                                <tr>
+                                    <td>{{ fermentable.fermentable.name }}</td>
+                                    <td>{{ fermentable.fermentable.type }}</td>
+                                    <td>{{ fermentable.amount }}</td>
+                                    <td>{{ fermentable.intended_use }}</td>
+                                    <td>{{ fermentable.is_fermentable }}</td>
+                                    <td>{{ fermentable.notes }}</td>
+                                </tr>
+                                {% endfor %}
+                                {% endif %} {# if fermentables #}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+        <!-- Adjuncts -->
+
+        <!--
+                        <div id="adjunct_form_set">
+                            {% for adjunct_form in adjunct_set %}
+                            <div id="adjunct_form" class = "form-group row border-left-success">
+                                <div class = "col-md-4 col-mb-0">
+                                    {{ adjunct_form.adjunct|as_crispy_field }}
+                                </div>
+                                <div class = "col-md-2 col-mb-0">
+                                    {{ adjunct_form.amount_metric|as_crispy_field }}
+                                </div>
+                                <div class = "col-md-2 col-mb-0">
+                                    {{ adjunct_form.time_to_add|as_crispy_field }}
+                                </div>
+                                <div class = "col-md-2 col-mb-0">
+                                    {{ adjunct_form.amount_is_weight|as_crispy_field }}
+                                </div>
+
+                            </div>
+                            {% endfor %}
+                        </div>
+                        <input type="button" class="btn btn-secondary" value = "Add Adjunct" id="addAdjunctFormButton">
+                    -->
+        <!-- Content Row - Adjuncts-->
+
+        <div class="row">
+
+            <div class="col-xl-12 col-lg-12">
+                <div class="card shadow mb-4">
+                    <!-- Adjunct Card Header - Dropdown -->
+                    <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                        <h6 class="m-0 font-weight-bold text-primary">Adjuncts</h6>
+                        <div class="dropdown no-arrow">
+                            <a class="dropdown-toggle" href="#" role="button" id="dropdownMenuLink"
+                               data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                <i class="fas fa-ellipsis-v fa-sm fa-fw text-gray-400"></i>
+                            </a>
+                            <div class="dropdown-menu dropdown-menu-right shadow animated--fade-in"
+                                 aria-labelledby="dropdownMenuLink">
+                                <div class="dropdown-header">Actions:</div>
+                                <a class="dropdown-item" href="editAdjuncts">Add/Edit Adjuncts</a>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Adjunct Card Body -->
+                    <div class="card-body">
+                        <table class="table">
+                            <thead>
+                            <tr>
+                                <th scope="col">Name</th>
+                                <th scope="col">Type</th>
+                                <th scope="col">Amount</th>
+                                <th scope="col">Usage</th>
+                                <th scope="col">Time</th>
+                                <th scope="col">Notes</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            {% if not adjuncts %}
+                            <tr>
+                                <td colspan="6">No Adjuncts</td>
+                            </tr>
+                            {% else %}
+                            {% for adjunct in adjuncts %}
+                            <tr>
+                                <td>{{ adjunct.adjunct.name }}</td>
+                                <td>{{ adjunct.adjunct.type }}</td>
+                                <td>{{ adjunct.amount }}</td>
+                                <td>{{ adjunct.adjunct.use_for }}</td>
+                                <td>{{ adjunct.time_to_add }}</td>
+                                <td>{{ adjunct.recipe_notes }}</td>
+                            </tr>
+                            {% endfor %}
+                            {% endif %} {# if Adjuncts #}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+
+        <!--
+            <div id="yeast_form_set">
+                {% for yeast_form in yeast_set %}
+                <div id="yeast_form" class="form-group row border-left-warning">
+                    <div class="col-md-4 col-mb-0">
+                        {{ yeast_form.yeast|as_crispy_field }}
+                    </div>
+                    <div class="col-md-2 col-mb-0">
+                        {{ yeast_form.amount_metric|as_crispy_field }}
+                    </div>
+
+                </div>
+                {% endfor %}
+            </div>
+            <input type="button" class="btn btn-secondary" value="Add Yeast" id="addYeastFormButton">
+        -->
+        <!-- Content Row - Yeasts-->
+
+        <div class="row">
+
+            <div class="col-xl-12 col-lg-12">
+                <div class="card shadow mb-4">
+                    <!-- Yeast Card Header - Dropdown -->
+                    <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                        <h6 class="m-0 font-weight-bold text-primary">Yeasts</h6>
+                        <div class="dropdown no-arrow">
+                            <a class="dropdown-toggle" href="#" role="button" id="dropdownMenuLink"
+                               data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                <i class="fas fa-ellipsis-v fa-sm fa-fw text-gray-400"></i>
+                            </a>
+                            <div class="dropdown-menu dropdown-menu-right shadow animated--fade-in"
+                                 aria-labelledby="dropdownMenuLink">
+                                <div class="dropdown-header">Actions:</div>
+                                <a class="dropdown-item" href="editYeasts">Add/Edit Yeast</a>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Yeast Card Body -->
+                    <div class="card-body">
+                            <table class="table">
+                                <thead>
+                                <tr>
+                                    <th scope="col">Name</th>
+                                    <th scope="col">Type</th>
+                                    <th scope="col">Form</th>
+                                    <th scope="col">Amount</th>
+                                    <th scope="col">Notes</th>
+                                </tr>
+                                </thead>
+                                <tbody>
+                                {% if not yeasts %}
+                                <tr>
+                                    <td colspan=5>No Yeasts</td>
+                                </tr>
+                                {% else %}
+                                {% for yeast in yeasts %}
+                                <tr>
+                                    <td>{{ yeast.yeast.name }}</td>
+                                    <td>{{ yeast.yeast.type }}</td>
+                                    <td>{{ yeast.yeast.form }}</td>
+                                    <td>{{ yeast.amount }}</td>
+                                    <td>{{ yeast.recipe_notes }}</td>
+                                </tr>
+                                {% endfor %}
+                                {% endif %} {# if yeasts #}
+                                </tbody>
+                            </table>
+                    </div>
+                </div>
+            </div>
+        </div>

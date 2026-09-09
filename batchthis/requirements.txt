@@ -1,0 +1,5 @@
+django>=3.0
+django_crispy_forms>=1.12
+xmltodict>=0.13.0
+crispy-bootstrap4>=2022.1
+django-pint>=0.7.1

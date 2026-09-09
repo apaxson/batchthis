@@ -1,0 +1,78 @@
+{% extends 'batchthis/base.html' %}
+{% block content %}
+{% include 'batchthis/topbar.html' %}
+{% load crispy_forms_tags %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col">
+            {% if form.errors %}
+            <div class="alert alert-warning" role="alert">
+                {{ form.errors }}
+            </div>
+            {% endif %}
+            <form method="POST" class="post-form" id="batchform" recipe-gravity-url="{% url 'getDataFromRecipe' %}">
+                {% csrf_token %}
+                <div class = "form-row">
+                    <div class="form-group col-md-4 col-mb-0">
+                        {{ form.recipe|as_crispy_field }}
+                    </div>
+                    <div class = "form-group col-md-4 col-mb-0">
+                        {{ form.size|as_crispy_field }}
+                    </div>
+                    <div class = "form-group col-md-4 col-mb-0">
+                        {{ form.startdate|as_crispy_field }}
+                    </div>
+                </div>
+                <div class = "form-row">
+                    <div class = "form-group col-md-4 col-mb-0">
+                        {{ form.startingGravity|as_crispy_field }}
+                    </div>
+                    <div class = "form-group col-md-4 col-mb-0">
+                        {{ form.estimatedEndGravity|as_crispy_field }}
+                    </div>
+                    <div class = "form-group col-md-4 col-mb-0">
+                        {{ form.fermenter|as_crispy_field }}
+                    </div>
+                </div>
+                <div class = "form-row">
+                    <div class="form-group col-md-6 col-mb-0">
+                        {{ form.name|as_crispy_field }}
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-user btn-block">Save</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+  <script src="https://code.jquery.com/jquery-3.3.1.min.js"></script>
+  <script>
+      function updateBatchName() {
+        rec_name_element = document.getElementById("id_recipe")
+        start_date = document.getElementById("id_startdate").value
+        size = document.getElementById("id_size").value
+        rec_name = rec_name_element.options[rec_name_element.selectedIndex].textContent
+        document.getElementById("id_name").value = rec_name + " (" + size + ") " + start_date
+      }
+    $("#id_size").change(function() { updateBatchName() })
+    $("#id_startdate").change(function () { updateBatchName() })
+    $("#id_recipe").change(function () {
+      var url = $("#batchform").attr("recipe-gravity-url");
+      var recipeId = $(this).val();
+
+      $.ajax({                       // initialize an AJAX request
+        url: url,                    // set the url of the request
+        data: {
+          'recipe': recipeId       // Data to send
+        },
+        success: function (data) {
+          document.getElementById("id_startingGravity").value = data.est_og
+          document.getElementById("id_estimatedEndGravity").value = data.est_fg
+
+          updateBatchName()
+
+        }
+      });
+    });
+  </script>
+{% endblock %}

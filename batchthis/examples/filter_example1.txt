@@ -1,0 +1,83 @@
+>>> batch1.tests.all()
+<QuerySet [<BatchTest: 02/29/20-20:14 pH>, <BatchTest: 02/29/20-20:17 Specific Gravity>, <BatchTest: 02/29/20-20:20 SO2>]>
+>>> from batchthis.models import BatchTest,BatchTestType
+>>> all_tests = batch1.tests.all()
+>>> all_tests
+<QuerySet [<BatchTest: 02/29/20-20:14 pH>, <BatchTest: 02/29/20-20:17 Specific Gravity>, <BatchTest: 02/29/20-20:20 SO2>]>
+>>> all_tests[0].type
+<BatchTestType: pH>
+>>> all_tests[0].type.name
+'pH'
+>>> batch1.tests.filter(type.name="ph")
+  File "<console>", line 1
+SyntaxError: expression cannot contain assignment, perhaps you meant "=="?
+>>> batch1.tests.filter(type__name="ph")
+<QuerySet []>
+>>> batch1.tests.filter(type__name="pH")
+<QuerySet [<BatchTest: 02/29/20-20:14 pH>]>
+>>> batch1.tests.filter(type__name="pH").value
+Traceback (most recent call last):
+  File "<console>", line 1, in <module>
+AttributeError: 'QuerySet' object has no attribute 'value'
+>>> batch1.tests.filter(type__name="pH")[0].value
+3.56
+>>> batch1.notes.all()
+<QuerySet [<BatchNote: 02/29/20-20:01 This is my note.  Things are going well.>]>
+>>> 
+>>> batch1 = Batch.objects.all()[0]
+>>> batch1
+<Batch: Test Mead Batch>
+>>> batch1.fermenter.all()
+<QuerySet [<Fermenter: Goliath (33gal)>]>
+>>> batch1.fermenter.all()[0].status
+'Clean/Ready'
+>>> ferms = Fermenter.objects.filter(status=Fermenter.STATUS_ACTIVE)
+>>> ferms
+<QuerySet [<Fermenter: Goliath (33gal)>]>
+>>> Fermenter.objects.filter(status=Fermenter.STATUS_ACTIVE).count()
+1
+
+
+>>> batch = Batch.objects.get(pk=1)
+>>> batch
+<Batch: Test Mead Batch>
+>>> batch.tests.all()
+<QuerySet [<BatchTest: 02/29/20-20:14 pH>, <BatchTest: 02/29/20-20:17 Specific Gravity>, <BatchTest: 02/29/20-20:20 SO2>, <BatchTest: 03/07/20-18:04 pH>]>
+>>> phtests = batch.tests.filter(type__name__contains='pH')
+>>> phtests
+<QuerySet [<BatchTest: 02/29/20-20:14 pH>, <BatchTest: 03/07/20-18:04 pH>]>
+>>> for value in phtests:
+...   print(value.value)
+...
+3.56
+3.77
+>>>
+
+
+
+
+
+>>> from batchthis.models import Batch, BatchTest, BatchTestType
+>>> b1 = Batch.objects.get(pk=1)
+>>> tests = b1.tests.all()
+>>> tests
+<QuerySet [<BatchTest: 02/29/20-20:14 pH>, <BatchTest: 02/29/20-20:17 Specific Gravity>, <BatchTest: 02/29/20-20:20 SO2>, <BatchTest: 03/07/20-18:04 pH>]>
+>>> tests[0].type
+<BatchTestType: pH>
+>>> tests[0].type.name
+'pH'
+>>> tests.values('type__name').distinct()
+<QuerySet [{'type__name': 'pH'}, {'type__name': 'Specific Gravity'}, {'type__name': 'SO2'}]>
+>>> testTypes = tests.values('type').distinct()
+>>> testTypes
+<QuerySet [{'type': 1}, {'type': 2}, {'type': 3}]>
+
+>>> for typeid in testTypes:
+...   print(b1.tests.filter(type__id=typeid['type']))
+...
+<QuerySet [<BatchTest: 02/29/20-20:14 pH>, <BatchTest: 03/07/20-18:04 pH>]>
+<QuerySet [<BatchTest: 02/29/20-20:17 Specific Gravity>]>
+<QuerySet [<BatchTest: 02/29/20-20:20 SO2>]>
+
+
+

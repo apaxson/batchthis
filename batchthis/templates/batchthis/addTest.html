@@ -1,0 +1,16 @@
+{% extends 'batchthis/base.html' %}
+{% block content %}
+{% include 'batchthis/topbar.html' %}
+{% load crispy_forms_tags %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col">
+            <form method="POST" class="post-form">
+                {% csrf_token %}
+                {{ form|crispy }}
+                <button type="submit" class="btn btn-primary btn-user btn-block">Save</button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

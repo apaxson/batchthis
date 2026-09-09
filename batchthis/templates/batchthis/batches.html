@@ -1,0 +1,156 @@
+{% extends 'batchthis/base.html' %}
+{% block content %}
+{% include 'batchthis/topbar.html' %}
+<!-- Prep for Datatables -->
+<link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.10.25/css/jquery.dataTables.css">
+
+<script type="text/javascript" charset="utf8" src="https://cdn.datatables.net/1.10.25/js/jquery.dataTables.js"></script>
+
+<div class="container-fluid">
+    <h1 class="h3 mb-2 text-gray-800">Batch Listing</h1>
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">Batch Details</h6>
+            <div class="col-md-04 bg-light text-right">
+                <a href="addBatch" class="btn btn-primary">Add Batch</a>
+            </div>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <div id="dataTable_wrapper" class="dataTables_wrapper dt-bootstrap4">
+                    <!--<div class="row">
+                        <div class="col-sm-12 col-md-6">
+                            <div class="dataTables_length" id="dataTable_length"><label>Show <select
+                                    name="dataTable_length" aria-controls="dataTable"
+                                    class="custom-select custom-select-sm form-control form-control-sm">
+                                <option value="10">10</option>
+                                <option value="25">25</option>
+                                <option value="50">50</option>
+                                <option value="100">100</option>
+                            </select> entries</label></div>
+                        </div>
+                        <div class="col-sm-12 col-md-6">
+                            <div id="dataTable_filter" class="dataTables_filter"><label>Search:<input type="search"
+                                                                                                      class="form-control form-control-sm"
+                                                                                                      placeholder=""
+                                                                                                      aria-controls="dataTable"></label>
+                            </div>
+                        </div>
+                    </div> -->
+                    <div class="row">
+                        <div class="col-sm-12">
+                            <table class="table table-bordered dataTable" id="dataTable" width="100%" cellspacing="0"
+                                   role="grid" aria-describedby="dataTable_info" style="width: 100%;">
+                                <thead>
+                                <tr role="row">
+                                    <th class="sorting" tabindex="0" aria-controls="dataTable" rowspan="1" colspan="1"
+                                        aria-label="Position: activate to sort column ascending" style="width: 62px;">
+                                        Recipe
+                                    </th>
+                                    <th class="sorting" tabindex="0" aria-controls="dataTable" rowspan="1" colspan="1"
+                                        aria-label="Age: activate to sort column ascending" style="width: 31px;">Style
+                                    </th>
+                                    <th class="sorting" tabindex="0" aria-controls="dataTable" rowspan="1" colspan="1"
+                                        aria-label="Office: activate to sort column ascending" style="width: 50px;">
+                                        Batch Size
+                                    </th>
+                                    <th class="sorting" tabindex="0" aria-controls="dataTable" rowspan="1" colspan="1"
+                                        aria-label="Age: activate to sort column ascending" style="width: 31px;">Type
+                                    </th>
+                                    <th class="sorting" tabindex="0" aria-controls="dataTable" rowspan="1" colspan="1"
+                                        aria-label="Start date: activate to sort column ascending" style="width: 68px;">
+                                        Vessel(s)
+                                    </th>
+                                    <th class="sorting" tabindex="0" aria-controls="dataTable" rowspan="1" colspan="1"
+                                        aria-label="Salary: activate to sort column ascending" style="width: 67px;">
+                                        State
+                                    </th>
+                                    <th class="sorting" tabindex="0" aria-controls="dataTable" rowspan="1" colspan="1"
+                                        aria-label="Salary: activate to sort column ascending" style="width: 67px;">
+                                        Start Date
+                                    </th>
+                                    <th class="sorting" tabindex="0" aria-controls="dataTable" rowspan="1" colspan="1"
+                                        aria-label="Salary: activate to sort column ascending" style="width: 67px;">
+                                        End Date
+                                    </th>
+                                </tr>
+                                </thead>
+                                <tfoot>
+                                <tr>
+                                    <th rowspan="1" colspan="1">Recipe</th>
+                                    <th rowspan="1" colspan="1">Style</th>
+                                    <th rowspan="1" colspan="1">Batch Size</th>
+                                    <th rowspan="1" colspan="1">Type</th>
+                                    <th rowspan="1" colspan="1">Vessel(s)</th>
+                                    <th rowspan="1" colspan="1">State</th>
+                                    <th rowspan="1" colspan="1">Start Date</th>
+                                    <th rowspan="1" colspan="1">End Date</th>
+                                </tr>
+                                </tfoot>
+                                <tbody>
+
+                                {% for batch in batches %}
+                                <tr role="row" class="odd">
+                                    <td><a href="{% url 'batch' batch.pk %}">{{ batch.name }}</a></td>
+                                    <td>{{ batch.category }}</td>
+                                    <td>{{ batch.size }} {{ batch.size_units }}</td>
+                                    <td>{{ batch.recipe.category.style.name }}</td>
+                                    <td>{% for fermenter in batch.fermenter.all %}
+                                    {{ fermenter }} {% endfor%} </td>
+                                    <td>{% if batch.active %} Active {% else %} InActive {% endif %}</td>
+                                    <td class="sorting_1">{{ batch.startdate }}</td>
+                                    <td>{{ batch.enddate }}</td>
+                                </tr>
+                                {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-sm-12 col-md-5">
+                            <div class="dataTables_info" id="dataTable_info" role="status" aria-live="polite"></div>
+                        </div>
+                      <!--
+                        <div class="col-sm-12 col-md-7">
+                            <div class="dataTables_paginate paging_simple_numbers" id="dataTable_paginate">
+                                <ul class="pagination">
+                                    <li class="paginate_button page-item previous disabled" id="dataTable_previous"><a
+                                            href="#" aria-controls="dataTable" data-dt-idx="0" tabindex="0"
+                                            class="page-link">Previous</a></li>
+                                    <li class="paginate_button page-item active"><a href="#" aria-controls="dataTable"
+                                                                                    data-dt-idx="1" tabindex="0"
+                                                                                    class="page-link">1</a></li>
+                                    <li class="paginate_button page-item "><a href="#" aria-controls="dataTable"
+                                                                              data-dt-idx="2" tabindex="0"
+                                                                              class="page-link">2</a></li>
+                                    <li class="paginate_button page-item "><a href="#" aria-controls="dataTable"
+                                                                              data-dt-idx="3" tabindex="0"
+                                                                              class="page-link">3</a></li>
+                                    <li class="paginate_button page-item "><a href="#" aria-controls="dataTable"
+                                                                              data-dt-idx="4" tabindex="0"
+                                                                              class="page-link">4</a></li>
+                                    <li class="paginate_button page-item "><a href="#" aria-controls="dataTable"
+                                                                              data-dt-idx="5" tabindex="0"
+                                                                              class="page-link">5</a></li>
+                                    <li class="paginate_button page-item "><a href="#" aria-controls="dataTable"
+                                                                              data-dt-idx="6" tabindex="0"
+                                                                              class="page-link">6</a></li>
+                                    <li class="paginate_button page-item next" id="dataTable_next"><a href="#"
+                                                                                                      aria-controls="dataTable"
+                                                                                                      data-dt-idx="7"
+                                                                                                      tabindex="0"
+                                                                                                      class="page-link">Next</a>
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>-->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- End Batch Listing Table/Card -->
+
+
+{% endblock %}

@@ -1,0 +1,1939 @@
+<?xml version="1.0" encoding="ISO-8859-1"?><MISCS>
+<MISC>
+ <NAME>Accumash</NAME>
+ <VERSION>1</VERSION>
+ <TYPE>Water Agent</TYPE>
+ <USE>Mash</USE>
+ <AMOUNT>1.000000</AMOUNT>
+ <TIME>60.00</TIME>
+ <AMOUNT_IS_WEIGHT>FALSE</AMOUNT_IS_WEIGHT>
+ <USE_FOR>Water Agent</USE_FOR>
+ <NOTES>Accumash&#8482; alters your strike water profile to deliver the perfect pH and mineral/ion content for each batch. It&#8217;s as simple as stirring it into your mash right after the grain.
+
+Note: Accumash&#8482; is designed for use with distilled or RO water and in your mash only. Do not use with spring water or tap water.</NOTES>
+ <DISPLAY_AMOUNT>1.00 Items</DISPLAY_AMOUNT>
+ <INVENTORY>0.00 Items</INVENTORY>
+ <DISPLAY_TIME>60.0 mins</DISPLAY_TIME>
+ <BATCH_SIZE>5.00 gal</BATCH_SIZE>
+</MISC>
+<MISC>
+ <NAME>Acid Blend</NAME>
+ <VERSION>1</VERSION>
+ <TYPE>Other</TYPE>
+ <USE>Bottling</USE>
+ <AMOUNT>0.004929</AMOUNT>
+ <TIME>0.00</TIME>
+ <AMOUNT_IS_WEIGHT>FALSE</AMOUNT_IS_WEIGHT>
+ <USE_FOR>Increasing Wine Acidity</USE_FOR>
+ <NOTES>A mix of citric, malic, and tartaric acids used to increase the acidity in wine.  1 tsp per gallon (4 l) will increase acidity of a finished wine by approx 0.1%</NOTES>
+ <DISPLAY_AMOUNT>1.00 tsp</DISPLAY_AMOUNT>
+ <INVENTORY>0.00 tsp</INVENTORY>
+ <DISPLAY_TIME>0.0 mins</DISPLAY_TIME>
+ <BATCH_SIZE>1.00 gal</BATCH_SIZE>
+</MISC>
+<MISC>
+ <NAME>Acti-ML</NAME>
+ <VERSION>1</VERSION>
+ <TYPE>Other</TYPE>
+ <USE>Primary</USE>
+ <AMOUNT>0.000840</AMOUNT>
+ <TIME>0.00</TIME>
+ <AMOUNT_IS_WEIGHT>TRUE</AMOUNT_IS_WEIGHT>
+ <USE_FOR>Malolactic Yeast Nutrient</USE_FOR>
+ <NOTES>A malolactic nutrrient used during re-hydration of malolactic bacteria strains in wine making.  Use 0.84 g per gal (4 l) of wine.  Mix Acti-ML with 5x its weight in water, then add bacteria culture and wait 15 min before pitching into wine.</NOTES>
+ <DISPLAY_AMOUNT>0.84 g</DISPLAY_AMOUNT>
+ <INVENTORY>0.00 g</INVENTORY>
+ <DISPLAY_TIME>0.0 days</DISPLAY_TIME>
+ <BATCH_SIZE>1.00 gal</BATCH_SIZE>
+</MISC>
+<MISC>
+ <NAME>Agave Nectar</NAME>
+ <VERSION>1</VERSION>
+ <TYPE>Flavor</TYPE>
+ <USE>Boil</USE>
+ <AMOUNT>0.340194</AMOUNT>
+ <TIME>5.00</TIME>
+ <AMOUNT_IS_WEIGHT>TRUE</AMOUNT_IS_WEIGHT>
+ <USE_FOR>Tequila Flavor</USE_FOR>
+ <NOTES>Agave Extract is the sticky, sweet nectar or syrup of the Agave plant. It is a fantastic way to experiment with different flavors in your meads and beers. It has a malty aroma with a hint of sweetness to it. One of the great things about Agave Extract is that it won&#39;t crystallize like honey will, so it maintains a smooth, liquid-like consistency. Notes of molasses come out when tasting it. The extract is light in color, and in addition to being fermented, many people use Agave extract as a sweetener in foods. And due to it&#39;s low glycemic index, it is a great alternative to sugar for diabetics.  Agave Extract is also referred to as Agave Syrup or Agave Nectar often times.
+
+Add 12 oz of agave nectar to boil. </NOTES>
+ <DISPLAY_AMOUNT>12.00 oz</DISPLAY_AMOUNT>
+ <INVENTORY>0.00 oz</INVENTORY>
+ <DISPLAY_TIME>5.0 mins</DISPLAY_TIME>
+ <BATCH_SIZE>5.00 gal</BATCH_SIZE>
+</MISC>
+<MISC>
+ <NAME>American Oak Cubes - Heavy Toast</NAME>
+ <VERSION>1</VERSION>
+ <TYPE>Flavor</TYPE>
+ <USE>Secondary</USE>
+ <AMOUNT>0.085048</AMOUNT>
+ <TIME>10080.00</TIME>
+ <AMOUNT_IS_WEIGHT>TRUE</AMOUNT_IS_WEIGHT>
+ <USE_FOR>Oak Flavor</USE_FOR>
+ <NOTES>Barrels used to be the home winemakers only choice for imparting oak flavor in their wines. These high quality oak cubes allow you to achieve the same quality of oak flavor that you taste in good wines. These are the same cubes used by many wineries in Napa Valley. Oak staves (the wooden strips that oak barrels are constructed of) are air dried for two to three years, then traditionally fire-toasted and cubed. Since three varieties are available, you are able to blend different levels of toast to achieve different effects. While the heavy-toast cubes are recommended for big reds that benefit from a heavy, caramelized oak flavor, they may also be used to supplement the medium-toast cubes for a more subtle flavoring. Many of our customers use a blend of French and American cubes, usually using the French cubes in a higher percentage. We have had success blending all three oaks, again using the French in the highest percentage.</NOTES>
+ <DISPLAY_AMOUNT>3.00 oz</DISPLAY_AMOUNT>
+ <INVENTORY>0.00 oz</INVENTORY>
+ <DISPLAY_TIME>7.0 days</DISPLAY_TIME>
+ <BATCH_SIZE>5.00 gal</BATCH_SIZE>
+</MISC>
+<MISC>
+ <NAME>American Oak Cubes - Medium Toast</NAME>
+ <VERSION>1</VERSION>
+ <TYPE>Flavor</TYPE>
+ <USE>Secondary</USE>
+ <AMOUNT>0.085048</AMOUNT>
+ <TIME>10080.00</TIME>
+ <AMOUNT_IS_WEIGHT>TRUE</AMOUNT_IS_WEIGHT>
+ <USE_FOR>Oak Flavor</USE_FOR>
+ <NOTES>Barrels used to be the home winemakers only choice for imparting oak flavor in their wines. These high quality oak cubes allow you to achieve the same quality of oak flavor that you taste in good wines. These are the same cubes used by many wineries in Napa Valley. Oak staves (the wooden strips that oak barrels are constructed of) are air dried for two to three years, then traditionally fire-toasted and cubed. Since three varieties are available, you are able to blend different levels of toast to achieve different effects. While the heavy-toast cubes are recommended for big reds that benefit from a heavy, caramelized oak flavor, they may also be used to supplement the medium-toast cubes for a more subtle flavoring. Many of our customers use a blend of French and American cubes, usually using the French cubes in a higher percentage. We have had success blending all three oaks, again using the French in the highest percentage. </NOTES>
+ <DISPLAY_AMOUNT>3.00 oz</DISPLAY_AMOUNT>
+ <INVENTORY>0.00 oz</INVENTORY>
+ <DISPLAY_TIME>7.0 days</DISPLAY_TIME>
+ <BATCH_SIZE>5.00 gal</BATCH_SIZE>
+</MISC>
+<MISC>
+ <NAME>American Oak Cubes, Medium-Heavy Toast</NAME>
+ <VERSION>1</VERSION>
+ <TYPE>Flavor</TYPE>
+ <USE>Secondary</USE>
+ <AMOUNT>0.085048</AMOUNT>
+ <TIME>10080.00</TIME>
+ <AMOUNT_IS_WEIGHT>TRUE</AMOUNT_IS_WEIGHT>
+ <USE_FOR>Oak Flavor</USE_FOR>
+ <NOTES>Barrels used to be the home winemakers only choice for imparting oak flavor in their wines. These high quality oak cubes allow you to achieve the same quality of oak flavor that you taste in good wines. These are the same cubes used by many wineries in Napa Valley. Oak staves (the wooden strips that oak barrels are constructed of) are air dried for two to three years, then traditionally fire-toasted and cubed. Since three varieties are available, you are able to blend different levels of toast to achieve different effects. While the heavy-toast cubes are recommended for big reds that benefit from a heavy, caramelized oak flavor, they may also be used to supplement the medium-toast cubes for a more subtle flavoring. Many of our customers use a blend of French and American cubes, usually using the French cubes in a higher percentage. We have had success blending all three oaks, again using the French in the highest percentage. </NOTES>
+ <DISPLAY_AMOUNT>3.00 oz</DISPLAY_AMOUNT>
+ <INVENTORY>0.00 oz</INVENTORY>
+ <DISPLAY_TIME>7.0 days</DISPLAY_TIME>
+ <BATCH_SIZE>5.00 gal</BATCH_SIZE>
+</MISC>
+<MISC>
+ <NAME>American Oak Infusion Spirals</NAME>
+ <VERSION>1</VERSION>
+ <TYPE>Flavor</TYPE>
+ <USE>Secondary</USE>
+ <AMOUNT>1.000000</AMOUNT>
+ <TIME>10080.00</TIME>
+ <AMOUNT_IS_WEIGHT>FALSE</AMOUNT_IS_WEIGHT>
+ <USE_FOR>Oak Flavor</USE_FOR>
+ <NOTES>American Oak Infusion Spiral Medium Toast has less tannins but more bouquet, so it will impart more aroma than flavor. It has a warm, sweet character with strong vanilla overtones.</NOTES>
+ <DISPLAY_AMOUNT>1.00 Items</DISPLAY_AMOUNT>
+ <INVENTORY>0.00 Items</INVENTORY>
+ <DISPLAY_TIME>7.0 days</DISPLAY_TIME>
+ <BATCH_SIZE>5.00 gal</BATCH_SIZE>
+</MISC>
+<MISC>
+ <NAME>Amylase Enzyme</NAME>
+ <VERSION>1</VERSION>
+ <TYPE>Other</TYPE>
+ <USE>Primary</USE>
+ <AMOUNT>0.002464</AMOUNT>
+ <TIME>4320.00</TIME>
+ <AMOUNT_IS_WEIGHT>FALSE</AMOUNT_IS_WEIGHT>
+ <USE_FOR>Fermentation</USE_FOR>
+ <NOTES>Enhances fermentation and lowers final gravity by breaking down complex starches.  Produces light bodied, high alcohol beers.  Add when pitching yeast.</NOTES>
+ <DISPLAY_AMOUNT>0.50 tsp</DISPLAY_AMOUNT>
+ <INVENTORY>0.00 tsp</INVENTORY>
+ <DISPLAY_TIME>3.0 days</DISPLAY_TIME>
+ <BATCH_SIZE>5.00 gal</BATCH_SIZE>
+</MISC>
+<MISC>
+ <NAME>Anise, Star</NAME>
+ <VERSION>1</VERSION>
+ <TYPE>Spice</TYPE>
+ <USE>Boil</USE>
+ <AMOUNT>0.070874</AMOUNT>
+ <TIME>30.00</TIME>
+ <AMOUNT_IS_WEIGHT>TRUE</AMOUNT_IS_WEIGHT>
+ <USE_FOR>Licorice flavor</USE_FOR>
+ <NOTES>Star Anise spice adds a strong black licorice flavor to holiday and specialty beers.  Boil for 30 minutes to extract flavor.</NOTES>
+ <DISPLAY_AMOUNT>2.50 oz</DISPLAY_AMOUNT>
+ <INVENTORY>0.00 oz</INVENTORY>
+ <DISPLAY_TIME>30.0 mins</DISPLAY_TIME>
+ <BATCH_SIZE>5.00 gal</BATCH_SIZE>
+</MISC>
+<MISC>
+ <NAME>Apple Extract</NAME>
+ <VERSION>1</VERSION>
+ <TYPE>Flavor</TYPE>
+ <USE>Bottling</USE>
+ <AMOUNT>0.056699</AMOUNT>
+ <TIME>0.00</TIME>
+ <AMOUNT_IS_WEIGHT>TRUE</AMOUNT_IS_WEIGHT>
+ <USE_FOR>Fruit Beer</USE_FOR>
+ <NOTES>These extracts should be added to your bottling bucket just prior to bottling. Traditionally, fruit flavors were added to wheat beers, witbiers, blonde ales, porter and stouts. Today, breweries are adding these flavors to just about any style of beer. 
+
+ Since the extract is added at bottling time, it is very easy to flavor only part of the batch. For example, if you made a Midwest Porter, you could bottle half of the batch without the extract, then add half the bottle of extract to the bottling bucket, stir, and bottle the rest. Use up to 4 oz. per 5 gallon batch. </NOTES>
+ <DISPLAY_AMOUNT>2.00 oz</DISPLAY_AMOUNT>
+ <INVENTORY>0.00 oz</INVENTORY>
+ <DISPLAY_TIME>0.0 days</DISPLAY_TIME>
+ <BATCH_SIZE>5.00 gal</BATCH_SIZE>
+</MISC>
+<MISC>
+ <NAME>Apricot Extract</NAME>
+ <VERSION>1</VERSION>
+ <TYPE>Flavor</TYPE>
+ <USE>Bottling</USE>
+ <AMOUNT>0.184272</AMOUNT>
+ <TIME>0.00</TIME>
+ <AMOUNT_IS_WEIGHT>TRUE</AMOUNT_IS_WEIGHT>
+ <USE_FOR>Fruit Beer</USE_FOR>
+ <NOTES>Apricot flavor extract.  Mix into beer just before bottling.  Adds apricot flavor to light ales and wheat beers.  Use low hop rate to allow sweet flavor through.</NOTES>
+ <DISPLAY_AMOUNT>6.50 oz</DISPLAY_AMOUNT>
+ <INVENTORY>0.00 oz</INVENTORY>
+ <DISPLAY_TIME>0.0 days</DISPLAY_TIME>
+ <BATCH_SIZE>5.00 gal</BATCH_SIZE>
+</MISC>
+<MISC>
+ <NAME>Ascorbic Acid</NAME>
+ <VERSION>1</VERSION>
+ <TYPE>Other</TYPE>
+ <USE>Secondary</USE>
+ <AMOUNT>0.000050</AMOUNT>
+ <TIME>0.00</TIME>
+ <AMOUNT_IS_WEIGHT>TRUE</AMOUNT_IS_WEIGHT>
+ <USE_FOR>Antioxident</USE_FOR>
+ <NOTES>Used as an antioxident to preserve wine.  Dosage rate of 50 mg per liter.  VERY IMPORTANT - Wine must have a free SO2 level of at least 30 mg/l before adding ascorbic acid or you run the risk of creating hydrogen peroxide which will oxidize the wine.  Check free SO2 level with a titrate kit before using.</NOTES>
+ <DISPLAY_AMOUNT>50.00 mg</DISPLAY_AMOUNT>
+ <INVENTORY>0.00 mg</INVENTORY>
+ <DISPLAY_TIME>0.0 mins</DISPLAY_TIME>
+ <BATCH_SIZE>0.26 gal</BATCH_SIZE>
+</MISC>
+<MISC>
+ <NAME>Baking Soda</NAME>
+ <VERSION>1</VERSION>
+ <TYPE>Water Agent</TYPE>
+ <USE>Mash</USE>
+ <AMOUNT>0.001000</AMOUNT>
+ <TIME>60.00</TIME>
+ <AMOUNT_IS_WEIGHT>TRUE</AMOUNT_IS_WEIGHT>
+ <USE_FOR>Water Agent</USE_FOR>
+ <NOTES>Baking Soda (NaHCO3) may be used as a water mineral to adjust brewing water for mashing.</NOTES>
+ <DISPLAY_AMOUNT>1.00 g</DISPLAY_AMOUNT>
+ <INVENTORY>0.00 g</INVENTORY>
+ <DISPLAY_TIME>60.0 mins</DISPLAY_TIME>
+ <BATCH_SIZE>5.00 gal</BATCH_SIZE>
+</MISC>
+<MISC>
+ <NAME>Bentonite</NAME>
+ <VERSION>1</VERSION>
+ <TYPE>Fining</TYPE>
+ <USE>Primary</USE>
+ <AMOUNT>0.009858</AMOUNT>
+ <TIME>14400.00</TIME>
+ <AMOUNT_IS_WEIGHT>FALSE</AMOUNT_IS_WEIGHT>
+ <USE_FOR>Clarity</USE_FOR>
+ <NOTES>A clay-based clarifier most often added to the primary just prior to fermentation, though also sometimes used in the secondary.  Use approx 2 tsp for 5 gal (19 l)</NOTES>
+ <DISPLAY_AMOUNT>2.00 tsp</DISPLAY_AMOUNT>
+ <INVENTORY>0.00 tsp</INVENTORY>
+ <DISPLAY_TIME>10.0 days</DISPLAY_TIME>
+ <BATCH_SIZE>5.00 gal</BATCH_SIZE>
+</MISC>
+<MISC>
+ <NAME>Biofine Clear</NAME>
+ <VERSION>1</VERSION>
+ <TYPE>Fining</TYPE>
+ <USE>Secondary</USE>
+ <AMOUNT>0.003000</AMOUNT>
+ <TIME>10080.00</TIME>
+ <AMOUNT_IS_WEIGHT>FALSE</AMOUNT_IS_WEIGHT>
+ <USE_FOR>Clarity</USE_FOR>
+ <NOTES>Biofine Clear is a clarifier made from Silicic Acid, SiO2, and is added to the secondary during the transfer from primary to secondary to precipitate yeast and other haze-causing particles. Biofine is a vegan product and is not derived from animals or animal by-products. Use can be as little as 1/4 Tbsp (1/10th fluid oz. or 3 ml) to as much as 2 Tbsp (1 fluid oz. or 30 ml) per 5 gallon batch of beer or wine. </NOTES>
+ <DISPLAY_AMOUNT>3.00 ml</DISPLAY_AMOUNT>
+ <INVENTORY>0.00 ml</INVENTORY>
+ <DISPLAY_TIME>7.0 days</DISPLAY_TIME>
+ <BATCH_SIZE>5.00 gal</BATCH_SIZE>
+</MISC>
+<MISC>
+ <NAME>Blackberry Extract</NAME>
+ <VERSION>1</VERSION>
+ <TYPE>Flavor</TYPE>
+ <USE>Bottling</USE>
+ <AMOUNT>0.127573</AMOUNT>
+ <TIME>0.00</TIME>
+ <AMOUNT_IS_WEIGHT>TRUE</AMOUNT_IS_WEIGHT>
+ <USE_FOR>Fruit Beer</USE_FOR>
+ <NOTES>Blackberry extract flavoring.  Mix into beer at bottling to add berry flavor to light ales and wheat beers.  Use low hop rate to allow sweet flavor through.</NOTES>
+ <DISPLAY_AMOUNT>4.50 oz</DISPLAY_AMOUNT>
+ <INVENTORY>0.00 oz</INVENTORY>
+ <DISPLAY_TIME>0.0 days</DISPLAY_TIME>
+ <BATCH_SIZE>5.00 gal</BATCH_SIZE>
+</MISC>
+<MISC>
+ <NAME>Blueberry Extract</NAME>
+ <VERSION>1</VERSION>
+ <TYPE>Flavor</TYPE>
+ <USE>Bottling</USE>
+ <AMOUNT>0.056699</AMOUNT>
+ <TIME>0.00</TIME>
+ <AMOUNT_IS_WEIGHT>TRUE</AMOUNT_IS_WEIGHT>
+ <USE_FOR>Fruit Beer</USE_FOR>
+ <NOTES>Add great fruit flavor and aroma to your beer with our natual fruit flavorings. Best if added just prior to bottling. We recommend you start by adding 1/2 bottle and then add more according to your taste. Contains no sugar or haze-causing pectins.</NOTES>
+ <DISPLAY_AMOUNT>2.00 oz</DISPLAY_AMOUNT>
+ <INVENTORY>0.00 oz</INVENTORY>
+ <DISPLAY_TIME>0.0 days</DISPLAY_TIME>
+ <BATCH_SIZE>5.00 gal</BATCH_SIZE>
+</MISC>
+<MISC>
+ <NAME>Booster Blanc</NAME>
+ <VERSION>1</VERSION>
+ <TYPE>Other</TYPE>
+ <USE>Primary</USE>
+ <AMOUNT>0.001000</AMOUNT>
+ <TIME>0.00</TIME>
+ <AMOUNT_IS_WEIGHT>TRUE</AMOUNT_IS_WEIGHT>
+ <USE_FOR>Improve Color, Stability in Wines</USE_FOR>
+ <NOTES>Booster Blanc is a Specific Inactivated Yeast (SIY) developed from an ICV strain used for white and rose wines. Booster Blanc helps to increase fresh varietal fruit aromas and mid-palate intensity while helping to diminish bitterness and chemical/vegetal characteristics. Booster Blanc is very useful for maintaining the aroma and freshness of wines that go through MLF and helps lower the production of off sulfur compounds during fermentation. 
+
+Add 1 g per gal (4 l) to 10x its weight in water and add to wine. 1 tsp is about 3.4 g.  Add at beginning of fermentation.</NOTES>
+ <DISPLAY_AMOUNT>1.00 g</DISPLAY_AMOUNT>
+ <INVENTORY>0.00 g</INVENTORY>
+ <DISPLAY_TIME>0.0 days</DISPLAY_TIME>
+ <BATCH_SIZE>1.00 gal</BATCH_SIZE>
+</MISC>
+<MISC>
+ <NAME>Booster Rouge</NAME>
+ <VERSION>1</VERSION>
+ <TYPE>Other</TYPE>
+ <USE>Primary</USE>
+ <AMOUNT>0.001000</AMOUNT>
+ <TIME>0.00</TIME>
+ <AMOUNT_IS_WEIGHT>TRUE</AMOUNT_IS_WEIGHT>
+ <USE_FOR>Improve Color, Stability in Wines.</USE_FOR>
+ <NOTES>Does your red wine need greater structure? Try &#34;body building&#34; with Booster Rouge. Booster Rouge is an natural yeast based nutrient from the ICV yeast range. It offers greater perception of intense volume in the initial mouthfeel due to the perceived tannic intensity in red wine.
+
+Add 1 g per gal (4 l) to 10x its weight in water and add to wine. 1 tsp is about 3 g.  Add at beginning of fermentation.</NOTES>
+ <DISPLAY_AMOUNT>1.00 g</DISPLAY_AMOUNT>
+ <INVENTORY>0.00 g</INVENTORY>
+ <DISPLAY_TIME>0.0 days</DISPLAY_TIME>
+ <BATCH_SIZE>1.00 gal</BATCH_SIZE>
+</MISC>
+<MISC>
+ <NAME>Bottle Caps</NAME>
+ <VERSION>1</VERSION>
+ <TYPE>Other</TYPE>
+ <USE>Bottling</USE>
+ <AMOUNT>52.000000</AMOUNT>
+ <TIME>1.00</TIME>
+ <AMOUNT_IS_WEIGHT>FALSE</AMOUNT_IS_WEIGHT>
+ <USE_FOR>Bottles</USE_FOR>
+ <NOTES>Useful for bottling -- keep your inventory here.</NOTES>
+ <DISPLAY_AMOUNT>52.00 Items</DISPLAY_AMOUNT>
+ <INVENTORY>0.00 Items</INVENTORY>
+ <DISPLAY_TIME>1.0 mins</DISPLAY_TIME>
+ <BATCH_SIZE>5.00 gal</BATCH_SIZE>
+</MISC>
+<MISC>
+ <NAME>Boysenberry Extract</NAME>
+ <VERSION>1</VERSION>
+ <TYPE>Flavor</TYPE>
+ <USE>Bottling</USE>
+ <AMOUNT>0.056699</AMOUNT>
+ <TIME>0.00</TIME>
+ <AMOUNT_IS_WEIGHT>TRUE</AMOUNT_IS_WEIGHT>
+ <USE_FOR>Fruit Beer</USE_FOR>
+ <NOTES>Add great fruit flavor and aroma to your beer with our natual fruit flavorings. Best if added just prior to bottling. We recommend you start by adding 1/2 bottle and then add more according to your taste. Contains no sugar or haze-causing pectins. </NOTES>
+ <DISPLAY_AMOUNT>2.00 oz</DISPLAY_AMOUNT>
+ <INVENTORY>0.00 oz</INVENTORY>
+ <DISPLAY_TIME>0.0 days</DISPLAY_TIME>
+ <BATCH_SIZE>5.00 gal</BATCH_SIZE>
+</MISC>
+<MISC>
+ <NAME>Burton Water Salts</NAME>
+ <VERSION>1</VERSION>
+ <TYPE>Water Agent</TYPE>
+ <USE>Mash</USE>
+ <AMOUNT>0.014175</AMOUNT>
+ <TIME>60.00</TIME>
+ <AMOUNT_IS_WEIGHT>TRUE</AMOUNT_IS_WEIGHT>
+ <USE_FOR>Water Agent</USE_FOR>
+ <NOTES>Also known as brewing salts, it is a mixture of Gypsum, Potassium Chloride and Epsom Salt.  Used to harden water.</NOTES>
+ <DISPLAY_AMOUNT>0.50 oz</DISPLAY_AMOUNT>
+ <INVENTORY>0.00 oz</INVENTORY>
+ <DISPLAY_TIME>60.0 mins</DISPLAY_TIME>
+ <BATCH_SIZE>5.00 gal</BATCH_SIZE>
+</MISC>
+<MISC>
+ <NAME>Cacao Nibs</NAME>
+ <VERSION>1</VERSION>
+ <TYPE>Flavor</TYPE>
+ <USE>Boil</USE>
+ <AMOUNT>0.085048</AMOUNT>
+ <TIME>5.00</TIME>
+ <AMOUNT_IS_WEIGHT>TRUE</AMOUNT_IS_WEIGHT>
+ <USE_FOR>Brown Ales, Stouts, Porters</USE_FOR>
+ <NOTES>Particularly well-suited for darker styles such as brown ales, porters and stouts, we recommend 2-4oz per 5 gallon batch. Nibs can be added during secondary fermentation for smooth, rich chocolate notes or at the end of the boil to extract a bittersweet bite.</NOTES>
+ <DISPLAY_AMOUNT>3.00 oz</DISPLAY_AMOUNT>
+ <INVENTORY>0.00 oz</INVENTORY>
+ <DISPLAY_TIME>5.0 mins</DISPLAY_TIME>
+ <BATCH_SIZE>5.00 gal</BATCH_SIZE>
+</MISC>
+<MISC>
+ <NAME>Calcium Carbonate</NAME>
+ <VERSION>1</VERSION>
+ <TYPE>Other</TYPE>
+ <USE>Primary</USE>
+ <AMOUNT>0.001000</AMOUNT>
+ <TIME>0.00</TIME>
+ <AMOUNT_IS_WEIGHT>TRUE</AMOUNT_IS_WEIGHT>
+ <USE_FOR>Increase pH</USE_FOR>
+ <NOTES>Calcium carbonate can be used to increase pH level in wines and meads (also raise pH during fermentation).  Adding 1 gram per gallon will add 106 ppm Calcium and 158 ppm carbonate.  Many mead/wine makers have transitioned to Potassium bicarbonate instead.</NOTES>
+ <DISPLAY_AMOUNT>1.00 g</DISPLAY_AMOUNT>
+ <INVENTORY>0.00 g</INVENTORY>
+ <DISPLAY_TIME>0.0 mins</DISPLAY_TIME>
+ <BATCH_SIZE>1.00 gal</BATCH_SIZE>
+</MISC>
+<MISC>
+ <NAME>Calcium Chloride</NAME>
+ <VERSION>1</VERSION>
+ <TYPE>Water Agent</TYPE>
+ <USE>Mash</USE>
+ <AMOUNT>0.005000</AMOUNT>
+ <TIME>60.00</TIME>
+ <AMOUNT_IS_WEIGHT>TRUE</AMOUNT_IS_WEIGHT>
+ <USE_FOR>Water Agent</USE_FOR>
+ <NOTES>Alters water profile and pH of mash.  Use the BeerSmith Water Profile tool to determine amount to add.</NOTES>
+ <DISPLAY_AMOUNT>5.00 g</DISPLAY_AMOUNT>
+ <INVENTORY>0.00 g</INVENTORY>
+ <DISPLAY_TIME>60.0 mins</DISPLAY_TIME>
+ <BATCH_SIZE>5.00 gal</BATCH_SIZE>
+</MISC>
+<MISC>
+ <NAME>Campden Tablets</NAME>
+ <VERSION>1</VERSION>
+ <TYPE>Water Agent</TYPE>
+ <USE>Mash</USE>
+ <AMOUNT>1.000000</AMOUNT>
+ <TIME>60.00</TIME>
+ <AMOUNT_IS_WEIGHT>FALSE</AMOUNT_IS_WEIGHT>
+ <USE_FOR>Water Agent</USE_FOR>
+ <NOTES>Use campden tablets to remove chlorine or chloramine from their brewing water.  Also used as a preservative in finished wines, meads and ciders or as a sanitizer for wine making in higher concentrations.  One tablet crushed in 1 gal (4 l) yields an equivalent of 75 ppm sulfur dioxide. Crush before using.  Made from Sodium Metabisulfite.</NOTES>
+ <DISPLAY_AMOUNT>1.00 Items</DISPLAY_AMOUNT>
+ <INVENTORY>0.00 Items</INVENTORY>
+ <DISPLAY_TIME>60.0 mins</DISPLAY_TIME>
+ <BATCH_SIZE>5.00 gal</BATCH_SIZE>
+</MISC>
+<MISC>
+ <NAME>Cardamom</NAME>
+ <VERSION>1</VERSION>
+ <TYPE>Spice</TYPE>
+ <USE>Boil</USE>
+ <AMOUNT>0.002464</AMOUNT>
+ <TIME>5.00</TIME>
+ <AMOUNT_IS_WEIGHT>FALSE</AMOUNT_IS_WEIGHT>
+ <USE_FOR>Spiced Beer</USE_FOR>
+ <NOTES>Cardamom has a strong, pungent flavor and aroma, with hints of lemon, mint and smoke. 
+Black cardamom has a distinctly more smokey, though not bitter, aroma, with a coolness some consider similar to mint. Green cardamom is one of the most expensive spices by weight but little is needed to impart flavor. It is best stored in pod form because once the seeds are exposed or ground, they quickly lose their flavor. Grinding the pods and seeds together lowers both the quality and the price. For recipes requiring whole cardamom pods, a generally accepted equivalent is 10 pods equals 1 1&#8260;2 teaspoons of ground cardamom.
+</NOTES>
+ <DISPLAY_AMOUNT>0.50 tsp</DISPLAY_AMOUNT>
+ <INVENTORY>0.00 tsp</INVENTORY>
+ <DISPLAY_TIME>5.0 mins</DISPLAY_TIME>
+ <BATCH_SIZE>5.00 gal</BATCH_SIZE>
+</MISC>
+<MISC>
+ <NAME>Chalk</NAME>
+ <VERSION>1</VERSION>
+ <TYPE>Water Agent</TYPE>
+ <USE>Mash</USE>
+ <AMOUNT>0.001000</AMOUNT>
+ <TIME>60.00</TIME>
+ <AMOUNT_IS_WEIGHT>TRUE</AMOUNT_IS_WEIGHT>
+ <USE_FOR>Water Agent</USE_FOR>
+ <NOTES>Chalk (CaCO3) can be used as a water addition to adjust mineral content for mashing.</NOTES>
+ <DISPLAY_AMOUNT>1.00 g</DISPLAY_AMOUNT>
+ <INVENTORY>0.00 g</INVENTORY>
+ <DISPLAY_TIME>60.0 mins</DISPLAY_TIME>
+ <BATCH_SIZE>5.00 gal</BATCH_SIZE>
+</MISC>
+<MISC>
+ <NAME>Cherry Extract</NAME>
+ <VERSION>1</VERSION>
+ <TYPE>Flavor</TYPE>
+ <USE>Bottling</USE>
+ <AMOUNT>0.099223</AMOUNT>
+ <TIME>0.00</TIME>
+ <AMOUNT_IS_WEIGHT>TRUE</AMOUNT_IS_WEIGHT>
+ <USE_FOR>Fruit Beer</USE_FOR>
+ <NOTES>Cherry extract flavoring.  Mix into beer at bottling to add cherry flavor to light ales and wheat beers.  Use low hop rate to allow sweet flavor through.</NOTES>
+ <DISPLAY_AMOUNT>3.50 oz</DISPLAY_AMOUNT>
+ <INVENTORY>0.00 oz</INVENTORY>
+ <DISPLAY_TIME>0.0 days</DISPLAY_TIME>
+ <BATCH_SIZE>5.00 gal</BATCH_SIZE>
+</MISC>
+<MISC>
+ <NAME>Chili Powder</NAME>
+ <VERSION>1</VERSION>
+ <TYPE>Spice</TYPE>
+ <USE>Boil</USE>
+ <AMOUNT>0.004929</AMOUNT>
+ <TIME>5.00</TIME>
+ <AMOUNT_IS_WEIGHT>FALSE</AMOUNT_IS_WEIGHT>
+ <USE_FOR>Spice Beer</USE_FOR>
+ <NOTES>Can use during any phase.</NOTES>
+ <DISPLAY_AMOUNT>1.00 tsp</DISPLAY_AMOUNT>
+ <INVENTORY>0.00 tsp</INVENTORY>
+ <DISPLAY_TIME>5.0 mins</DISPLAY_TIME>
+ <BATCH_SIZE>5.00 gal</BATCH_SIZE>
+</MISC>
+<MISC>
+ <NAME>Chilis</NAME>
+ <VERSION>1</VERSION>
+ <TYPE>Spice</TYPE>
+ <USE>Secondary</USE>
+ <AMOUNT>0.028349</AMOUNT>
+ <TIME>10080.00</TIME>
+ <AMOUNT_IS_WEIGHT>TRUE</AMOUNT_IS_WEIGHT>
+ <USE_FOR>Spice Beer</USE_FOR>
+ <NOTES>Use is similar to hops. Longer boils will give you more bitterness, putting in secondary will add more flavor.</NOTES>
+ <DISPLAY_AMOUNT>1.00 oz</DISPLAY_AMOUNT>
+ <INVENTORY>0.00 oz</INVENTORY>
+ <DISPLAY_TIME>7.0 days</DISPLAY_TIME>
+ <BATCH_SIZE>5.00 gal</BATCH_SIZE>
+</MISC>
+<MISC>
+ <NAME>Chitosan</NAME>
+ <VERSION>1</VERSION>
+ <TYPE>Fining</TYPE>
+ <USE>Secondary</USE>
+ <AMOUNT>0.028349</AMOUNT>
+ <TIME>0.00</TIME>
+ <AMOUNT_IS_WEIGHT>TRUE</AMOUNT_IS_WEIGHT>
+ <USE_FOR>Clarity</USE_FOR>
+ <NOTES>Used in combination with Kieselsol to aid in sedimentation and clarity in wines, meads and ciders.  Use 1 oz per 5-6 gal (19 l) of wine.</NOTES>
+ <DISPLAY_AMOUNT>1.00 oz</DISPLAY_AMOUNT>
+ <INVENTORY>0.00 oz</INVENTORY>
+ <DISPLAY_TIME>0.0 mins</DISPLAY_TIME>
+ <BATCH_SIZE>5.00 gal</BATCH_SIZE>
+</MISC>
+<MISC>
+ <NAME>Chocolate</NAME>
+ <VERSION>1</VERSION>
+ <TYPE>Flavor</TYPE>
+ <USE>Boil</USE>
+ <AMOUNT>0.056699</AMOUNT>
+ <TIME>5.00</TIME>
+ <AMOUNT_IS_WEIGHT>TRUE</AMOUNT_IS_WEIGHT>
+ <USE_FOR>Chocolate Stouts, Ales, Porters</USE_FOR>
+ <NOTES>Can be used in mash or boil</NOTES>
+ <DISPLAY_AMOUNT>2.00 oz</DISPLAY_AMOUNT>
+ <INVENTORY>0.00 oz</INVENTORY>
+ <DISPLAY_TIME>5.0 mins</DISPLAY_TIME>
+ <BATCH_SIZE>5.00 gal</BATCH_SIZE>
+</MISC>
+<MISC>
+ <NAME>Cinnamon Powder</NAME>
+ <VERSION>1</VERSION>
+ <TYPE>Spice</TYPE>
+ <USE>Boil</USE>
+ <AMOUNT>0.004929</AMOUNT>
+ <TIME>5.00</TIME>
+ <AMOUNT_IS_WEIGHT>FALSE</AMOUNT_IS_WEIGHT>
+ <USE_FOR>Holiday Beer</USE_FOR>
+ <NOTES>3 teaspoons for last 5 minutes of boil for 5 gallons. Can also add to secondary.</NOTES>
+ <DISPLAY_AMOUNT>1.00 tsp</DISPLAY_AMOUNT>
+ <INVENTORY>0.00 tsp</INVENTORY>
+ <DISPLAY_TIME>5.0 mins</DISPLAY_TIME>
+ <BATCH_SIZE>5.00 gal</BATCH_SIZE>
+</MISC>
+<MISC>
+ <NAME>Cinnamon Stick</NAME>
+ <VERSION>1</VERSION>
+ <TYPE>Spice</TYPE>
+ <USE>Boil</USE>
+ <AMOUNT>0.002835</AMOUNT>
+ <TIME>5.00</TIME>
+ <AMOUNT_IS_WEIGHT>TRUE</AMOUNT_IS_WEIGHT>
+ <USE_FOR>Holiday Beer</USE_FOR>
+ <NOTES>Used to add cinnamon flavor to holiday beers.  Goes well with ginger, honey and orange flavors.  Add one stick 5 minutes from the end of the boil.</NOTES>
+ <DISPLAY_AMOUNT>0.10 oz</DISPLAY_AMOUNT>
+ <INVENTORY>0.00 oz</INVENTORY>
+ <DISPLAY_TIME>5.0 mins</DISPLAY_TIME>
+ <BATCH_SIZE>5.00 gal</BATCH_SIZE>
+</MISC>
+<MISC>
+ <NAME>Citric Acid</NAME>
+ <VERSION>1</VERSION>
+ <TYPE>Other</TYPE>
+ <USE>Boil</USE>
+ <AMOUNT>0.004929</AMOUNT>
+ <TIME>0.00</TIME>
+ <AMOUNT_IS_WEIGHT>FALSE</AMOUNT_IS_WEIGHT>
+ <USE_FOR>Increase Acidity of Wine</USE_FOR>
+ <NOTES>Used in a finished wine to increase acidity for improved stability and shelf life.  1 tsp per gallon (4 l) will raise acidity by about 0.1%.</NOTES>
+ <DISPLAY_AMOUNT>1.00 tsp</DISPLAY_AMOUNT>
+ <INVENTORY>0.00 tsp</INVENTORY>
+ <DISPLAY_TIME>0.0 mins</DISPLAY_TIME>
+ <BATCH_SIZE>1.00 gal</BATCH_SIZE>
+</MISC>
+<MISC>
+ <NAME>Clarity Ferm (White Labs)</NAME>
+ <VERSION>1</VERSION>
+ <TYPE>Fining</TYPE>
+ <USE>Primary</USE>
+ <AMOUNT>1.000000</AMOUNT>
+ <TIME>10080.00</TIME>
+ <AMOUNT_IS_WEIGHT>FALSE</AMOUNT_IS_WEIGHT>
+ <USE_FOR>Clarity</USE_FOR>
+ <NOTES>This enzyme promotes clearer beer by breaking down the proteins responsible for chill haze. It can also be used to reduce the gluten content in beer made with barley and wheat. Each vial is sufficient for treating 5 gallons of beer. Simply add to chilled wort when pitching yeast.</NOTES>
+ <DISPLAY_AMOUNT>1.00 Items</DISPLAY_AMOUNT>
+ <INVENTORY>0.00 Items</INVENTORY>
+ <DISPLAY_TIME>7.0 days</DISPLAY_TIME>
+ <BATCH_SIZE>5.00 gal</BATCH_SIZE>
+</MISC>
+<MISC>
+ <NAME>Clearfine</NAME>
+ <VERSION>1</VERSION>
+ <TYPE>Fining</TYPE>
+ <USE>Secondary</USE>
+ <AMOUNT>0.007087</AMOUNT>
+ <TIME>1440.00</TIME>
+ <AMOUNT_IS_WEIGHT>TRUE</AMOUNT_IS_WEIGHT>
+ <USE_FOR>Clarity</USE_FOR>
+ <NOTES>Commercial blend of animal collagen and polysaccarides that helps rapidly precipitate yeast and tannins.  Mix with 2 oz cold water and add after fermentation has completed.</NOTES>
+ <DISPLAY_AMOUNT>0.25 oz</DISPLAY_AMOUNT>
+ <INVENTORY>0.00 oz</INVENTORY>
+ <DISPLAY_TIME>1.0 days</DISPLAY_TIME>
+ <BATCH_SIZE>5.00 gal</BATCH_SIZE>
+</MISC>
+<MISC>
+ <NAME>Coriander Seed</NAME>
+ <VERSION>1</VERSION>
+ <TYPE>Spice</TYPE>
+ <USE>Boil</USE>
+ <AMOUNT>0.021262</AMOUNT>
+ <TIME>5.00</TIME>
+ <AMOUNT_IS_WEIGHT>TRUE</AMOUNT_IS_WEIGHT>
+ <USE_FOR>Belgian Wit</USE_FOR>
+ <NOTES>Used in Belgian Wit, Whites, and Holiday ales.  Very good when used in light wheat ales.  Often used with Bitter Orange Peel.</NOTES>
+ <DISPLAY_AMOUNT>0.75 oz</DISPLAY_AMOUNT>
+ <INVENTORY>0.00 oz</INVENTORY>
+ <DISPLAY_TIME>5.0 mins</DISPLAY_TIME>
+ <BATCH_SIZE>5.00 gal</BATCH_SIZE>
+</MISC>
+<MISC>
+ <NAME>Corks</NAME>
+ <VERSION>1</VERSION>
+ <TYPE>Other</TYPE>
+ <USE>Bottling</USE>
+ <AMOUNT>1.000000</AMOUNT>
+ <TIME>0.00</TIME>
+ <AMOUNT_IS_WEIGHT>FALSE</AMOUNT_IS_WEIGHT>
+ <USE_FOR>Bottling</USE_FOR>
+ <NOTES>Generic corks used for bottling wine, mead, cider and specialty beers.</NOTES>
+ <DISPLAY_AMOUNT>1.00 Items</DISPLAY_AMOUNT>
+ <INVENTORY>0.00 Items</INVENTORY>
+ <DISPLAY_TIME>0.0 mins</DISPLAY_TIME>
+ <BATCH_SIZE>0.20 gal</BATCH_SIZE>
+</MISC>
+<MISC>
+ <NAME>Cranberry Extract</NAME>
+ <VERSION>1</VERSION>
+ <TYPE>Flavor</TYPE>
+ <USE>Bottling</USE>
+ <AMOUNT>0.056699</AMOUNT>
+ <TIME>0.00</TIME>
+ <AMOUNT_IS_WEIGHT>TRUE</AMOUNT_IS_WEIGHT>
+ <USE_FOR>Fruit Beer</USE_FOR>
+ <NOTES>Add great fruit flavor and aroma to your beer with our natual fruit flavorings. Best if added just prior to bottling. We recommend you start by adding 1/2 bottle and then add more according to your taste. Contains no sugar or haze-causing pectins.</NOTES>
+ <DISPLAY_AMOUNT>2.00 oz</DISPLAY_AMOUNT>
+ <INVENTORY>0.00 oz</INVENTORY>
+ <DISPLAY_TIME>0.0 days</DISPLAY_TIME>
+ <BATCH_SIZE>5.00 gal</BATCH_SIZE>
+</MISC>
+<MISC>
+ <NAME>Diammonium Phosphate (DAP)</NAME>
+ <VERSION>1</VERSION>
+ <TYPE>Other</TYPE>
+ <USE>Primary</USE>
+ <AMOUNT>0.000600</AMOUNT>
+ <TIME>0.00</TIME>
+ <AMOUNT_IS_WEIGHT>TRUE</AMOUNT_IS_WEIGHT>
+ <USE_FOR>Yeast Nutrient</USE_FOR>
+ <NOTES>A source of nitrogen for yeast used in primary fermentation for wines, meads and ciders.  Use 0.5 to 0.75 g per gallon (4 l).  1 tsp is roughly 3.1 grams.</NOTES>
+ <DISPLAY_AMOUNT>0.60 g</DISPLAY_AMOUNT>
+ <INVENTORY>0.00 g</INVENTORY>
+ <DISPLAY_TIME>0.0 mins</DISPLAY_TIME>
+ <BATCH_SIZE>1.00 gal</BATCH_SIZE>
+</MISC>
+<MISC>
+ <NAME>Distilled Hop Oil - Chinook</NAME>
+ <VERSION>1</VERSION>
+ <TYPE>Flavor</TYPE>
+ <USE>Bottling</USE>
+ <AMOUNT>0.000500</AMOUNT>
+ <TIME>0.00</TIME>
+ <AMOUNT_IS_WEIGHT>FALSE</AMOUNT_IS_WEIGHT>
+ <USE_FOR></USE_FOR>
+ <NOTES>Distilled hop oils are aromatic hop oils used to provide the aroma of freshly harvested hops.  Use on finished beer as a substitute for dry hopping or flavor accent at a rate of 0.5-1ml per 5 gal (19 l) batch.</NOTES>
+ <DISPLAY_AMOUNT>0.50 ml</DISPLAY_AMOUNT>
+ <INVENTORY>0.00 ml</INVENTORY>
+ <DISPLAY_TIME>0.0 mins</DISPLAY_TIME>
+ <BATCH_SIZE>5.00 gal</BATCH_SIZE>
+</MISC>
+<MISC>
+ <NAME>Distilled Hop Oil - El Dorado</NAME>
+ <VERSION>1</VERSION>
+ <TYPE>Flavor</TYPE>
+ <USE>Bottling</USE>
+ <AMOUNT>0.000500</AMOUNT>
+ <TIME>0.00</TIME>
+ <AMOUNT_IS_WEIGHT>FALSE</AMOUNT_IS_WEIGHT>
+ <USE_FOR></USE_FOR>
+ <NOTES>Distilled hop oils are aromatic hop oils used to provide the aroma of freshly harvested hops.  Use on finished beer as a substitute for dry hopping or flavor accent at a rate of 0.5-1ml per 5 gal (19 l) batch.</NOTES>
+ <DISPLAY_AMOUNT>0.50 ml</DISPLAY_AMOUNT>
+ <INVENTORY>0.00 ml</INVENTORY>
+ <DISPLAY_TIME>0.0 mins</DISPLAY_TIME>
+ <BATCH_SIZE>5.00 gal</BATCH_SIZE>
+</MISC>
+<MISC>
+ <NAME>Epsom Salt (MgSO4)</NAME>
+ <VERSION>1</VERSION>
+ <TYPE>Water Agent</TYPE>
+ <USE>Mash</USE>
+ <AMOUNT>0.005000</AMOUNT>
+ <TIME>60.00</TIME>
+ <AMOUNT_IS_WEIGHT>TRUE</AMOUNT_IS_WEIGHT>
+ <USE_FOR>Water Agent</USE_FOR>
+ <NOTES>Water agent used to modify water profile.  Use the BeerSmith Water Profile tool to determine amount to add.</NOTES>
+ <DISPLAY_AMOUNT>5.00 g</DISPLAY_AMOUNT>
+ <INVENTORY>0.00 g</INVENTORY>
+ <DISPLAY_TIME>60.0 mins</DISPLAY_TIME>
+ <BATCH_SIZE>5.00 gal</BATCH_SIZE>
+</MISC>
+<MISC>
+ <NAME>Fermaid K</NAME>
+ <VERSION>1</VERSION>
+ <TYPE>Other</TYPE>
+ <USE>Primary</USE>
+ <AMOUNT>0.001000</AMOUNT>
+ <TIME>10080.00</TIME>
+ <AMOUNT_IS_WEIGHT>TRUE</AMOUNT_IS_WEIGHT>
+ <USE_FOR>Yeast Nutrient</USE_FOR>
+ <NOTES>A formula including DAP, yeast hulls, free amino acids, sterols and micronutrients plus vitamins to aid in yeast growth.  Used in conjunction with GoFerm and added during active fermentation.  Use approx 1 gram/gallon (4 l).  1 tsp=4.7 grams.</NOTES>
+ <DISPLAY_AMOUNT>1.00 g</DISPLAY_AMOUNT>
+ <INVENTORY>0.00 g</INVENTORY>
+ <DISPLAY_TIME>7.0 days</DISPLAY_TIME>
+ <BATCH_SIZE>1.00 gal</BATCH_SIZE>
+</MISC>
+<MISC>
+ <NAME>Fermaid O</NAME>
+ <VERSION>1</VERSION>
+ <TYPE>Other</TYPE>
+ <USE>Primary</USE>
+ <AMOUNT>0.007500</AMOUNT>
+ <TIME>10080.00</TIME>
+ <AMOUNT_IS_WEIGHT>TRUE</AMOUNT_IS_WEIGHT>
+ <USE_FOR>Yeast Nutrient</USE_FOR>
+ <NOTES>Fermaid O is certified organic by OMRI. It is an autolyzed yeast nutrient with a high content of organic nitrogen (amino acids). It is formu&#173;lated without DAP. It is best to add Fermaid O in two doses. Add half the dose at the end of lag phase (at the onset of fermentation) and the other half between 1/4 and 1/3 sugar depletion.
+
+ To Use: Fermaid O should be mixed with room tem&#173;perature water before adding to an active fermentation to avoid CO2 release and overflowing of tanks or bar&#173;rels. The amount of water used is not critical. Simply add enough to make a slurry.
+
+ Dosage: 1.5 grams/ gallon
+</NOTES>
+ <DISPLAY_AMOUNT>7.50 g</DISPLAY_AMOUNT>
+ <INVENTORY>0.00 g</INVENTORY>
+ <DISPLAY_TIME>7.0 days</DISPLAY_TIME>
+ <BATCH_SIZE>5.00 gal</BATCH_SIZE>
+</MISC>
+<MISC>
+ <NAME>Fermax</NAME>
+ <VERSION>1</VERSION>
+ <TYPE>Other</TYPE>
+ <USE>Primary</USE>
+ <AMOUNT>0.024645</AMOUNT>
+ <TIME>10080.00</TIME>
+ <AMOUNT_IS_WEIGHT>FALSE</AMOUNT_IS_WEIGHT>
+ <USE_FOR>Yeast Nutrient</USE_FOR>
+ <NOTES>A premium formulation. Fermax Yeast Nutrient gives nourishment to your yeast so that it stays healthy throughout the fermentation process. Used in beer, wine, mead, etc. to produce healthy yeast for a complete fermentation. Use 1 teaspoon per gallon prior to fermentation beginning.</NOTES>
+ <DISPLAY_AMOUNT>5.00 tsp</DISPLAY_AMOUNT>
+ <INVENTORY>0.00 tsp</INVENTORY>
+ <DISPLAY_TIME>7.0 days</DISPLAY_TIME>
+ <BATCH_SIZE>5.00 gal</BATCH_SIZE>
+</MISC>
+<MISC>
+ <NAME>Fermcap-S</NAME>
+ <VERSION>1</VERSION>
+ <TYPE>Water Agent</TYPE>
+ <USE>Boil</USE>
+ <AMOUNT>0.001000</AMOUNT>
+ <TIME>60.00</TIME>
+ <AMOUNT_IS_WEIGHT>FALSE</AMOUNT_IS_WEIGHT>
+ <USE_FOR>Foam Inhibitor</USE_FOR>
+ <NOTES>Prevent boil overs on the hot side, add 2 drops per gallon for a nice rolling boil. On the cold side, Fermcap keeps the krausen in your fermenter to 1/2 an inch. Fermcap works very well for brewers who use a carboy for primary fermentation. In a 6 gallon carboy there is no need for blow off tubing when you use this product. Use only two drops per gallon at the start of fermentation. If you add Fermcap during the boil you do not need to add it again in your fermenter. Used in the fermenter, it increases the bitterness of your beer (retained IBUs) by about 10%! Enough for about 20 batches. Keep refrigerated. Size: 1 Oz.</NOTES>
+ <DISPLAY_AMOUNT>1.00 ml</DISPLAY_AMOUNT>
+ <INVENTORY>0.00 ml</INVENTORY>
+ <DISPLAY_TIME>60.0 mins</DISPLAY_TIME>
+ <BATCH_SIZE>5.00 gal</BATCH_SIZE>
+</MISC>
+<MISC>
+ <NAME>Fizz Drops</NAME>
+ <VERSION>1</VERSION>
+ <TYPE>Other</TYPE>
+ <USE>Bottling</USE>
+ <AMOUNT>1.000000</AMOUNT>
+ <TIME>0.00</TIME>
+ <AMOUNT_IS_WEIGHT>FALSE</AMOUNT_IS_WEIGHT>
+ <USE_FOR>Priming</USE_FOR>
+ <NOTES>Fizz Drops are designed to take the place of making a priming solution and batch priming. These drops help to reduce the guesswork often associated with irregular batch size bottle conditioning because they are a uniform weight of pure sugar.</NOTES>
+ <DISPLAY_AMOUNT>1.00 Items</DISPLAY_AMOUNT>
+ <INVENTORY>0.00 Items</INVENTORY>
+ <DISPLAY_TIME>0.0 mins</DISPLAY_TIME>
+ <BATCH_SIZE>5.00 gal</BATCH_SIZE>
+</MISC>
+<MISC>
+ <NAME>French Oak Cubes - Heavy Toast</NAME>
+ <VERSION>1</VERSION>
+ <TYPE>Flavor</TYPE>
+ <USE>Secondary</USE>
+ <AMOUNT>0.085048</AMOUNT>
+ <TIME>10080.00</TIME>
+ <AMOUNT_IS_WEIGHT>TRUE</AMOUNT_IS_WEIGHT>
+ <USE_FOR>Oak Flavor</USE_FOR>
+ <NOTES>Barrels used to be the home winemakers only choice for imparting oak flavor in their wines. These high quality oak cubes allow you to achieve the same quality of oak flavor that you taste in good wines. These are the same cubes used by many wineries in Napa Valley. Oak staves (the wooden strips that oak barrels are constructed of) are air dried for two to three years, then traditionally fire-toasted and cubed. Since three varieties are available, you are able to blend different levels of toast to achieve different effects. While the heavy-toast cubes are recommended for big reds that benefit from a heavy, caramelized oak flavor, they may also be used to supplement the medium-toast cubes for a more subtle flavoring. Many of our customers use a blend of French and American cubes, usually using the French cubes in a higher percentage. We have had success blending all three oaks, again using the French in the highest percentage. </NOTES>
+ <DISPLAY_AMOUNT>3.00 oz</DISPLAY_AMOUNT>
+ <INVENTORY>0.00 oz</INVENTORY>
+ <DISPLAY_TIME>7.0 days</DISPLAY_TIME>
+ <BATCH_SIZE>5.00 gal</BATCH_SIZE>
+</MISC>
+<MISC>
+ <NAME>French Oak Cubes - Medium Toast</NAME>
+ <VERSION>1</VERSION>
+ <TYPE>Flavor</TYPE>
+ <USE>Secondary</USE>
+ <AMOUNT>0.085048</AMOUNT>
+ <TIME>10080.00</TIME>
+ <AMOUNT_IS_WEIGHT>TRUE</AMOUNT_IS_WEIGHT>
+ <USE_FOR>Oak Flavor</USE_FOR>
+ <NOTES>Barrels used to be the home winemakers only choice for imparting oak flavor in their wines. These high quality oak cubes allow you to achieve the same quality of oak flavor that you taste in good wines. These are the same cubes used by many wineries in Napa Valley. Oak staves (the wooden strips that oak barrels are constructed of) are air dried for two to three years, then traditionally fire-toasted and cubed. Since three varieties are available, you are able to blend different levels of toast to achieve different effects. While the heavy-toast cubes are recommended for big reds that benefit from a heavy, caramelized oak flavor, they may also be used to supplement the medium-toast cubes for a more subtle flavoring. Many of our customers use a blend of French and American cubes, usually using the French cubes in a higher percentage. We have had success blending all three oaks, again using the French in the highest percentage. </NOTES>
+ <DISPLAY_AMOUNT>3.00 oz</DISPLAY_AMOUNT>
+ <INVENTORY>0.00 oz</INVENTORY>
+ <DISPLAY_TIME>7.0 days</DISPLAY_TIME>
+ <BATCH_SIZE>5.00 gal</BATCH_SIZE>
+</MISC>
+<MISC>
+ <NAME>French Oak Cubes Medium - Heavy Toast</NAME>
+ <VERSION>1</VERSION>
+ <TYPE>Flavor</TYPE>
+ <USE>Secondary</USE>
+ <AMOUNT>0.085048</AMOUNT>
+ <TIME>10080.00</TIME>
+ <AMOUNT_IS_WEIGHT>TRUE</AMOUNT_IS_WEIGHT>
+ <USE_FOR>Oak Flavor</USE_FOR>
+ <NOTES>Barrels used to be the home winemakers only choice for imparting oak flavor in their wines. These high quality oak cubes allow you to achieve the same quality of oak flavor that you taste in good wines. These are the same cubes used by many wineries in Napa Valley. Oak staves (the wooden strips that oak barrels are constructed of) are air dried for two to three years, then traditionally fire-toasted and cubed. Since three varieties are available, you are able to blend different levels of toast to achieve different effects. While the heavy-toast cubes are recommended for big reds that benefit from a heavy, caramelized oak flavor, they may also be used to supplement the medium-toast cubes for a more subtle flavoring. Many of our customers use a blend of French and American cubes, usually using the French cubes in a higher percentage. We have had success blending all three oaks, again using the French in the highest percentage.</NOTES>
+ <DISPLAY_AMOUNT>3.00 oz</DISPLAY_AMOUNT>
+ <INVENTORY>0.00 oz</INVENTORY>
+ <DISPLAY_TIME>7.0 days</DISPLAY_TIME>
+ <BATCH_SIZE>5.00 gal</BATCH_SIZE>
+</MISC>
+<MISC>
+ <NAME>French Oak Infusion Spirals</NAME>
+ <VERSION>1</VERSION>
+ <TYPE>Flavor</TYPE>
+ <USE>Secondary</USE>
+ <AMOUNT>1.000000</AMOUNT>
+ <TIME>10080.00</TIME>
+ <AMOUNT_IS_WEIGHT>FALSE</AMOUNT_IS_WEIGHT>
+ <USE_FOR>Oak Flavor</USE_FOR>
+ <NOTES>French Oak Infusion Spiral Light Toast contributes fresh oak, coconut and fruit flavors. Infusion Spirals are easy to use, time saving, economical, environmentally friendly, as well as being high-quality.</NOTES>
+ <DISPLAY_AMOUNT>1.00 Items</DISPLAY_AMOUNT>
+ <INVENTORY>0.00 Items</INVENTORY>
+ <DISPLAY_TIME>7.0 days</DISPLAY_TIME>
+ <BATCH_SIZE>5.00 gal</BATCH_SIZE>
+</MISC>
+<MISC>
+ <NAME>Gale, Sweet</NAME>
+ <VERSION>1</VERSION>
+ <TYPE>Spice</TYPE>
+ <USE>Boil</USE>
+ <AMOUNT>0.001000</AMOUNT>
+ <TIME>10.00</TIME>
+ <AMOUNT_IS_WEIGHT>TRUE</AMOUNT_IS_WEIGHT>
+ <USE_FOR>Holiday Beers</USE_FOR>
+ <NOTES>Very strong, fragrant shrub.  Great spice, though relatively unknown.  Aroma used in soups, stews, and candles.  Well suited for holiday beers.  Use sparingly -- the aroma and flavor are VERY strong.</NOTES>
+ <DISPLAY_AMOUNT>1.00 g</DISPLAY_AMOUNT>
+ <INVENTORY>0.00 g</INVENTORY>
+ <DISPLAY_TIME>10.0 mins</DISPLAY_TIME>
+ <BATCH_SIZE>5.00 gal</BATCH_SIZE>
+</MISC>
+<MISC>
+ <NAME>Gelatin</NAME>
+ <VERSION>1</VERSION>
+ <TYPE>Fining</TYPE>
+ <USE>Secondary</USE>
+ <AMOUNT>0.002464</AMOUNT>
+ <TIME>300.00</TIME>
+ <AMOUNT_IS_WEIGHT>FALSE</AMOUNT_IS_WEIGHT>
+ <USE_FOR>Clarity</USE_FOR>
+ <NOTES>Clear, unflavored gelatin can be purchased from your grocer.  Aids in settling yeast.  Prepare in 1 pint of water by heating gently until dissolved.  Add before bottling.  Do not boil.</NOTES>
+ <DISPLAY_AMOUNT>0.50 tsp</DISPLAY_AMOUNT>
+ <INVENTORY>0.00 tsp</INVENTORY>
+ <DISPLAY_TIME>5.0 hours</DISPLAY_TIME>
+ <BATCH_SIZE>5.00 gal</BATCH_SIZE>
+</MISC>
+<MISC>
+ <NAME>Gesho Kitel (Ethiopian Hop Powder)</NAME>
+ <VERSION>1</VERSION>
+ <TYPE>Spice</TYPE>
+ <USE>Boil</USE>
+ <AMOUNT>0.028349</AMOUNT>
+ <TIME>0.00</TIME>
+ <AMOUNT_IS_WEIGHT>TRUE</AMOUNT_IS_WEIGHT>
+ <USE_FOR>Spice</USE_FOR>
+ <NOTES>Sundried hop leaves from Ethiopia (sometimes powderred).  Used in the production of Tej - a honey wine. Adds a tealike astringency and aroma.</NOTES>
+ <DISPLAY_AMOUNT>1.00 oz</DISPLAY_AMOUNT>
+ <INVENTORY>0.00 oz</INVENTORY>
+ <DISPLAY_TIME>0.0 mins</DISPLAY_TIME>
+ <BATCH_SIZE>5.00 gal</BATCH_SIZE>
+</MISC>
+<MISC>
+ <NAME>Ginger Root</NAME>
+ <VERSION>1</VERSION>
+ <TYPE>Herb</TYPE>
+ <USE>Boil</USE>
+ <AMOUNT>0.028349</AMOUNT>
+ <TIME>12.00</TIME>
+ <AMOUNT_IS_WEIGHT>TRUE</AMOUNT_IS_WEIGHT>
+ <USE_FOR>Holiday Beer</USE_FOR>
+ <NOTES>Adds distinctive ginger flavor for Ginger Ales, Holiday Beers.  Fresh grated ginger root from the grocer is best.  As little as 1/2 ounce per 5 gallons is noticable, but up to 4 oz can be used for ginger ales.</NOTES>
+ <DISPLAY_AMOUNT>1.00 oz</DISPLAY_AMOUNT>
+ <INVENTORY>0.00 oz</INVENTORY>
+ <DISPLAY_TIME>12.0 mins</DISPLAY_TIME>
+ <BATCH_SIZE>5.00 gal</BATCH_SIZE>
+</MISC>
+<MISC>
+ <NAME>Ginger, Crystallized</NAME>
+ <VERSION>1</VERSION>
+ <TYPE>Herb</TYPE>
+ <USE>Boil</USE>
+ <AMOUNT>0.042524</AMOUNT>
+ <TIME>5.00</TIME>
+ <AMOUNT_IS_WEIGHT>TRUE</AMOUNT_IS_WEIGHT>
+ <USE_FOR>Holiday Beer</USE_FOR>
+ <NOTES>They add a substantial spicy, gingery flavor and aroma. They can be added at the end of a boil, or to secondary. Use 1-2 oz. per 5 gallons. Soak them in enough vodka or similar neutral spirit to cover for 24 hours if adding to secondary. </NOTES>
+ <DISPLAY_AMOUNT>1.50 oz</DISPLAY_AMOUNT>
+ <INVENTORY>0.00 oz</INVENTORY>
+ <DISPLAY_TIME>5.0 mins</DISPLAY_TIME>
+ <BATCH_SIZE>5.00 gal</BATCH_SIZE>
+</MISC>
+<MISC>
+ <NAME>Glycerin</NAME>
+ <VERSION>1</VERSION>
+ <TYPE>Other</TYPE>
+ <USE>Secondary</USE>
+ <AMOUNT>0.028349</AMOUNT>
+ <TIME>0.00</TIME>
+ <AMOUNT_IS_WEIGHT>TRUE</AMOUNT_IS_WEIGHT>
+ <USE_FOR>Sweetens and Adds Body to Wine</USE_FOR>
+ <NOTES>Used to sweeten and add body to a finished wine.  Add 1-2 oz per gal (4 L) for wine or 1-2 oz per quart (liter) for liquers.</NOTES>
+ <DISPLAY_AMOUNT>1.00 oz</DISPLAY_AMOUNT>
+ <INVENTORY>0.00 oz</INVENTORY>
+ <DISPLAY_TIME>0.0 mins</DISPLAY_TIME>
+ <BATCH_SIZE>1.00 gal</BATCH_SIZE>
+</MISC>
+<MISC>
+ <NAME>GoFerm Protect</NAME>
+ <VERSION>1</VERSION>
+ <TYPE>Other</TYPE>
+ <USE>Primary</USE>
+ <AMOUNT>0.005700</AMOUNT>
+ <TIME>0.00</TIME>
+ <AMOUNT_IS_WEIGHT>TRUE</AMOUNT_IS_WEIGHT>
+ <USE_FOR>Yeast Hydration Nutrient</USE_FOR>
+ <NOTES>Yeast nutrient that aids in the hydration of dry yeast.  Add 1.25 grams of GoFerm for each gram of dry yeast, or approx 30 g/hl.  Mix GoFerm with 20x its weight in luke warm (105 F) water, then mix in yeast and allow 20 min to cool.  Add small amounts of wort or must to aid in cooling and activation.</NOTES>
+ <DISPLAY_AMOUNT>5.70 g</DISPLAY_AMOUNT>
+ <INVENTORY>0.00 g</INVENTORY>
+ <DISPLAY_TIME>0.0 mins</DISPLAY_TIME>
+ <BATCH_SIZE>5.00 gal</BATCH_SIZE>
+</MISC>
+<MISC>
+ <NAME>Grapefruit Peel</NAME>
+ <VERSION>1</VERSION>
+ <TYPE>Flavor</TYPE>
+ <USE>Boil</USE>
+ <AMOUNT>0.028349</AMOUNT>
+ <TIME>5.00</TIME>
+ <AMOUNT_IS_WEIGHT>TRUE</AMOUNT_IS_WEIGHT>
+ <USE_FOR>Fruit Beer, IPA, Wheatbeer</USE_FOR>
+ <NOTES>Grapefruit peel is a great way to add a refreshing and slightly tart citrus tang to your favorite fermented creation. Add it to the end of the boil in a white ale, or add it to secondary fermentation to impart a grapefruit flavor and aroma in a pale ale or IPA. Suggested usage rate: 1-2 oz per 5 gallons. </NOTES>
+ <DISPLAY_AMOUNT>1.00 oz</DISPLAY_AMOUNT>
+ <INVENTORY>0.00 oz</INVENTORY>
+ <DISPLAY_TIME>5.0 mins</DISPLAY_TIME>
+ <BATCH_SIZE>5.00 gal</BATCH_SIZE>
+</MISC>
+<MISC>
+ <NAME>Gypsum (Calcium Sulfate)</NAME>
+ <VERSION>1</VERSION>
+ <TYPE>Water Agent</TYPE>
+ <USE>Mash</USE>
+ <AMOUNT>0.010000</AMOUNT>
+ <TIME>60.00</TIME>
+ <AMOUNT_IS_WEIGHT>TRUE</AMOUNT_IS_WEIGHT>
+ <USE_FOR>Water Agent</USE_FOR>
+ <NOTES>Reduces PH of water for mashing and sparging.   Alters water profile -- used to harden soft water.  Use the BeerSmith Water Profile tool to determine amount to add.</NOTES>
+ <DISPLAY_AMOUNT>10.00 g</DISPLAY_AMOUNT>
+ <INVENTORY>0.00 g</INVENTORY>
+ <DISPLAY_TIME>60.0 mins</DISPLAY_TIME>
+ <BATCH_SIZE>5.00 gal</BATCH_SIZE>
+</MISC>
+<MISC>
+ <NAME>Hazelnut</NAME>
+ <VERSION>1</VERSION>
+ <TYPE>Flavor</TYPE>
+ <USE>Secondary</USE>
+ <AMOUNT>0.012500</AMOUNT>
+ <TIME>1440.00</TIME>
+ <AMOUNT_IS_WEIGHT>FALSE</AMOUNT_IS_WEIGHT>
+ <USE_FOR>Nutty Flavor</USE_FOR>
+ <NOTES>Add great nutty flavor and aroma to your beer with our Hazelnut extract. Best if added just prior to bottling. We recommend you start by adding 1/2 bottle and then add more according to your taste. Contains no sugar or haze-causing pectins.</NOTES>
+ <DISPLAY_AMOUNT>12.50 ml</DISPLAY_AMOUNT>
+ <INVENTORY>0.00 ml</INVENTORY>
+ <DISPLAY_TIME>1.0 days</DISPLAY_TIME>
+ <BATCH_SIZE>5.00 gal</BATCH_SIZE>
+</MISC>
+<MISC>
+ <NAME>Heading Liquid</NAME>
+ <VERSION>1</VERSION>
+ <TYPE>Other</TYPE>
+ <USE>Bottling</USE>
+ <AMOUNT>0.002464</AMOUNT>
+ <TIME>5.00</TIME>
+ <AMOUNT_IS_WEIGHT>FALSE</AMOUNT_IS_WEIGHT>
+ <USE_FOR>Head Retention</USE_FOR>
+ <NOTES>Aids head formation and retention.  Mix into beer before bottling.</NOTES>
+ <DISPLAY_AMOUNT>0.50 tsp</DISPLAY_AMOUNT>
+ <INVENTORY>0.00 tsp</INVENTORY>
+ <DISPLAY_TIME>5.0 mins</DISPLAY_TIME>
+ <BATCH_SIZE>5.00 gal</BATCH_SIZE>
+</MISC>
+<MISC>
+ <NAME>Irish Moss</NAME>
+ <VERSION>1</VERSION>
+ <TYPE>Fining</TYPE>
+ <USE>Boil</USE>
+ <AMOUNT>0.001232</AMOUNT>
+ <TIME>10.00</TIME>
+ <AMOUNT_IS_WEIGHT>FALSE</AMOUNT_IS_WEIGHT>
+ <USE_FOR>Clarity</USE_FOR>
+ <NOTES>Fining agent that aids in the post-boil protein break.  Reduces protein chill haze and improves beer clarity.</NOTES>
+ <DISPLAY_AMOUNT>0.25 tsp</DISPLAY_AMOUNT>
+ <INVENTORY>0.00 tsp</INVENTORY>
+ <DISPLAY_TIME>10.0 mins</DISPLAY_TIME>
+ <BATCH_SIZE>5.00 gal</BATCH_SIZE>
+</MISC>
+<MISC>
+ <NAME>Isinglass (Liquid)</NAME>
+ <VERSION>1</VERSION>
+ <TYPE>Fining</TYPE>
+ <USE>Secondary</USE>
+ <AMOUNT>0.014787</AMOUNT>
+ <TIME>10080.00</TIME>
+ <AMOUNT_IS_WEIGHT>FALSE</AMOUNT_IS_WEIGHT>
+ <USE_FOR>Clarity</USE_FOR>
+ <NOTES>Keep liquid form refrigerated.  Isinglass is widely used by commercial brewers to aid clarity, but is not as popular for home brewers due to stability.  Aids in settling proteins, tannins and yeast.</NOTES>
+ <DISPLAY_AMOUNT>3.00 tsp</DISPLAY_AMOUNT>
+ <INVENTORY>0.00 tsp</INVENTORY>
+ <DISPLAY_TIME>7.0 days</DISPLAY_TIME>
+ <BATCH_SIZE>5.00 gal</BATCH_SIZE>
+</MISC>
+<MISC>
+ <NAME>Juniper Berries</NAME>
+ <VERSION>1</VERSION>
+ <TYPE>Flavor</TYPE>
+ <USE>Boil</USE>
+ <AMOUNT>0.028349</AMOUNT>
+ <TIME>5.00</TIME>
+ <AMOUNT_IS_WEIGHT>TRUE</AMOUNT_IS_WEIGHT>
+ <USE_FOR>Fruit Beer</USE_FOR>
+ <NOTES>Most people associate Juniper Berries as being the principal flavoring in gin. Juniper has been used In porters, stouts and doppelbocks for centuries as well. Use 1/2 - 1 ounce in the boil. The flavor is very compatible with rye beer, and blends well with the citrus notes of ginger and orange peel, as well as licorice root and coriander. Crush berries with mortar and pestle before using, or place in thick plastic bag and crush with a mallet. The berries are also delicious in sauces and marinades for game dishes. </NOTES>
+ <DISPLAY_AMOUNT>1.00 oz</DISPLAY_AMOUNT>
+ <INVENTORY>0.00 oz</INVENTORY>
+ <DISPLAY_TIME>5.0 mins</DISPLAY_TIME>
+ <BATCH_SIZE>5.00 gal</BATCH_SIZE>
+</MISC>
+<MISC>
+ <NAME>Kieselsol</NAME>
+ <VERSION>1</VERSION>
+ <TYPE>Fining</TYPE>
+ <USE>Secondary</USE>
+ <AMOUNT>0.007087</AMOUNT>
+ <TIME>0.00</TIME>
+ <AMOUNT_IS_WEIGHT>TRUE</AMOUNT_IS_WEIGHT>
+ <USE_FOR>Clarity</USE_FOR>
+ <NOTES>Kieselsol is used in wines, meads and ciders, usually in combination with chitosan.  Use 1/4 oz per 5-6 gal (19 l) of wine.</NOTES>
+ <DISPLAY_AMOUNT>0.25 oz</DISPLAY_AMOUNT>
+ <INVENTORY>0.00 oz</INVENTORY>
+ <DISPLAY_TIME>0.0 mins</DISPLAY_TIME>
+ <BATCH_SIZE>5.00 gal</BATCH_SIZE>
+</MISC>
+<MISC>
+ <NAME>Lactic Acid</NAME>
+ <VERSION>1</VERSION>
+ <TYPE>Water Agent</TYPE>
+ <USE>Mash</USE>
+ <AMOUNT>0.001000</AMOUNT>
+ <TIME>60.00</TIME>
+ <AMOUNT_IS_WEIGHT>FALSE</AMOUNT_IS_WEIGHT>
+ <USE_FOR>Mash pH</USE_FOR>
+ <NOTES>Used to lower the pH of the mash without altering the water profile.  Lower pH mashes generally improves head retention, increases extraction rate.</NOTES>
+ <DISPLAY_AMOUNT>1.00 ml</DISPLAY_AMOUNT>
+ <INVENTORY>0.00 ml</INVENTORY>
+ <DISPLAY_TIME>60.0 mins</DISPLAY_TIME>
+ <BATCH_SIZE>5.00 gal</BATCH_SIZE>
+</MISC>
+<MISC>
+ <NAME>Lallyzyme C-Max</NAME>
+ <VERSION>1</VERSION>
+ <TYPE>Other</TYPE>
+ <USE>Secondary</USE>
+ <AMOUNT>0.000060</AMOUNT>
+ <TIME>0.00</TIME>
+ <AMOUNT_IS_WEIGHT>TRUE</AMOUNT_IS_WEIGHT>
+ <USE_FOR>White wine clarification</USE_FOR>
+ <NOTES>Enzyme that aids in clarification and de-pectinization of white wine juice. Combination of pectinase reduces pectin and aids in long macerations.  Use 0.06 g per gal (4 l) of wine during aging to aid in sedimentation.</NOTES>
+ <DISPLAY_AMOUNT>0.06 g</DISPLAY_AMOUNT>
+ <INVENTORY>0.00 g</INVENTORY>
+ <DISPLAY_TIME>0.0 days</DISPLAY_TIME>
+ <BATCH_SIZE>1.00 gal</BATCH_SIZE>
+</MISC>
+<MISC>
+ <NAME>Lallzyme EX</NAME>
+ <VERSION>1</VERSION>
+ <TYPE>Other</TYPE>
+ <USE>Primary</USE>
+ <AMOUNT>0.000100</AMOUNT>
+ <TIME>0.00</TIME>
+ <AMOUNT_IS_WEIGHT>TRUE</AMOUNT_IS_WEIGHT>
+ <USE_FOR>Red wine stability, mouthfeel</USE_FOR>
+ <NOTES>Used in red wines to improve stability, mouthfeel, fruity, floral and spicy flavors. Use 0.1 g per gal (4 l) of must.  Dissolve in 100x the weight of water and add to the must before the onset of fermentation.</NOTES>
+ <DISPLAY_AMOUNT>0.10 g</DISPLAY_AMOUNT>
+ <INVENTORY>0.00 g</INVENTORY>
+ <DISPLAY_TIME>0.0 days</DISPLAY_TIME>
+ <BATCH_SIZE>1.00 gal</BATCH_SIZE>
+</MISC>
+<MISC>
+ <NAME>Lemon Grass</NAME>
+ <VERSION>1</VERSION>
+ <TYPE>Flavor</TYPE>
+ <USE>Boil</USE>
+ <AMOUNT>0.141747</AMOUNT>
+ <TIME>5.00</TIME>
+ <AMOUNT_IS_WEIGHT>TRUE</AMOUNT_IS_WEIGHT>
+ <USE_FOR>Wheat Beers</USE_FOR>
+ <NOTES>Good for use in wheat beers</NOTES>
+ <DISPLAY_AMOUNT>5.00 oz</DISPLAY_AMOUNT>
+ <INVENTORY>0.00 oz</INVENTORY>
+ <DISPLAY_TIME>5.0 mins</DISPLAY_TIME>
+ <BATCH_SIZE>5.00 gal</BATCH_SIZE>
+</MISC>
+<MISC>
+ <NAME>Lemon Peel</NAME>
+ <VERSION>1</VERSION>
+ <TYPE>Flavor</TYPE>
+ <USE>Boil</USE>
+ <AMOUNT>0.028349</AMOUNT>
+ <TIME>5.00</TIME>
+ <AMOUNT_IS_WEIGHT>TRUE</AMOUNT_IS_WEIGHT>
+ <USE_FOR>Flavoring</USE_FOR>
+ <NOTES>Dried lemon peel.  To use either add last 5-10 min of the boil or alternatly make a tea with it and add tea to taste.</NOTES>
+ <DISPLAY_AMOUNT>1.00 oz</DISPLAY_AMOUNT>
+ <INVENTORY>0.00 oz</INVENTORY>
+ <DISPLAY_TIME>5.0 mins</DISPLAY_TIME>
+ <BATCH_SIZE>5.00 gal</BATCH_SIZE>
+</MISC>
+<MISC>
+ <NAME>Licorice Root</NAME>
+ <VERSION>1</VERSION>
+ <TYPE>Flavor</TYPE>
+ <USE>Boil</USE>
+ <AMOUNT>0.028349</AMOUNT>
+ <TIME>5.00</TIME>
+ <AMOUNT_IS_WEIGHT>TRUE</AMOUNT_IS_WEIGHT>
+ <USE_FOR>Licorice Flavor</USE_FOR>
+ <NOTES>Traditionally used in dark beers such as Porters and Stouts, this root imparts a very distinct licorice flavor and is surprisingly sweet. It contains Glycyrrhizin, a substance 50 times sweeter than sugar! Use about 1/2 - 1 ounce per 5 gallons and add for the last few minutes of the boil. </NOTES>
+ <DISPLAY_AMOUNT>1.00 oz</DISPLAY_AMOUNT>
+ <INVENTORY>0.00 oz</INVENTORY>
+ <DISPLAY_TIME>5.0 mins</DISPLAY_TIME>
+ <BATCH_SIZE>5.00 gal</BATCH_SIZE>
+</MISC>
+<MISC>
+ <NAME>Liquid Pectic Enzyme</NAME>
+ <VERSION>1</VERSION>
+ <TYPE>Other</TYPE>
+ <USE>Primary</USE>
+ <AMOUNT>0.001232</AMOUNT>
+ <TIME>0.00</TIME>
+ <AMOUNT_IS_WEIGHT>FALSE</AMOUNT_IS_WEIGHT>
+ <USE_FOR>Reducing Fruit Haze</USE_FOR>
+ <NOTES>Used to reduce pectin haze from fruits.  This is the liquid form (normally it is in powder).  Use 1/4 tsp of liquid for approx 5 gal (19 l) of wine, mead or cider.</NOTES>
+ <DISPLAY_AMOUNT>0.25 tsp</DISPLAY_AMOUNT>
+ <INVENTORY>0.00 tsp</INVENTORY>
+ <DISPLAY_TIME>0.0 mins</DISPLAY_TIME>
+ <BATCH_SIZE>5.00 gal</BATCH_SIZE>
+</MISC>
+<MISC>
+ <NAME>Lysozyme</NAME>
+ <VERSION>1</VERSION>
+ <TYPE>Other</TYPE>
+ <USE>Boil</USE>
+ <AMOUNT>0.001000</AMOUNT>
+ <TIME>0.00</TIME>
+ <AMOUNT_IS_WEIGHT>TRUE</AMOUNT_IS_WEIGHT>
+ <USE_FOR>Control Lactic Acid Growth Wine</USE_FOR>
+ <NOTES>Use Lysozyme to control lactic acid bacteria growth.  Isolated from egg whites, this enzyme will degrade the cell wall of gram positive bacteria, but will not affect yeast or gram negative bacteria such as Acetobacter. Lysozyme can be used for both Red and White Wine Malo Fermentation.
+
+To Delay Malolactic Fermentation: Red Wine - add to grapes at 100 - 200 ppm, or 0.38 - 0.76 grams per gallon. White Wine - Add to must at 200 - 300 ppm, or 0.76 - 1.14 grams per gallon.
+
+To Block Malolactic Fermentation: White Wine - Add to must or wine at 300 - 500 ppm, or 1.14 - 1.90 grams per gallon.
+
+Stabilizing wine after MLF is complete: Add to barrel during storage at 250 - 500 ppm, or 0.95 - 1.90 grams per gallon.
+</NOTES>
+ <DISPLAY_AMOUNT>1.00 g</DISPLAY_AMOUNT>
+ <INVENTORY>0.00 g</INVENTORY>
+ <DISPLAY_TIME>0.0 mins</DISPLAY_TIME>
+ <BATCH_SIZE>1.00 gal</BATCH_SIZE>
+</MISC>
+<MISC>
+ <NAME>Malic Acid</NAME>
+ <VERSION>1</VERSION>
+ <TYPE>Other</TYPE>
+ <USE>Secondary</USE>
+ <AMOUNT>0.003400</AMOUNT>
+ <TIME>0.00</TIME>
+ <AMOUNT_IS_WEIGHT>TRUE</AMOUNT_IS_WEIGHT>
+ <USE_FOR>Raise Acidity in Cider</USE_FOR>
+ <NOTES>Used primariy in ciders as malic acid is native to apples.  A dose of 3.4 g in 1 gal (4 l) will raise acidity by approx 0.1%. 1 tsp is about 2.7 g.  Sometimes used in Reisling, Gewurztraminer, and Muscat varieties.  Do not use in a wine where you will be doing a malolactic fermentation,</NOTES>
+ <DISPLAY_AMOUNT>3.40 g</DISPLAY_AMOUNT>
+ <INVENTORY>0.00 g</INVENTORY>
+ <DISPLAY_TIME>0.0 mins</DISPLAY_TIME>
+ <BATCH_SIZE>1.00 gal</BATCH_SIZE>
+</MISC>
+<MISC>
+ <NAME>Noblesse</NAME>
+ <VERSION>1</VERSION>
+ <TYPE>Other</TYPE>
+ <USE>Primary</USE>
+ <AMOUNT>0.001000</AMOUNT>
+ <TIME>0.00</TIME>
+ <AMOUNT_IS_WEIGHT>TRUE</AMOUNT_IS_WEIGHT>
+ <USE_FOR>Boost Color, Stability in Wines</USE_FOR>
+ <NOTES>Noblesse is an inactive yeast product which improves body, color stability, and mouthfeel in red and white wines. The effect of using Noblesse in the must is very balanced and falls in between the soft roundness of Opti Red and the structural intensity you get from Booster Rouge.
+
+Use 1 gram per gal (4 l) of red wine at the beginning of fermentation.  1 tsp = 2.9 g.</NOTES>
+ <DISPLAY_AMOUNT>1.00 g</DISPLAY_AMOUNT>
+ <INVENTORY>0.00 g</INVENTORY>
+ <DISPLAY_TIME>0.0 days</DISPLAY_TIME>
+ <BATCH_SIZE>1.00 gal</BATCH_SIZE>
+</MISC>
+<MISC>
+ <NAME>Nutmeg</NAME>
+ <VERSION>1</VERSION>
+ <TYPE>Spice</TYPE>
+ <USE>Secondary</USE>
+ <AMOUNT>0.001232</AMOUNT>
+ <TIME>0.00</TIME>
+ <AMOUNT_IS_WEIGHT>FALSE</AMOUNT_IS_WEIGHT>
+ <USE_FOR>Spice</USE_FOR>
+ <NOTES>Common nutmeg spice used in holiday ales, and many ciders often in combination with cinnamon.  1/4 tsp in 5 gal (19 l) will give a noticable hint of spice.</NOTES>
+ <DISPLAY_AMOUNT>0.25 tsp</DISPLAY_AMOUNT>
+ <INVENTORY>0.00 tsp</INVENTORY>
+ <DISPLAY_TIME>0.0 mins</DISPLAY_TIME>
+ <BATCH_SIZE>5.00 gal</BATCH_SIZE>
+</MISC>
+<MISC>
+ <NAME>Nutriferm</NAME>
+ <VERSION>1</VERSION>
+ <TYPE>Other</TYPE>
+ <USE>Primary</USE>
+ <AMOUNT>0.002000</AMOUNT>
+ <TIME>0.00</TIME>
+ <AMOUNT_IS_WEIGHT>TRUE</AMOUNT_IS_WEIGHT>
+ <USE_FOR>Yeast Nutrient</USE_FOR>
+ <NOTES>A yeast-hull based nutrient to aid in fermentation.  Added at start of fermentation at a rate of approx 1-3 g per 5 gal (19 l) batch.  At 100 ppm it contributes approx 13 mg/L of YAN.</NOTES>
+ <DISPLAY_AMOUNT>2.00 g</DISPLAY_AMOUNT>
+ <INVENTORY>0.00 g</INVENTORY>
+ <DISPLAY_TIME>0.0 mins</DISPLAY_TIME>
+ <BATCH_SIZE>5.00 gal</BATCH_SIZE>
+</MISC>
+<MISC>
+ <NAME>Oak Chips</NAME>
+ <VERSION>1</VERSION>
+ <TYPE>Flavor</TYPE>
+ <USE>Secondary</USE>
+ <AMOUNT>0.113398</AMOUNT>
+ <TIME>10080.00</TIME>
+ <AMOUNT_IS_WEIGHT>TRUE</AMOUNT_IS_WEIGHT>
+ <USE_FOR>Oak Flavor</USE_FOR>
+ <NOTES>Can be added to the secondary or keg during aging to simulate oak flavor.  Boil first to sterilize and place in weighted bag so they do not float.  Amounts vary with chip size and time - smaller chips impart more flavor.</NOTES>
+ <DISPLAY_AMOUNT>4.00 oz</DISPLAY_AMOUNT>
+ <INVENTORY>0.00 oz</INVENTORY>
+ <DISPLAY_TIME>7.0 days</DISPLAY_TIME>
+ <BATCH_SIZE>5.00 gal</BATCH_SIZE>
+</MISC>
+<MISC>
+ <NAME>Oak Essence (Liquid)</NAME>
+ <VERSION>1</VERSION>
+ <TYPE>Flavor</TYPE>
+ <USE>Bottling</USE>
+ <AMOUNT>0.056699</AMOUNT>
+ <TIME>5.00</TIME>
+ <AMOUNT_IS_WEIGHT>TRUE</AMOUNT_IS_WEIGHT>
+ <USE_FOR>Oak Flavor</USE_FOR>
+ <NOTES>Adds Oak Aged flavor to English Ales, IPAs.  Mix in prior to bottling.  Amouts vary with concentration, so check label or add to taste.</NOTES>
+ <DISPLAY_AMOUNT>2.00 oz</DISPLAY_AMOUNT>
+ <INVENTORY>0.00 oz</INVENTORY>
+ <DISPLAY_TIME>5.0 mins</DISPLAY_TIME>
+ <BATCH_SIZE>5.00 gal</BATCH_SIZE>
+</MISC>
+<MISC>
+ <NAME>Oak Powder</NAME>
+ <VERSION>1</VERSION>
+ <TYPE>Flavor</TYPE>
+ <USE>Primary</USE>
+ <AMOUNT>0.002464</AMOUNT>
+ <TIME>14400.00</TIME>
+ <AMOUNT_IS_WEIGHT>FALSE</AMOUNT_IS_WEIGHT>
+ <USE_FOR>Oak Flavor in Wines</USE_FOR>
+ <NOTES>Oak powder (may be American or French Oak) is used in the primary fermentation to add oak flavor to wines.  Primarily used in Reds but may also be added to some whites such as Chardonnay.  Vanilla, rich aroma, roasted nut flavors.</NOTES>
+ <DISPLAY_AMOUNT>0.50 tsp</DISPLAY_AMOUNT>
+ <INVENTORY>0.00 tsp</INVENTORY>
+ <DISPLAY_TIME>10.0 days</DISPLAY_TIME>
+ <BATCH_SIZE>1.00 gal</BATCH_SIZE>
+</MISC>
+<MISC>
+ <NAME>Opti Malo Plus</NAME>
+ <VERSION>1</VERSION>
+ <TYPE>Other</TYPE>
+ <USE>Primary</USE>
+ <AMOUNT>0.001000</AMOUNT>
+ <TIME>0.00</TIME>
+ <AMOUNT_IS_WEIGHT>TRUE</AMOUNT_IS_WEIGHT>
+ <USE_FOR>Malolactic Nutrient</USE_FOR>
+ <NOTES>Similar to using yeast nutrient, but specialized to aid malolactic fermentation.  Use at rate of 1 g per gallon (4 l).  Opti&#39;Malo Plus is a natural nutrient developed by Lallemand specifically for Malolactic Fermentation. It is a blend of inactive yeasts rich in amino acids, mineral cofactors, vitamins, cell wall polysaccharides and cellulose. The cellulose provides surface area to keep the bacteria in suspension and to help adsorb toxic compounds that may be present at the end of primary fementation.</NOTES>
+ <DISPLAY_AMOUNT>1.00 g</DISPLAY_AMOUNT>
+ <INVENTORY>0.00 g</INVENTORY>
+ <DISPLAY_TIME>0.0 mins</DISPLAY_TIME>
+ <BATCH_SIZE>1.00 gal</BATCH_SIZE>
+</MISC>
+<MISC>
+ <NAME>Opti-Red</NAME>
+ <VERSION>1</VERSION>
+ <TYPE>Other</TYPE>
+ <USE>Secondary</USE>
+ <AMOUNT>0.001000</AMOUNT>
+ <TIME>0.00</TIME>
+ <AMOUNT_IS_WEIGHT>TRUE</AMOUNT_IS_WEIGHT>
+ <USE_FOR>Red wine body, stability</USE_FOR>
+ <NOTES>Inactive yeast product that improves the body, stability and color of red wines.  Gives a more intense color, mouthfeel and better tannin integration.  Use in combo with Lallzyme EX for best results.  Use 1 gram/gal (4 l) in red wines.  1 tsp=2.6 g.</NOTES>
+ <DISPLAY_AMOUNT>1.00 g</DISPLAY_AMOUNT>
+ <INVENTORY>0.00 g</INVENTORY>
+ <DISPLAY_TIME>0.0 days</DISPLAY_TIME>
+ <BATCH_SIZE>1.00 gal</BATCH_SIZE>
+</MISC>
+<MISC>
+ <NAME>Opti-White</NAME>
+ <VERSION>1</VERSION>
+ <TYPE>Other</TYPE>
+ <USE>Primary</USE>
+ <AMOUNT>0.001900</AMOUNT>
+ <TIME>0.00</TIME>
+ <AMOUNT_IS_WEIGHT>TRUE</AMOUNT_IS_WEIGHT>
+ <USE_FOR>Mouthfeel in white wine, cider</USE_FOR>
+ <NOTES>Yeast product for white wines and ciders to increase mouthfeel, avoid browning and increase protein stability.  Add opt-white at the onset of fermentation.  Use 1.9 g per gal (4 l) to 4x its weight of water or must at the beginning of fermentation.</NOTES>
+ <DISPLAY_AMOUNT>1.90 g</DISPLAY_AMOUNT>
+ <INVENTORY>0.00 g</INVENTORY>
+ <DISPLAY_TIME>0.0 days</DISPLAY_TIME>
+ <BATCH_SIZE>1.00 gal</BATCH_SIZE>
+</MISC>
+<MISC>
+ <NAME>Orange Peel, Bitter</NAME>
+ <VERSION>1</VERSION>
+ <TYPE>Spice</TYPE>
+ <USE>Boil</USE>
+ <AMOUNT>0.021262</AMOUNT>
+ <TIME>5.00</TIME>
+ <AMOUNT_IS_WEIGHT>TRUE</AMOUNT_IS_WEIGHT>
+ <USE_FOR>Belgian Wit</USE_FOR>
+ <NOTES>Made from the Curaco Orange Peel, peels are green-gray in color.  Used to add a distinctive flavor to Belgian Wits and White beers.</NOTES>
+ <DISPLAY_AMOUNT>0.75 oz</DISPLAY_AMOUNT>
+ <INVENTORY>0.00 oz</INVENTORY>
+ <DISPLAY_TIME>5.0 mins</DISPLAY_TIME>
+ <BATCH_SIZE>5.00 gal</BATCH_SIZE>
+</MISC>
+<MISC>
+ <NAME>Orange Peel, Sweet</NAME>
+ <VERSION>1</VERSION>
+ <TYPE>Spice</TYPE>
+ <USE>Boil</USE>
+ <AMOUNT>0.021262</AMOUNT>
+ <TIME>5.00</TIME>
+ <AMOUNT_IS_WEIGHT>TRUE</AMOUNT_IS_WEIGHT>
+ <USE_FOR>Holiday Beers</USE_FOR>
+ <NOTES>Adds a Conitreau or Grand Marnier flavor to your beer.  Used primarily in Belgian Strong Ale and Holiday Ales to add a sweet orange flavor and aroma.</NOTES>
+ <DISPLAY_AMOUNT>0.75 oz</DISPLAY_AMOUNT>
+ <INVENTORY>0.00 oz</INVENTORY>
+ <DISPLAY_TIME>5.0 mins</DISPLAY_TIME>
+ <BATCH_SIZE>5.00 gal</BATCH_SIZE>
+</MISC>
+<MISC>
+ <NAME>PH 5.2 Stabilizer</NAME>
+ <VERSION>1</VERSION>
+ <TYPE>Water Agent</TYPE>
+ <USE>Mash</USE>
+ <AMOUNT>0.014787</AMOUNT>
+ <TIME>60.00</TIME>
+ <AMOUNT_IS_WEIGHT>FALSE</AMOUNT_IS_WEIGHT>
+ <USE_FOR>Water Agent</USE_FOR>
+ <NOTES>PH 5.2 Stabilizer by Five Star is a prioprietary mix of phosphate buffers used to lower the PH of your Mash to 5.2 for brewing.</NOTES>
+ <DISPLAY_AMOUNT>1.00 tbsp</DISPLAY_AMOUNT>
+ <INVENTORY>0.00 tbsp</INVENTORY>
+ <DISPLAY_TIME>60.0 mins</DISPLAY_TIME>
+ <BATCH_SIZE>5.00 gal</BATCH_SIZE>
+</MISC>
+<MISC>
+ <NAME>Papain</NAME>
+ <VERSION>1</VERSION>
+ <TYPE>Fining</TYPE>
+ <USE>Secondary</USE>
+ <AMOUNT>0.000500</AMOUNT>
+ <TIME>5760.00</TIME>
+ <AMOUNT_IS_WEIGHT>TRUE</AMOUNT_IS_WEIGHT>
+ <USE_FOR>Chill Haze</USE_FOR>
+ <NOTES>An enzyme extracted from papaya.  Helps reduce protein chill haze.  Add 0.5 gram at end of secondary fermentation, allow several days for it to work.  Available from herb and spice shops.</NOTES>
+ <DISPLAY_AMOUNT>0.50 g</DISPLAY_AMOUNT>
+ <INVENTORY>0.00 g</INVENTORY>
+ <DISPLAY_TIME>4.0 days</DISPLAY_TIME>
+ <BATCH_SIZE>5.00 gal</BATCH_SIZE>
+</MISC>
+<MISC>
+ <NAME>Paradise Seed</NAME>
+ <VERSION>1</VERSION>
+ <TYPE>Spice</TYPE>
+ <USE>Boil</USE>
+ <AMOUNT>0.007087</AMOUNT>
+ <TIME>5.00</TIME>
+ <AMOUNT_IS_WEIGHT>TRUE</AMOUNT_IS_WEIGHT>
+ <USE_FOR>Belgian Beers</USE_FOR>
+ <NOTES>This spice has a peppery zing to it, but also brings a balance of citrus notes and an earthy pine aroma. Typically used in Belgian-Style specialty and holiday beers. Crush lightly before using and add to the boil. Combine with Licorice Root and Sweet Orange Peel for a great Belgian Holiday beer.</NOTES>
+ <DISPLAY_AMOUNT>0.25 oz</DISPLAY_AMOUNT>
+ <INVENTORY>0.00 oz</INVENTORY>
+ <DISPLAY_TIME>5.0 mins</DISPLAY_TIME>
+ <BATCH_SIZE>5.00 gal</BATCH_SIZE>
+</MISC>
+<MISC>
+ <NAME>Peach Extract</NAME>
+ <VERSION>1</VERSION>
+ <TYPE>Flavor</TYPE>
+ <USE>Bottling</USE>
+ <AMOUNT>0.056699</AMOUNT>
+ <TIME>0.00</TIME>
+ <AMOUNT_IS_WEIGHT>TRUE</AMOUNT_IS_WEIGHT>
+ <USE_FOR>Fruit Beer</USE_FOR>
+ <NOTES>Add great fruit flavor and aroma to your beer with our natual fruit flavorings. Best if added just prior to bottling. Recommend you start by adding 1/2 bottle and then add more according to your taste. Contains no sugar or haze-causing pectins. </NOTES>
+ <DISPLAY_AMOUNT>2.00 oz</DISPLAY_AMOUNT>
+ <INVENTORY>0.00 oz</INVENTORY>
+ <DISPLAY_TIME>0.0 days</DISPLAY_TIME>
+ <BATCH_SIZE>5.00 gal</BATCH_SIZE>
+</MISC>
+<MISC>
+ <NAME>Pectic Enzyme</NAME>
+ <VERSION>1</VERSION>
+ <TYPE>Other</TYPE>
+ <USE>Primary</USE>
+ <AMOUNT>0.009858</AMOUNT>
+ <TIME>0.00</TIME>
+ <AMOUNT_IS_WEIGHT>FALSE</AMOUNT_IS_WEIGHT>
+ <USE_FOR>Reducing Fruit Haze</USE_FOR>
+ <NOTES>Used to reduce pectin haze from fruits.  Can be used at up to 1/2 tsp per gallon of fruit juice or 1/10 tsp per pound of fruit</NOTES>
+ <DISPLAY_AMOUNT>2.00 tsp</DISPLAY_AMOUNT>
+ <INVENTORY>0.00 tsp</INVENTORY>
+ <DISPLAY_TIME>0.0 mins</DISPLAY_TIME>
+ <BATCH_SIZE>5.00 gal</BATCH_SIZE>
+</MISC>
+<MISC>
+ <NAME>Phosphoric Acid</NAME>
+ <VERSION>1</VERSION>
+ <TYPE>Water Agent</TYPE>
+ <USE>Mash</USE>
+ <AMOUNT>0.020000</AMOUNT>
+ <TIME>20.00</TIME>
+ <AMOUNT_IS_WEIGHT>FALSE</AMOUNT_IS_WEIGHT>
+ <USE_FOR>Lower Mash pH</USE_FOR>
+ <NOTES>Phosporic acid is used to lower the mash pH during the mash</NOTES>
+ <DISPLAY_AMOUNT>20.00 ml</DISPLAY_AMOUNT>
+ <INVENTORY>0.00 ml</INVENTORY>
+ <DISPLAY_TIME>20.0 mins</DISPLAY_TIME>
+ <BATCH_SIZE>5.00 gal</BATCH_SIZE>
+</MISC>
+<MISC>
+ <NAME>Phosphoric Acid 10%</NAME>
+ <VERSION>1</VERSION>
+ <TYPE>Water Agent</TYPE>
+ <USE>Mash</USE>
+ <AMOUNT>0.029000</AMOUNT>
+ <TIME>60.00</TIME>
+ <AMOUNT_IS_WEIGHT>FALSE</AMOUNT_IS_WEIGHT>
+ <USE_FOR>Water Agent</USE_FOR>
+ <NOTES>Multiply ml by 1.05365 to get grams at 20*C
+Used to lower the pH of the mash without altering the water profile.  Lower pH mashes generally improves head retention, increases extraction rate.</NOTES>
+ <DISPLAY_AMOUNT>29.00 ml</DISPLAY_AMOUNT>
+ <INVENTORY>0.00 ml</INVENTORY>
+ <DISPLAY_TIME>60.0 mins</DISPLAY_TIME>
+ <BATCH_SIZE>6.08 gal</BATCH_SIZE>
+</MISC>
+<MISC>
+ <NAME>Phosphoric Acid 85%</NAME>
+ <VERSION>1</VERSION>
+ <TYPE>Water Agent</TYPE>
+ <USE>Mash</USE>
+ <AMOUNT>0.002000</AMOUNT>
+ <TIME>60.00</TIME>
+ <AMOUNT_IS_WEIGHT>FALSE</AMOUNT_IS_WEIGHT>
+ <USE_FOR>Water Agent</USE_FOR>
+ <NOTES>Multiply ml by 1.6954 to get grams at 20*C
+Used to lower the pH of the mash without altering the water profile.  Lower pH mashes generally improves head retention, increases extraction rate.</NOTES>
+ <DISPLAY_AMOUNT>2.00 ml</DISPLAY_AMOUNT>
+ <INVENTORY>0.00 ml</INVENTORY>
+ <DISPLAY_TIME>60.0 mins</DISPLAY_TIME>
+ <BATCH_SIZE>5.00 gal</BATCH_SIZE>
+</MISC>
+<MISC>
+ <NAME>Polyclar</NAME>
+ <VERSION>1</VERSION>
+ <TYPE>Fining</TYPE>
+ <USE>Secondary</USE>
+ <AMOUNT>0.007087</AMOUNT>
+ <TIME>1440.00</TIME>
+ <AMOUNT_IS_WEIGHT>TRUE</AMOUNT_IS_WEIGHT>
+ <USE_FOR>Chill Haze</USE_FOR>
+ <NOTES>Plastic powder that reduces chill haze by removing tannins and proteins.  Add to secondary after yeast has settled.  Amounts vary by manufacturer -- check instructions before adding. Do not boil.</NOTES>
+ <DISPLAY_AMOUNT>0.25 oz</DISPLAY_AMOUNT>
+ <INVENTORY>0.00 oz</INVENTORY>
+ <DISPLAY_TIME>1.0 days</DISPLAY_TIME>
+ <BATCH_SIZE>5.00 gal</BATCH_SIZE>
+</MISC>
+<MISC>
+ <NAME>Potasium Bicarbonate</NAME>
+ <VERSION>1</VERSION>
+ <TYPE>Other</TYPE>
+ <USE>Primary</USE>
+ <AMOUNT>0.004929</AMOUNT>
+ <TIME>0.00</TIME>
+ <AMOUNT_IS_WEIGHT>FALSE</AMOUNT_IS_WEIGHT>
+ <USE_FOR>Raise pH During Fermentation</USE_FOR>
+ <NOTES>Potasium bicarbonate is used to raise the pH of meads, wines and ciders during fermentation.  It is needed in many fruit meads as the pH can easily drop below 3.0 during active fermentation.  Monitor pH level during fermentation and add 1 tsp at a time to 5 gal (19 l) until pH reaches desired level.</NOTES>
+ <DISPLAY_AMOUNT>1.00 tsp</DISPLAY_AMOUNT>
+ <INVENTORY>0.00 tsp</INVENTORY>
+ <DISPLAY_TIME>0.0 days</DISPLAY_TIME>
+ <BATCH_SIZE>5.00 gal</BATCH_SIZE>
+</MISC>
+<MISC>
+ <NAME>Potassium Carbonate</NAME>
+ <VERSION>1</VERSION>
+ <TYPE>Other</TYPE>
+ <USE>Secondary</USE>
+ <AMOUNT>0.003800</AMOUNT>
+ <TIME>30240.00</TIME>
+ <AMOUNT_IS_WEIGHT>TRUE</AMOUNT_IS_WEIGHT>
+ <USE_FOR>Lower acidity in wine</USE_FOR>
+ <NOTES>Used to lower acidity levels in wine. Requires that the fermenter be cold stored for several weeks to allow tartaric acid to drop out as potassium bitartrate.  Dose of 3.8 g per gal will reduce acidity by about 0.1%.</NOTES>
+ <DISPLAY_AMOUNT>3.80 g</DISPLAY_AMOUNT>
+ <INVENTORY>0.00 g</INVENTORY>
+ <DISPLAY_TIME>3.0 weeks</DISPLAY_TIME>
+ <BATCH_SIZE>1.00 gal</BATCH_SIZE>
+</MISC>
+<MISC>
+ <NAME>Potassium Metabisulfite</NAME>
+ <VERSION>1</VERSION>
+ <TYPE>Other</TYPE>
+ <USE>Secondary</USE>
+ <AMOUNT>0.001232</AMOUNT>
+ <TIME>0.00</TIME>
+ <AMOUNT_IS_WEIGHT>FALSE</AMOUNT_IS_WEIGHT>
+ <USE_FOR>Preservative</USE_FOR>
+ <NOTES>Critical additive in wine, mead, cider making that acts as a preservative and antioxidant by releasing sulfur dioxide.   1/4 tsp in 5 gallons yields approximately 50 ppm SO2.  Usually added during aging to preserve beverage.</NOTES>
+ <DISPLAY_AMOUNT>0.25 tsp</DISPLAY_AMOUNT>
+ <INVENTORY>0.00 tsp</INVENTORY>
+ <DISPLAY_TIME>0.0 mins</DISPLAY_TIME>
+ <BATCH_SIZE>5.00 gal</BATCH_SIZE>
+</MISC>
+<MISC>
+ <NAME>Potassium Sorbate</NAME>
+ <VERSION>1</VERSION>
+ <TYPE>Other</TYPE>
+ <USE>Bottling</USE>
+ <AMOUNT>0.002464</AMOUNT>
+ <TIME>0.00</TIME>
+ <AMOUNT_IS_WEIGHT>FALSE</AMOUNT_IS_WEIGHT>
+ <USE_FOR>Stabilizer</USE_FOR>
+ <NOTES>Potassium sorbate is used in combination with Potassium sulfite (Campden) to inhibit fermentation and prepare a beverage for backsweetening.  Use 1/2 tsp per gallon (4 l).  I recommend adding sulfites first, and then wait a few hours before adding the sorbates.</NOTES>
+ <DISPLAY_AMOUNT>0.50 tsp</DISPLAY_AMOUNT>
+ <INVENTORY>0.00 tsp</INVENTORY>
+ <DISPLAY_TIME>0.0 mins</DISPLAY_TIME>
+ <BATCH_SIZE>1.00 gal</BATCH_SIZE>
+</MISC>
+<MISC>
+ <NAME>Prickly Pear Flower Buds (Opuntia)</NAME>
+ <VERSION>1</VERSION>
+ <TYPE>Flavor</TYPE>
+ <USE>Secondary</USE>
+ <AMOUNT>0.680388</AMOUNT>
+ <TIME>10080.00</TIME>
+ <AMOUNT_IS_WEIGHT>TRUE</AMOUNT_IS_WEIGHT>
+ <USE_FOR>Fruit Beer</USE_FOR>
+ <NOTES>Prickly Pear has a taste similar to raspberries or watermelon, with a slight bite like kiwi fruit.
+
+There are a couple of ways to use prickly pear, one is to add them to the kettle using a stainless hop spider and boil for 90 minutes. Another is to crush the fruit and boil beforehand then add the juice to primary or secondary.</NOTES>
+ <DISPLAY_AMOUNT>1.50 lb</DISPLAY_AMOUNT>
+ <INVENTORY>0.00 lb</INVENTORY>
+ <DISPLAY_TIME>7.0 days</DISPLAY_TIME>
+ <BATCH_SIZE>5.00 gal</BATCH_SIZE>
+</MISC>
+<MISC>
+ <NAME>Raspberry Extract</NAME>
+ <VERSION>1</VERSION>
+ <TYPE>Flavor</TYPE>
+ <USE>Bottling</USE>
+ <AMOUNT>0.184272</AMOUNT>
+ <TIME>0.00</TIME>
+ <AMOUNT_IS_WEIGHT>TRUE</AMOUNT_IS_WEIGHT>
+ <USE_FOR>Fruit Beer</USE_FOR>
+ <NOTES>Raspberry extract flavoring.  Mix into beer at bottling to add berry flavor to light ales and wheat beers.  Use low hop rate to allow sweet flavor through.</NOTES>
+ <DISPLAY_AMOUNT>6.50 oz</DISPLAY_AMOUNT>
+ <INVENTORY>0.00 oz</INVENTORY>
+ <DISPLAY_TIME>0.0 days</DISPLAY_TIME>
+ <BATCH_SIZE>5.00 gal</BATCH_SIZE>
+</MISC>
+<MISC>
+ <NAME>Reduless</NAME>
+ <VERSION>1</VERSION>
+ <TYPE>Other</TYPE>
+ <USE>Secondary</USE>
+ <AMOUNT>0.000400</AMOUNT>
+ <TIME>0.00</TIME>
+ <AMOUNT_IS_WEIGHT>TRUE</AMOUNT_IS_WEIGHT>
+ <USE_FOR>Reducing H2S and DMS in Wine</USE_FOR>
+ <NOTES>Reduless is a product from Lallemand designed to reduce Hydrogen Sulfide (H2S) and Dimethyl Sulfide (DMS) in Wine. Use 0.4-0.6 g/gal (4 L).</NOTES>
+ <DISPLAY_AMOUNT>0.40 g</DISPLAY_AMOUNT>
+ <INVENTORY>0.00 g</INVENTORY>
+ <DISPLAY_TIME>0.0 mins</DISPLAY_TIME>
+ <BATCH_SIZE>1.00 gal</BATCH_SIZE>
+</MISC>
+<MISC>
+ <NAME>Saguaro Fruit</NAME>
+ <VERSION>1</VERSION>
+ <TYPE>Flavor</TYPE>
+ <USE>Boil</USE>
+ <AMOUNT>0.453592</AMOUNT>
+ <TIME>5.00</TIME>
+ <AMOUNT_IS_WEIGHT>TRUE</AMOUNT_IS_WEIGHT>
+ <USE_FOR>Fruit Beer</USE_FOR>
+ <NOTES>Can use during any phase. If adding to primary or secondary, juice, strain and pasturized before adding.</NOTES>
+ <DISPLAY_AMOUNT>1.00 lb</DISPLAY_AMOUNT>
+ <INVENTORY>0.00 lb</INVENTORY>
+ <DISPLAY_TIME>5.0 mins</DISPLAY_TIME>
+ <BATCH_SIZE>5.00 gal</BATCH_SIZE>
+</MISC>
+<MISC>
+ <NAME>Salt</NAME>
+ <VERSION>1</VERSION>
+ <TYPE>Water Agent</TYPE>
+ <USE>Mash</USE>
+ <AMOUNT>0.000500</AMOUNT>
+ <TIME>60.00</TIME>
+ <AMOUNT_IS_WEIGHT>TRUE</AMOUNT_IS_WEIGHT>
+ <USE_FOR>Water Agent</USE_FOR>
+ <NOTES>Table Salt (NaCl) may be used as a water mineral to adjust brewing water for mashing.</NOTES>
+ <DISPLAY_AMOUNT>0.50 g</DISPLAY_AMOUNT>
+ <INVENTORY>0.00 g</INVENTORY>
+ <DISPLAY_TIME>60.0 mins</DISPLAY_TIME>
+ <BATCH_SIZE>5.00 gal</BATCH_SIZE>
+</MISC>
+<MISC>
+ <NAME>Sassafras Root Bark</NAME>
+ <VERSION>1</VERSION>
+ <TYPE>Spice</TYPE>
+ <USE>Boil</USE>
+ <AMOUNT>0.028349</AMOUNT>
+ <TIME>60.00</TIME>
+ <AMOUNT_IS_WEIGHT>TRUE</AMOUNT_IS_WEIGHT>
+ <USE_FOR>Root Beer Flavor</USE_FOR>
+ <NOTES>Bark is safe (do not use the tree or root - they may be toxic!).  This is the original source of the flavor for root beer, and adds a great root beer flavor.</NOTES>
+ <DISPLAY_AMOUNT>1.00 oz</DISPLAY_AMOUNT>
+ <INVENTORY>0.00 oz</INVENTORY>
+ <DISPLAY_TIME>60.0 mins</DISPLAY_TIME>
+ <BATCH_SIZE>5.00 gal</BATCH_SIZE>
+</MISC>
+<MISC>
+ <NAME>Seeds of Paradise</NAME>
+ <VERSION>1</VERSION>
+ <TYPE>Spice</TYPE>
+ <USE>Boil</USE>
+ <AMOUNT>0.002000</AMOUNT>
+ <TIME>5.00</TIME>
+ <AMOUNT_IS_WEIGHT>TRUE</AMOUNT_IS_WEIGHT>
+ <USE_FOR>Spiced Beer</USE_FOR>
+ <NOTES>Also called Paradise Seeds or Grains of Paradise. Native to west Africa.  Pepper zing with citrus notes, pine aroma.</NOTES>
+ <DISPLAY_AMOUNT>2.00 g</DISPLAY_AMOUNT>
+ <INVENTORY>0.00 g</INVENTORY>
+ <DISPLAY_TIME>5.0 mins</DISPLAY_TIME>
+ <BATCH_SIZE>5.00 gal</BATCH_SIZE>
+</MISC>
+<MISC>
+ <NAME>Sinamar</NAME>
+ <VERSION>1</VERSION>
+ <TYPE>Other</TYPE>
+ <USE>Boil</USE>
+ <AMOUNT>0.113398</AMOUNT>
+ <TIME>5.00</TIME>
+ <AMOUNT_IS_WEIGHT>TRUE</AMOUNT_IS_WEIGHT>
+ <USE_FOR>Coloring</USE_FOR>
+ <NOTES>This coloring extract has been used in the commercial industry for the last 100 years. Substitute this extract to gain color without the typical intense flavors associated with roasted malts. Add to the kettle or to the fermenter. 4 oz. will add 16 srm units to 5 gallons.</NOTES>
+ <DISPLAY_AMOUNT>4.00 oz</DISPLAY_AMOUNT>
+ <INVENTORY>0.00 oz</INVENTORY>
+ <DISPLAY_TIME>5.0 mins</DISPLAY_TIME>
+ <BATCH_SIZE>5.00 gal</BATCH_SIZE>
+</MISC>
+<MISC>
+ <NAME>Sodium Metabisulfite</NAME>
+ <VERSION>1</VERSION>
+ <TYPE>Other</TYPE>
+ <USE>Secondary</USE>
+ <AMOUNT>0.004929</AMOUNT>
+ <TIME>0.00</TIME>
+ <AMOUNT_IS_WEIGHT>FALSE</AMOUNT_IS_WEIGHT>
+ <USE_FOR>Preservative</USE_FOR>
+ <NOTES>Sodium metabisulfite can be used in the same method/quantity as potasium metabisulfite, but it adds sodium ions.  Also sold as Campden tablets. Some wine makers prefer to use sodium for cleaning and the potassium for late fermentation additions.</NOTES>
+ <DISPLAY_AMOUNT>1.00 tsp</DISPLAY_AMOUNT>
+ <INVENTORY>0.00 tsp</INVENTORY>
+ <DISPLAY_TIME>0.0 mins</DISPLAY_TIME>
+ <BATCH_SIZE>5.00 gal</BATCH_SIZE>
+</MISC>
+<MISC>
+ <NAME>Sparkalloid</NAME>
+ <VERSION>1</VERSION>
+ <TYPE>Fining</TYPE>
+ <USE>Secondary</USE>
+ <AMOUNT>0.014787</AMOUNT>
+ <TIME>20160.00</TIME>
+ <AMOUNT_IS_WEIGHT>FALSE</AMOUNT_IS_WEIGHT>
+ <USE_FOR>Clarity</USE_FOR>
+ <NOTES>Used to improve clarity for wines and meads.  Add 1 Tbsp to 1 cup of water and boil for 15 min, then mix into finished wine while hot.  Leave for approx 1-2 weeks before bottling.</NOTES>
+ <DISPLAY_AMOUNT>1.00 tbsp</DISPLAY_AMOUNT>
+ <INVENTORY>0.00 tbsp</INVENTORY>
+ <DISPLAY_TIME>14.0 days</DISPLAY_TIME>
+ <BATCH_SIZE>6.00 gal</BATCH_SIZE>
+</MISC>
+<MISC>
+ <NAME>Spruce Extract</NAME>
+ <VERSION>1</VERSION>
+ <TYPE>Flavor</TYPE>
+ <USE>Bottling</USE>
+ <AMOUNT>0.004929</AMOUNT>
+ <TIME>0.00</TIME>
+ <AMOUNT_IS_WEIGHT>FALSE</AMOUNT_IS_WEIGHT>
+ <USE_FOR>Spruce Beer</USE_FOR>
+ <NOTES>Spruce essence generates the flavor and smell of fresh spruce pine needles.  Add in small increments and taste as it can be a rather strong flavoring.</NOTES>
+ <DISPLAY_AMOUNT>1.00 tsp</DISPLAY_AMOUNT>
+ <INVENTORY>0.00 tsp</INVENTORY>
+ <DISPLAY_TIME>0.0 days</DISPLAY_TIME>
+ <BATCH_SIZE>5.00 gal</BATCH_SIZE>
+</MISC>
+<MISC>
+ <NAME>Strawberry Extract</NAME>
+ <VERSION>1</VERSION>
+ <TYPE>Flavor</TYPE>
+ <USE>Bottling</USE>
+ <AMOUNT>0.056699</AMOUNT>
+ <TIME>0.00</TIME>
+ <AMOUNT_IS_WEIGHT>TRUE</AMOUNT_IS_WEIGHT>
+ <USE_FOR>Fruit Beer</USE_FOR>
+ <NOTES>Add great fruit flavor and aroma to your beer with our natual fruit flavorings. Best if added just prior to bottling. We recommend you start by adding 1/2 bottle and then add more according to your taste. Contains no sugar or haze-causing pectins.</NOTES>
+ <DISPLAY_AMOUNT>2.00 oz</DISPLAY_AMOUNT>
+ <INVENTORY>0.00 oz</INVENTORY>
+ <DISPLAY_TIME>0.0 days</DISPLAY_TIME>
+ <BATCH_SIZE>5.00 gal</BATCH_SIZE>
+</MISC>
+<MISC>
+ <NAME>Super-Kleer KC Finings</NAME>
+ <VERSION>1</VERSION>
+ <TYPE>Fining</TYPE>
+ <USE>Secondary</USE>
+ <AMOUNT>1.000000</AMOUNT>
+ <TIME>4320.00</TIME>
+ <AMOUNT_IS_WEIGHT>FALSE</AMOUNT_IS_WEIGHT>
+ <USE_FOR>Clarity</USE_FOR>
+ <NOTES>Super Kleer KC Finings is a liquid finings solution that is a 2 stage clearing agent for beer and wine. 1 pack will work on up to 6 gallons of wine or beer at a time. Super Kleer is able to clear the beer or wine in 12 - 48 hours. It is made up of 50ml Chitosan and 15ml Kieselsol. </NOTES>
+ <DISPLAY_AMOUNT>1.00 Items</DISPLAY_AMOUNT>
+ <INVENTORY>0.00 Items</INVENTORY>
+ <DISPLAY_TIME>3.0 days</DISPLAY_TIME>
+ <BATCH_SIZE>5.00 gal</BATCH_SIZE>
+</MISC>
+<MISC>
+ <NAME>Sur Lie</NAME>
+ <VERSION>1</VERSION>
+ <TYPE>Other</TYPE>
+ <USE>Boil</USE>
+ <AMOUNT>0.001850</AMOUNT>
+ <TIME>0.00</TIME>
+ <AMOUNT_IS_WEIGHT>TRUE</AMOUNT_IS_WEIGHT>
+ <USE_FOR>Simulate/Aid in Lees Aging</USE_FOR>
+ <NOTES>Aging your wine on the lees (sur lie) in red and white wines is known to reduce the perception of acidity, eliminate specific harsh phenolics, increase the perception of sweetness, help protect against oxidation and improve mouthfeel. A naturally occurring peptide product that can be added to wine as early as late fermentation, Sur-Lie contributes the positive sensory impact of lees aging while drastically reducing time and labor. Contact with Sur-Lie for three to five weeks gives similar flavor as 6 months on lees.
+
+Add 1.1 to 2.6 g/gal (4 l) during late fermentation or during aging.</NOTES>
+ <DISPLAY_AMOUNT>1.85 g</DISPLAY_AMOUNT>
+ <INVENTORY>0.00 g</INVENTORY>
+ <DISPLAY_TIME>0.0 mins</DISPLAY_TIME>
+ <BATCH_SIZE>1.00 gal</BATCH_SIZE>
+</MISC>
+<MISC>
+ <NAME>Tannin FT Rouge</NAME>
+ <VERSION>1</VERSION>
+ <TYPE>Other</TYPE>
+ <USE>Primary</USE>
+ <AMOUNT>0.001300</AMOUNT>
+ <TIME>0.00</TIME>
+ <AMOUNT_IS_WEIGHT>TRUE</AMOUNT_IS_WEIGHT>
+ <USE_FOR>Add tannins to wine</USE_FOR>
+ <NOTES>Add refined tannins dureing any stage of fermentation.  Increases structure, color, stability and complexity.  Use 0.8-1.9 g per gal (4 l) or 1.3 g per gal during punch down/pump over.  1 tsp=2.4 g.</NOTES>
+ <DISPLAY_AMOUNT>1.30 g</DISPLAY_AMOUNT>
+ <INVENTORY>0.00 g</INVENTORY>
+ <DISPLAY_TIME>0.0 days</DISPLAY_TIME>
+ <BATCH_SIZE>1.00 gal</BATCH_SIZE>
+</MISC>
+<MISC>
+ <NAME>Tartaric Acid</NAME>
+ <VERSION>1</VERSION>
+ <TYPE>Other</TYPE>
+ <USE>Bottling</USE>
+ <AMOUNT>0.004929</AMOUNT>
+ <TIME>0.00</TIME>
+ <AMOUNT_IS_WEIGHT>FALSE</AMOUNT_IS_WEIGHT>
+ <USE_FOR>Increase acidity in wine</USE_FOR>
+ <NOTES>One tsp will raise the acidity by about 0.1% for a gallon (4 liters) of wine.  Used in wines to increase the stability by raising acidity level in a finished wine.</NOTES>
+ <DISPLAY_AMOUNT>1.00 tsp</DISPLAY_AMOUNT>
+ <INVENTORY>0.00 tsp</INVENTORY>
+ <DISPLAY_TIME>0.0 mins</DISPLAY_TIME>
+ <BATCH_SIZE>1.00 gal</BATCH_SIZE>
+</MISC>
+<MISC>
+ <NAME>Vanilla Beans</NAME>
+ <VERSION>1</VERSION>
+ <TYPE>Flavor</TYPE>
+ <USE>Secondary</USE>
+ <AMOUNT>1.000000</AMOUNT>
+ <TIME>14400.00</TIME>
+ <AMOUNT_IS_WEIGHT>FALSE</AMOUNT_IS_WEIGHT>
+ <USE_FOR>Vanilla Porter, Oatmeal Stout</USE_FOR>
+ <NOTES>Can be used in boil, primary, or secondary. To use, simply slice the bean open lengthwise and add to your Secondary or Keg. Remove when the Vanilla flavor is at the desired strength. 1-2 beans are fine for a slight Vanilla flavor, but some  brewers will push the limits and add the third bean.</NOTES>
+ <DISPLAY_AMOUNT>1.00 Items</DISPLAY_AMOUNT>
+ <INVENTORY>0.00 Items</INVENTORY>
+ <DISPLAY_TIME>10.0 days</DISPLAY_TIME>
+ <BATCH_SIZE>5.00 gal</BATCH_SIZE>
+</MISC>
+<MISC>
+ <NAME>Vanilla Extract</NAME>
+ <VERSION>1</VERSION>
+ <TYPE>Spice</TYPE>
+ <USE>Bottling</USE>
+ <AMOUNT>0.004929</AMOUNT>
+ <TIME>0.00</TIME>
+ <AMOUNT_IS_WEIGHT>FALSE</AMOUNT_IS_WEIGHT>
+ <USE_FOR>Spice</USE_FOR>
+ <NOTES>Common liquid vanilla extract - usually added before bottling to taste in vanilla porters, meads, ciders.  1 tsp in 5 gal (19 l) will give a slight vanilla hint.  Use more if you want a strong vanilla flavor.</NOTES>
+ <DISPLAY_AMOUNT>1.00 tsp</DISPLAY_AMOUNT>
+ <INVENTORY>0.00 tsp</INVENTORY>
+ <DISPLAY_TIME>0.0 days</DISPLAY_TIME>
+ <BATCH_SIZE>5.00 gal</BATCH_SIZE>
+</MISC>
+<MISC>
+ <NAME>Whirlfloc Tablet</NAME>
+ <VERSION>1</VERSION>
+ <TYPE>Fining</TYPE>
+ <USE>Boil</USE>
+ <AMOUNT>1.000000</AMOUNT>
+ <TIME>15.00</TIME>
+ <AMOUNT_IS_WEIGHT>FALSE</AMOUNT_IS_WEIGHT>
+ <USE_FOR>Clarity</USE_FOR>
+ <NOTES>Aids in clearing yeast and chill haze.  Easy to use tablet form.</NOTES>
+ <DISPLAY_AMOUNT>1.00 Items</DISPLAY_AMOUNT>
+ <INVENTORY>0.00 Items</INVENTORY>
+ <DISPLAY_TIME>15.0 mins</DISPLAY_TIME>
+ <BATCH_SIZE>5.00 gal</BATCH_SIZE>
+</MISC>
+<MISC>
+ <NAME>Wine Conditioner</NAME>
+ <VERSION>1</VERSION>
+ <TYPE>Other</TYPE>
+ <USE>Secondary</USE>
+ <AMOUNT>0.100000</AMOUNT>
+ <TIME>0.00</TIME>
+ <AMOUNT_IS_WEIGHT>FALSE</AMOUNT_IS_WEIGHT>
+ <USE_FOR>Residual Sweetness in Wine</USE_FOR>
+ <NOTES>Wine conditioner is a sugar and sorbate solution to add residual sweetness to a finished wine.  Sorbate helps prevent fermentation.  MUST stabilize wine with Sulfites before adding or you run risk of fermentation.  76-78 Brix solution.  Add to taste up to 125 ml per 23 l (6 gal) of wine.</NOTES>
+ <DISPLAY_AMOUNT>100.00 ml</DISPLAY_AMOUNT>
+ <INVENTORY>0.00 ml</INVENTORY>
+ <DISPLAY_TIME>0.0 days</DISPLAY_TIME>
+ <BATCH_SIZE>6.00 gal</BATCH_SIZE>
+</MISC>
+<MISC>
+ <NAME>Wine Tannin</NAME>
+ <VERSION>1</VERSION>
+ <TYPE>Other</TYPE>
+ <USE>Bottling</USE>
+ <AMOUNT>0.004929</AMOUNT>
+ <TIME>0.00</TIME>
+ <AMOUNT_IS_WEIGHT>FALSE</AMOUNT_IS_WEIGHT>
+ <USE_FOR>Raise Tannin Levels</USE_FOR>
+ <NOTES>Wine tannins can be added to increase the structure/flavor of an otherwise dull wine.  It can also be used in unoaked white wines to raise astringency.  Add slowly to taste.</NOTES>
+ <DISPLAY_AMOUNT>1.00 tsp</DISPLAY_AMOUNT>
+ <INVENTORY>0.00 tsp</INVENTORY>
+ <DISPLAY_TIME>0.0 mins</DISPLAY_TIME>
+ <BATCH_SIZE>5.00 gal</BATCH_SIZE>
+</MISC>
+<MISC>
+ <NAME>Yeast Energizer</NAME>
+ <VERSION>1</VERSION>
+ <TYPE>Other</TYPE>
+ <USE>Primary</USE>
+ <AMOUNT>0.002464</AMOUNT>
+ <TIME>0.00</TIME>
+ <AMOUNT_IS_WEIGHT>FALSE</AMOUNT_IS_WEIGHT>
+ <USE_FOR>Yeast nutrient</USE_FOR>
+ <NOTES>A blend of yeast hulls, magnesium suphate, diammonium phosphate and vitamin B.  Use 1/2 tsp per gallon in wine must to restart/aid fermentation.</NOTES>
+ <DISPLAY_AMOUNT>0.50 tsp</DISPLAY_AMOUNT>
+ <INVENTORY>0.00 tsp</INVENTORY>
+ <DISPLAY_TIME>0.0 mins</DISPLAY_TIME>
+ <BATCH_SIZE>1.00 gal</BATCH_SIZE>
+</MISC>
+<MISC>
+ <NAME>Yeast Hulls</NAME>
+ <VERSION>1</VERSION>
+ <TYPE>Other</TYPE>
+ <USE>Primary</USE>
+ <AMOUNT>0.000700</AMOUNT>
+ <TIME>0.00</TIME>
+ <AMOUNT_IS_WEIGHT>TRUE</AMOUNT_IS_WEIGHT>
+ <USE_FOR>Yeast nutrient</USE_FOR>
+ <NOTES>Yeast hulls are an additive to help revitalize a stuck conventional or malolactic fermentation.  Use 0.5-0.9 g per gallon (4 l).  1 tsp is about 2 g. This is preferred over many other yeast nutrients for a stuck fermentation as it has less risk than DAP or Fermaid-K.</NOTES>
+ <DISPLAY_AMOUNT>0.70 g</DISPLAY_AMOUNT>
+ <INVENTORY>0.00 g</INVENTORY>
+ <DISPLAY_TIME>0.0 days</DISPLAY_TIME>
+ <BATCH_SIZE>1.00 gal</BATCH_SIZE>
+</MISC>
+<MISC>
+ <NAME>Yeast Nutrient</NAME>
+ <VERSION>1</VERSION>
+ <TYPE>Other</TYPE>
+ <USE>Primary</USE>
+ <AMOUNT>0.004929</AMOUNT>
+ <TIME>4320.00</TIME>
+ <AMOUNT_IS_WEIGHT>FALSE</AMOUNT_IS_WEIGHT>
+ <USE_FOR>Fermentation</USE_FOR>
+ <NOTES>Gives yeast nutrients for healthy fermentation.  Not needed for most beers, but good for those with a high percentage of adjuncts.  Add before yeast.</NOTES>
+ <DISPLAY_AMOUNT>1.00 tsp</DISPLAY_AMOUNT>
+ <INVENTORY>0.00 tsp</INVENTORY>
+ <DISPLAY_TIME>3.0 days</DISPLAY_TIME>
+ <BATCH_SIZE>5.00 gal</BATCH_SIZE>
+</MISC>
+</MISCS>

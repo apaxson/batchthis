@@ -1,0 +1,31 @@
+>>> RecipeFermentable.objects.get(pk=1).amount_actual
+<Quantity(1.023, 'kilogram')>
+>>> RecipeFermentable.objects.get(pk=1).amount_actual.to('pound')
+<Quantity(2.25532894, 'pound')>
+>>> RecipeFermentable.objects.get(pk=1).amount_actual.to('oz')
+<Quantity(36.0852631, 'ounce')>
+>>> RecipeFermentable.objects.get(pk=1).amount_actual.dimensionality
+<UnitsContainer({'[mass]': 1})>
+>>> RecipeFermentable.objects.get(pk=1).amount_actual.check('[mass]')
+True
+>>> RecipeFermentable.objects.get(pk=1).amount_actual.dimensionality == '[mass]'
+True
+>>> RecipeFermentable.objects.get(pk=1).amount_actual.dimensionality == '[volume]'
+False
+
+
+
+
+>>> specgrav = 1.010 * ureg.sg
+>>> specgrav
+<Quantity(1.01, 'SpecificGravity')>
+>>> specgrav.magnitude
+1.01
+>>> specgrav.units
+<Unit('SpecificGravity')>
+>>> specgrav.dimensionality
+<UnitsContainer({'[Sucrose]': 1})>
+
+
+
+https://www.youtube.com/watch?v=99Qwqr6xKXM&list=PLOLrQ9Pn6cayYycbeBdxHUFrzTqrNE7Pe&index=48
