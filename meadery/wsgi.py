@@ -1,5 +1,5 @@
 """
-WSGI config for stonesrivermeadery project.
+WSGI config for meadery project.
 
 It exposes the WSGI callable as a module-level variable named ``application``.
 
@@ -11,6 +11,6 @@ import os
 
 from django.core.wsgi import get_wsgi_application
 
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'stonesrivermeadery.settings')
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'meadery.settings')
 
 application = get_wsgi_application()
