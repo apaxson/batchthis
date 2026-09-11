@@ -1,19 +1,19 @@
 import pdb
 
 from django.core.files.uploadedfile import UploadedFile
-from batchthis.models import AdjunctType, AdjunctUsage, Adjunct, Fermentable, FermentableType, Yeast
-from batchthis.models import BatchStage, Recipe, BatchCategory, BatchStyle
-from batchthis.lib.bslib import Recipe as R
-from batchthis.lib.bslib import Fermentable as F
-from batchthis.lib.bslib import Adjunct as A
-from batchthis.lib.bslib import Yeast as Y
+from apps.batchthis.models import AdjunctType, AdjunctUsage, Adjunct, Fermentable, FermentableType, Yeast
+from apps.batchthis.models import BatchStage, Recipe, BatchCategory, BatchStyle
+from apps.batchthis.lib.bslib import Recipe as R
+from apps.batchthis.lib.bslib import Fermentable as F
+from apps.batchthis.lib.bslib import Adjunct as A
+from apps.batchthis.lib.bslib import Yeast as Y
 from django.contrib.auth.models import Group
 from django.core.files.storage import FileSystemStorage
 from django.shortcuts import render
 from django.contrib import messages
 import xmltodict
 from pint import Quantity
-from batchthis.models import RecipeFermentable, RecipeYeasts, RecipeAdjunct
+from apps.batchthis.models import RecipeFermentable, RecipeYeasts, RecipeAdjunct
 import logging
 
 log = logging.getLogger(__name__)

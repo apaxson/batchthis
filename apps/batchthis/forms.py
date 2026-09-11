@@ -5,7 +5,7 @@ from django.db.models import Q, CharField
 from django import forms
 from django.core.exceptions import ValidationError
 
-import batchthis.models
+import apps.batchthis.models
 from .models import BatchTest, BatchNote, BatchAddition, Batch, Unit, Fermenter, Vessel, BatchCategory, BatchStyle
 from .models import Fermentable, Adjunct, Yeast, Recipe, AdjunctUsage, RecipeFermentable
 from django.forms.widgets import NumberInput, DateInput

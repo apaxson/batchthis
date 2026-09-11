@@ -1,4 +1,4 @@
-from batchthis.lib.utils import Utils
+from apps.batchthis.lib.utils import Utils
 from django.http import HttpResponse, HttpResponseForbidden
 
 

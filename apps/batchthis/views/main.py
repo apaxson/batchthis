@@ -6,13 +6,13 @@ from django.views.generic import FormView
 from django.views.generic.detail import SingleObjectMixin
 from django.contrib import messages
 import logging
-from batchthis.models import Batch, Fermenter, BatchTestType, BatchNoteType, Vessel, Unit, Recipe, Fermentable, AdjunctUsage, RecipeYeasts,RecipeFermentable,RecipeAdjunct
+from apps.batchthis.models import Batch, Fermenter, BatchTestType, BatchNoteType, Vessel, Unit, Recipe, Fermentable, AdjunctUsage, RecipeYeasts,RecipeFermentable,RecipeAdjunct
 from django.shortcuts import get_object_or_404
-from batchthis.forms import BatchTestForm, BatchNoteForm, BatchAdditionForm, RefractometerCorrectionForm, BatchAddForm, \
+from apps.batchthis.forms import BatchTestForm, BatchNoteForm, BatchAdditionForm, RefractometerCorrectionForm, BatchAddForm, \
     BatchCategory
-from batchthis.forms import RecipeAddForm, FermentableForm, AdjunctForm, YeastForm
+from apps.batchthis.forms import RecipeAddForm, FermentableForm, AdjunctForm, YeastForm
 from django.forms.formsets import formset_factory
-from batchthis.lib.utils import Utils
+from apps.batchthis.lib.utils import Utils
 from django.contrib.auth.decorators import login_required
 from django.forms.models import model_to_dict, modelformset_factory
 from pint import Quantity

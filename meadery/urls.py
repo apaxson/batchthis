@@ -20,10 +20,10 @@ from django.conf.urls.static import static
 from django.conf import settings
 
 urlpatterns = [
-	path('batchthis/', include('batchthis.urls')),
+	path('batchthis/', include('apps.batchthis.urls')),
     path('admin/', admin.site.urls),
     path('user/', include("django.contrib.auth.urls")),
-    path('user/', include("user.urls")),
+    path('user/', include("apps.user.urls")),
 
 ]
 

@@ -51,8 +51,8 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'user',
-    'batchthis',
+    'apps.user',
+    'apps.batchthis',
 ]
 
 MIDDLEWARE = [
@@ -114,13 +114,13 @@ LOGGING = {
                 'level': os.getenv('DJANGO_LOG_LEVEL', 'INFO'),
                 'propagate': False,
             },
-            'batchthis': {
+            'apps.batchthis': {
                 'handlers': ['batchthis_file'],
                 'level': 'DEBUG',
                 'propogate': False,
                 'formatter': 'verbose',
             },
-            'batchthis.fields': {
+            'apps.batchthis.fields': {
                 'handlers': ['batchthis_file'],
                 'level': 'DEBUG',
                 'propogate': False,
