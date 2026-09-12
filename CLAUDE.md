@@ -8,6 +8,12 @@
 This project is meant to track, graph, test, and monitor multiple wine batches in various stages for a wine-making business, mostly for Mead and Wine with the occassional beer and cider from recipe and fermentation to bottling.
 Leveraging known organic chemistry formulae reactions and wine faults, identify and troubleshoot wine flaws.  Track for future reference in workflows as to not be repeated.
 
+## Models
+- Use `models.TextChoices` for enum fields
+- Add `__str__`, `Meta.ordering`, and `Meta.verbose_name` on all models
+- Use `update_fields` in `.save()` calls to avoid overwriting concurrent changes
+- Index frequently queried fields with `db_index=True` or `Meta.indexes`
+
 ## Key Commands
 - **Run Django Server:** `python manage.py runserver`
 - **Run Frontend Dev:** `npm run dev` or `vite` (depending on build tool)
@@ -32,4 +38,6 @@ Leveraging known organic chemistry formulae reactions and wine faults, identify 
 - Do not run time-consuming logic inside the request-response cycle of a view; pass it to Celery.
 - Always handle CORS carefully when frontend and backend environments are split (`django-cors-headers`).
 - When modifying models, immediately generate migrations using `makemigrations` and inspect them before applying.
+- Do not modify migration files after they have been applied
+- Always include migrations in the same commit as model changes
 - Maintain consistent look and feel UI with common CSS across page templates.
