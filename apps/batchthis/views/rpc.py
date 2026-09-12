@@ -1,9 +1,15 @@
-from apps.batchthis.lib.utils import Utils
-from django.http import HttpResponse, HttpResponseForbidden
+from apps.batchthis.lib.utils import Utils, InvalidArguments, InvalidUnitsException
+from django.http import JsonResponse, HttpResponseForbidden, HttpResponseBadRequest
 
 
-def utilities(request, action, **kwargs):
+def _float_or_none(value):
+    return float(value) if value not in (None, '') else None
+
+
+def utilities(request, action):
     """
+    GET /rpc/utils/<action>/?<params>
+
     :param action:
         sgToBrix
         brixToSg
@@ -11,48 +17,63 @@ def utilities(request, action, **kwargs):
         refractometerCorrection
         dilution
         innoculationRate
-    :param kwargs:
-    :return:
+    :return: JsonResponse
     """
     if not request.user.is_authenticated:
         # If no user, then this request is outside
         # the context of the web page.  Disregard.
         return HttpResponseForbidden()
 
+    params = request.GET
+
+    try:
+        return _dispatch(action, params)
+    except (InvalidArguments, InvalidUnitsException, TypeError, ValueError) as e:
+        return HttpResponseBadRequest(f"Invalid parameters for {action}: {e}")
+
+
+def _dispatch(action, params):
     if action == "sgToBrix":
-        return HttpResponse(Utils.sgToBrix(kwargs.get('sg')), content_type="application/json")
+        return JsonResponse({'brix': Utils.sgToBrix(_float_or_none(params.get('sg')))})
 
     if action == "brixToSg":
-        return HttpResponse(Utils.brixToSg(kwargs.get('brix')), content_type="application/json")
+        return JsonResponse({'sg': Utils.brixToSg(_float_or_none(params.get('brix')))})
 
     if action == "potentialABV":
-        return HttpResponse(Utils.potentialABV(
-            startBrix=kwargs.get('startBrix'),
-            endBrix=kwargs.get('endBrix'),
-            startSG=kwargs.get('startSG'),
-            endSG=kwargs.get('endSG'),
-            yeastPotential=kwargs.get('yeastPotential')
-        ), content_type="application/json")
+        abv, endSG = Utils.potentialABV(
+            startBrix=_float_or_none(params.get('startBrix')),
+            endBrix=_float_or_none(params.get('endBrix')),
+            startSG=_float_or_none(params.get('startSG')),
+            endSG=_float_or_none(params.get('endSG')),
+            yeastPotential=_float_or_none(params.get('yeastPotential'))
+        )
+        return JsonResponse({'abv': abv, 'endSG': endSG})
 
     if action == "refractometerCorrection":
-        return HttpResponse(Utils.refractometerCorrection(
-            startSG=kwargs.get('startSG'),
-            startBrix=kwargs.get('startBrix'),
-            currentSG=kwargs.get('currentSG'),
-            currentBrix=kwargs.get('currentBrix')
-        ), content_type="application/json")
+        currentGravity, abv = Utils.refractometerCorrection(
+            startSG=_float_or_none(params.get('startSG')),
+            startBrix=_float_or_none(params.get('startBrix')),
+            currentSG=_float_or_none(params.get('currentSG')),
+            currentBrix=_float_or_none(params.get('currentBrix'))
+        )
+        return JsonResponse({'sg': currentGravity, 'abv': abv})
 
     if action == "dilution":
-        return HttpResponse(Utils.dilution(
-            startConcentration=kwargs.get('startConcentration'),
-            startVolume=kwargs.get('startVolume'),
-            endConcentration=kwargs.get('endConcentration'),
-            endVolume=kwargs.get('endVolume')
-        ), content_type="application/json")
+        # startConcentration/endConcentration/startVolume/endVolume may carry
+        # a unit suffix (e.g. "100ml"), so pass the raw query strings through.
+        result = Utils.dilution(
+            startConcentration=params.get('startConcentration'),
+            startVolume=params.get('startVolume'),
+            endConcentration=params.get('endConcentration'),
+            endVolume=params.get('endVolume')
+        )
+        return JsonResponse({'result': result})
 
     if action == "innoculationRate":
-        return HttpResponse(Utils.innoculationRate(
-            startBrix=kwargs.get('startBrix'),
-            liters=kwargs.get('liters')
-        ), content_type="application/json")
+        yeastGrams, hydrationML = Utils.innoculationRate(
+            startBrix=_float_or_none(params.get('startBrix')),
+            liters=_float_or_none(params.get('liters'))
+        )
+        return JsonResponse({'yeastGrams': yeastGrams, 'hydrationML': hydrationML})
 
+    return HttpResponseBadRequest(f"Unknown action: {action}")

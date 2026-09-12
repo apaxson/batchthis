@@ -162,7 +162,7 @@ class Utils:
             endVolume = (startConcentration * startVolume) / endConcentration
             return str(endVolume) + startVolumeStr
 
-    def innoculationRate(self,startBrix,liters,yeastreq=None):
+    def innoculationRate(startBrix,liters,yeastreq=None):
         """
         :param startBrix:
         :param liters:
