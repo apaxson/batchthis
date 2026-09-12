@@ -4,6 +4,10 @@
 - **Task Queue:** Celery with Redis/RabbitMQ
 - **Lint / Format:** Ruff (Python), ESLint/Prettier (JS)
 
+## Project Intent and Goal
+This project is meant to track, graph, test, and monitor multiple wine batches in various stages for a wine-making business, mostly for Mead and Wine with the occassional beer and cider from recipe and fermentation to bottling.
+Leveraging known organic chemistry formulae reactions and wine faults, identify and troubleshoot wine flaws.  Track for future reference in workflows as to not be repeated.
+
 ## Key Commands
 - **Run Django Server:** `python manage.py runserver`
 - **Run Frontend Dev:** `npm run dev` or `vite` (depending on build tool)
@@ -12,16 +16,20 @@
 - **Run Backend Tests:** `python manage.py test`
 
 ## Project Structure
-- `config/`: Project settings, celery setup, and root URL configurations.
 - `apps/`: Feature-based modular Django apps.
-- `frontend/`: React components, graph modules, and form handlers.
+- `apps/<appname>/frontend/`: React components, graph modules, and form handlers.
+- `apps/<appname>/views/rpc.py`: Backend REST endpoint returning JSON and validating authentication for forms and react.js 
 
 ## Code Style & Architecture Guidelines
-- **Views:** Stick strictly to Function-Based Views (FBVs). Decorate API endpoints with `@api_view` if using DRF or return `JsonResponse`.
+- **Views:** Prefer function-Based Views (FBVs). Decorate API endpoints with `@api_view` if using DRF or return `JsonResponse`.
 - **Forms & Graphs:** Keep validation and rendering on the React client side. Backend views should strictly accept/return JSON payloads.
-- **Celery Tasks:** Offload all heavy graph computations, long-running reports, and non-immediate data mutations to Celery. 
+- **Form Modals:** Use react.js and backend RPC/API endpoints to create modal forms as form field helpers.
+- **Celery Tasks:** Offload all heavy graph computations, long-running reports, and non-immediate data mutations to Celery. Celery is to manage timed-events for notifications and task management including logfile rotations.
 - **Task Naming:** Always explicitly name Celery tasks using a consistent domain pattern (e.g., `apps.reports.tasks.generate_graph_data`).
+- **Logging:** Logs are to be sent to log/<appname>/ and globally configured in meadery/settings.py.  Development should default to `DEBUG` while production should default to `ERROR`
 
 ## Constraints & Rules
 - Do not run time-consuming logic inside the request-response cycle of a view; pass it to Celery.
 - Always handle CORS carefully when frontend and backend environments are split (`django-cors-headers`).
+- When modifying models, immediately generate migrations using `makemigrations` and inspect them before applying.
+- Maintain consistent look and feel UI with common CSS across page templates.
