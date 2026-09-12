@@ -1,3 +1,6 @@
-/.idea/
+/.idea/*
 /db.sqlite3
 *.log
+/.python-version
+/pyproject.toml
+/uv.lock
