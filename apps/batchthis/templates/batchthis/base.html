@@ -103,6 +103,11 @@
   </div>
 
   <!-- Custom scripts for all pages-->
+  <script>
+    // URL template consumed by utils-rpc.js -- '__ACTION__' is swapped for the action name at call time.
+    var RPC_UTILS_URL_TEMPLATE = "{% url 'utils' '__ACTION__' %}";
+  </script>
+  <script src="{% static 'batchthis/js/utils-rpc.js' %}"></script>
   <script src="{% static 'batchthis/js/sb-admin-2.js' %}"></script>
   <script src="{% static 'batchthis/vendor/chart.js/Chart.min.js' %}"></script>
   <script>
