@@ -4,3 +4,6 @@
 /.python-version
 /pyproject.toml
 /uv.lock
+__pycache__/
+*.pyc
+frontend/node_modules/

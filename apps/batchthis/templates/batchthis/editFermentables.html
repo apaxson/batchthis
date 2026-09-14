@@ -3,6 +3,7 @@
 {% include 'batchthis/topbar.html' %}
 {% load crispy_forms_tags %}
 {% load static %}
+<script type="module" src="{% static 'batchthis/dist/model-select.js' %}"></script>
 <div class="container-fluid">
     <div class="row">
         <div class="col">
@@ -18,7 +19,12 @@
                     {% for fermentable_form in fermentable_set %}
                     <div id="fermentable_form" class = "form-group row border-left-primary">
                         <div class = "col-md-4 col-mb-0">
-                            {{ fermentable_form.fermentable_id|as_crispy_field }}
+                            <label for="{{ fermentable_form.fermentable_id.id_for_label }}">Fermentable</label>
+                            {{ fermentable_form.fermentable_id }}
+                            <div data-react-model-select
+                                 data-endpoint="{% url 'fermentable-list' %}"
+                                 data-target="#{{ fermentable_form.fermentable_id.id_for_label }}"
+                                 data-placeholder="Search fermentables..."></div>
                         </div>
                         <div class = "col-md-4 col-mb-0">
                             {{ fermentable_form.amount|as_crispy_field }}
@@ -64,7 +70,10 @@
       newSelector.innerHTML = newSelector.innerHTML.replace(formRegex, `form-${newFormId}-`)
       $(`#id_form-${newFormId}-amount_weight_0`).attr('value',"");
       $(`#id_form-${newFormId}-amount_volume_0`).attr('value',"");
-      document.getElementById(`id_form-${newFormId}-fermentable_id`).selectedIndex = -1
+      document.getElementById(`id_form-${newFormId}-fermentable_id`).value = ""
+      var newModelSelect = newSelector.querySelector('[data-react-model-select]')
+      newModelSelect.removeAttribute('data-model-select-mounted')
+      window.BatchThis.mountModelSelects(newSelector)
       document.getElementById(`id_form-${newFormId}-intended_use_id`).selectedIndex = -1
 
 
