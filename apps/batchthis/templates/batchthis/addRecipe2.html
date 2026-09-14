@@ -87,6 +87,17 @@
 
     });
 
+    function calculateEstimatedABV() {
+      var startSG = parseFloat($('#id_estOG').val());
+      var endSG = parseFloat($('#id_estFG').val());
+      if (isNaN(startSG) || isNaN(endSG)) {
+        return;
+      }
+      BatchUtilsRPC.potentialABV({startSG: startSG, endSG: endSG}).done(function (data) {
+        $('#id_estABV').val(data.abv.toFixed(1));
+      });
+    }
+    $('#id_estOG, #id_estFG').on('change blur', calculateEstimatedABV);
 
 </script>
 <script>

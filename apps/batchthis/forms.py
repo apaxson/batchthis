@@ -9,6 +9,7 @@ import apps.batchthis.models
 from .models import BatchTest, BatchNote, BatchAddition, Batch, Unit, Fermenter, Vessel, BatchCategory, BatchStyle
 from .models import Fermentable, Adjunct, Yeast, Recipe, AdjunctUsage, RecipeFermentable
 from django.forms.widgets import NumberInput, DateInput
+from django.utils import timezone
 from quantityfield.fields import QuantityFormField, QuantityWidget
 from .fields import DescriptiveQuantityFormField, PrecisionQuantityWidget, PrecisionTextWidget
 import logging
@@ -114,14 +115,14 @@ class RecipeAddForm(forms.Form):
 
     file = forms.FileField(widget=forms.FileInput(), label="Recipe File", required=False)
     name = forms.CharField(widget=forms.TextInput(attrs={'placeholder':'Recipe Name'}),required=True,label="Recipe Name")
-    dateCreated = forms.DateField(label="Created Date",widget=NumberInput(attrs={'type':'date'}),required=True)
+    dateCreated = forms.DateField(label="Created Date",widget=NumberInput(attrs={'type':'date'}),required=True, initial=timezone.localdate)
     dateUpdated = forms.DateField(label="Last Updated",widget=NumberInput(attrs={'type':'date'}), required=False)
     version = forms.IntegerField(label="Version", required=False)
     style = forms.ModelChoiceField(queryset=BatchStyle.objects.all())
     category = forms.ModelChoiceField(queryset=BatchCategory.objects.all())
     brewer = forms.CharField(widget=forms.TextInput(attrs={'placeholder':'Name of brewer'}),label="Brewer", required=False)
     batchSize = forms.CharField(widget=forms.TextInput(attrs={'placeholder': 'Size of Batch'}), label = "Batch Size", required=True)
-    notes = forms.CharField(widget=forms.Textarea(),label="Recipe Notes")
+    notes = forms.CharField(widget=forms.Textarea(),label="Recipe Notes", required=False)
     estOG = QuantityFormField(widget=PrecisionTextWidget(precision=3),base_units='sg', required=True, label="Expected Original Gravity")
     estFG = forms.CharField(widget=PrecisionTextWidget(precision=3, base_units='sg'), required=True,
                               label="Estimated Final Gravity")

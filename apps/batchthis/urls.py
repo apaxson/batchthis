@@ -31,7 +31,7 @@ urlpatterns = [
     path('utils/refractometerCorrection', views.refractometerCorrection, name="refractometerCorrection"),
     path('rpc/categoryFilterByStyle', views.categoryFilterByStyle, name="categoryFilterByStyle"),
     path('rpc/getDataFromRecipe', views.getDataFromRecipe, name="getDataFromRecipe"),
-    path('rpc/utils/', views.utilities, name="utils"),
+    path('rpc/utils/<str:action>/', views.utilities, name="utils"),
     path('admin/import', views.admin_import, name="admin_import")
     #TODO: Add Fermenter Page/Admin Template
 ]
