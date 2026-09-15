@@ -12,6 +12,6 @@ Pint==0.24.4
 platformdirs==4.3.6
 pytest==9.1.1
 pytest-django==4.14.0
-sqlparse==0.5.0
+sqlparse==0.6.0
 typing_extensions==4.6.3
 xmltodict==0.13.0
