@@ -92,8 +92,9 @@ class RecipeFormItem(forms.Form):
     """
 class FermentableForm(RecipeFormItem):
 
-    #TODO use chosen.js (Django-chosen) to select a fermentable rather than a ModelChoiceField
-    fermentable_id = forms.ModelChoiceField(queryset=Fermentable.objects.all(), label = "Fermentable")
+    fermentable_id = forms.ModelChoiceField(
+        queryset=Fermentable.objects.all(), label="Fermentable", widget=forms.HiddenInput()
+    )
     is_fermentable = forms.BooleanField(label="Is Fermentable?", initial=True,
                                         required=False)
 
