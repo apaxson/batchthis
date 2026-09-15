@@ -24,15 +24,17 @@
 - **Apply migrations:** `python manage.py migrate`
 - **Check migration status:** `python manage.py showmigrations`
 - **Rollback last migration:** `python manage.py migrate <app_name> <previous_migration_number>`
-- **Run Backend Tests (pytest):** `pytest` (pytest-django + factory-boy configured via `pytest.ini` at repo root; factories live in each app's `factories.py`, e.g. `apps/batchthis/factories.py`)
-  - **Run Tests for One App:** `pytest apps/<app_name>/`                  
-  - **Run a Single Test:** `pytest apps/<app_name>/test_<name>.py::test_function_name`     
-- 
+- **Run Backend Tests (pytest):** `pytest` (pytest-django + factory-boy configured via `pytest.ini` at repo root; factories live in each app's `factories.py`, e.g. `apps/batchthis/factories.py`; test files live in each app's `tests/` directory, e.g. `apps/batchthis/tests/`)
+  - **Run Tests for One App:** `pytest apps/<app_name>/tests/`
+  - **Run a Single Test:** `pytest apps/<app_name>/tests/test_<name>.py::test_function_name`
+
 ## Project Structure
 - `meadery/`: Project settings, celery setup, and root URL configurations.
 - `apps/`: Feature-based modular Django apps.
 - `frontend/`: React components, graph modules, and form handlers.
-- `apps/<app_name>/`
+- `Folder Structure per App`
+```
+apps/<app_name>/
     ├── models.py        (Database models)
     ├── signals.py       (Django signal logic)
     ├── views/           (Python package for Django views and viewsets as admin.py, main.py, rpc.py, and APIViews in api.py)
@@ -40,8 +42,10 @@
     ├── apps.py          (Register signals here.  Metadata on application)
     ├── utils.py         (Misc helpers)
     ├── urls.py          (URL routing)
-    ├── tests.py         (application specific testing)
+    ├── tests/           (application specific testing, e.g. test_<name>.py)
     ├── templates/       (application templates) 
+    ├── fields.py        Custom Fields
+```
 
 ## React components
 - repeatable component for ModelChoiceField is react-select
