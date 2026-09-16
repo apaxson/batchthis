@@ -92,18 +92,23 @@ class RecipeFormItem(forms.Form):
     """
 class FermentableForm(RecipeFormItem):
 
-    #TODO use chosen.js (Django-chosen) to select a fermentable rather than a ModelChoiceField
-    fermentable_id = forms.ModelChoiceField(queryset=Fermentable.objects.all(), label = "Fermentable")
+    fermentable_id = forms.ModelChoiceField(
+        queryset=Fermentable.objects.all(), label="Fermentable", widget=forms.HiddenInput()
+    )
     is_fermentable = forms.BooleanField(label="Is Fermentable?", initial=True,
                                         required=False)
 
 class AdjunctForm(RecipeFormItem):
 
-    adjunct_id = forms.ModelChoiceField(queryset=Adjunct.objects.all())
+    adjunct_id = forms.ModelChoiceField(
+        queryset=Adjunct.objects.all(), label="Adjunct", widget=forms.HiddenInput()
+    )
     time_to_add = forms.CharField(widget=forms.TextInput(attrs={'placeholder':'Time in days/hours/mins from start'}), label="Time to Add", required=True)
 
 class YeastForm(forms.Form):
-    yeast_id = forms.ModelChoiceField(queryset=Yeast.objects.all())
+    yeast_id = forms.ModelChoiceField(
+        queryset=Yeast.objects.all(), label="Yeast", widget=forms.HiddenInput()
+    )
     amount = forms.CharField(widget=forms.TextInput,
                                      label = "Amount",
                                      required=True)

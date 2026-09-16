@@ -1,18 +1,18 @@
 # Project Overview
-- **Backend Framework:** Django (Function-Based Views)
-- **Frontend Stack:** React.js (for Forms and Graphs/Data Visualization)
+- **Backend Framework:** Django 
+- **Frontend Stack:** React.js (for Forms, performance, and Graphs/Data Visualization)
 - **Task Queue:** Celery with Redis/RabbitMQ
 - **Lint / Format:** Ruff (Python), ESLint/Prettier (JS)
 
-## Project Intent and Goal
-This project is meant to track, graph, test, task with workflows, and monitor multiple wine batches in various stages for a wine-making business, mostly for Mead and Wine with the occassional beer and cider from recipe and fermentation to bottling.
-Leveraging known organic chemistry formulae reactions and wine faults, identify and troubleshoot wine flaws.  Track for future reference in workflows as to not be repeated.
+## Project Application Goals
+- **Batch This:** Application that tracks, manages, monitors, and guides the full lifecycle workflow of wine-making including recipe, fermentation, testing, treating, and bottling wine/mead.
+- **User:** Application that manages preferences and logins for different user accounts and roles
 
-## Models
-- Use `models.TextChoices` for enum fields
-- Add `__str__`, `Meta.ordering`, and `Meta.verbose_name` on all models
-- Use `update_fields` in `.save()` calls to avoid overwriting concurrent changes
-- Index frequently queried fields with `db_index=True` or `Meta.indexes`
+## Error Handling
+- NEVER swallow errors silently
+- Always show user feedback for errors (Django messages, HTMX response headers)
+- Log errors with proper context for debugging
+- Create, at a minimum, the following log levels: DEBUG, ERROR, INFO for functions
 
 ## Key Commands
 - **Run Django Server:** `python manage.py runserver`
@@ -20,24 +20,57 @@ Leveraging known organic chemistry formulae reactions and wine faults, identify 
 - **Run Celery Worker:** `celery -A your_project_name worker --loglevel=info`
 - **Run Celery Beat:** `celery -A your_project_name beat --loglevel=info`
 - **Run Backend Tests:** `python manage.py test`
+- **Create migrations:** `python manage.py makemigrations`
+- **Apply migrations:** `python manage.py migrate`
+- **Check migration status:** `python manage.py showmigrations`
+- **Rollback last migration:** `python manage.py migrate <app_name> <previous_migration_number>`
+- **Run Backend Tests (pytest):** `pytest` (pytest-django + factory-boy configured via `pytest.ini` at repo root; factories live in each app's `factories.py`, e.g. `apps/batchthis/factories.py`; test files live in each app's `tests/` directory, e.g. `apps/batchthis/tests/`)
+  - **Run Tests for One App:** `pytest apps/<app_name>/tests/`
+  - **Run a Single Test:** `pytest apps/<app_name>/tests/test_<name>.py::test_function_name`
 
 ## Project Structure
+- `meadery/`: Project settings, celery setup, and root URL configurations.
 - `apps/`: Feature-based modular Django apps.
-- `apps/<appname>/frontend/`: React components, graph modules, and form handlers.
-- `apps/<appname>/views/rpc.py`: Backend REST endpoint returning JSON and validating authentication for forms and react.js 
+- `frontend/`: React components, graph modules, and form handlers.
+- `Folder Structure per App`
+```
+apps/<app_name>/
+    ├── models.py        (Database models)
+    ├── signals.py       (Django signal logic)
+    ├── views/           (Python package for Django views and viewsets as admin.py, main.py, rpc.py, and APIViews in api.py)
+    ├── serializers.py   (DRF Serializers)
+    ├── apps.py          (Register signals here.  Metadata on application)
+    ├── utils.py         (Misc helpers)
+    ├── urls.py          (URL routing)
+    ├── tests/           (application specific testing, e.g. test_<name>.py)
+    ├── templates/       (application templates) 
+    ├── fields.py        Custom Fields
+```
+
+## React components
+- repeatable component for ModelChoiceField is react-select
 
 ## Code Style & Architecture Guidelines
-- **Views:** Prefer function-Based Views (FBVs). Decorate API endpoints with `@api_view` if using DRF or return `JsonResponse`.
+- **Views:** Use class-based views for complex logic, function-based for simple endpoints.
 - **Forms & Graphs:** Keep validation and rendering on the React client side. Backend views should strictly accept/return JSON payloads.
-- **Form Modals:** Use react.js and backend RPC/API endpoints to create modal forms as form field helpers.
-- **Celery Tasks:** Offload all heavy graph computations, long-running reports, and non-immediate data mutations to Celery. Celery is to manage timed-events for notifications and task management including logfile rotations.
+- **Celery Tasks:** Offload all heavy graph computations, long-running reports, and non-immediate data mutations to Celery. 
 - **Task Naming:** Always explicitly name Celery tasks using a consistent domain pattern (e.g., `apps.reports.tasks.generate_graph_data`).
-- **Logging:** Logs are to be sent to log/<appname>/ and globally configured in meadery/settings.py.  Development should default to `DEBUG` while production should default to `ERROR`
+- **Timed Events/Tasks:** Use Celery for time-based events and task management using 5 minute intervals.
+- **URLs:** namespaced per app, named with app_name:action-model pattern
+- **Models:** TimeStampedModel base class for all models (adds created_at, updated_at)
+- **API:** Use APIView for DRF
+- **Serializers:** ModelSerializer with explicit fields (never fields = '__all__')
+- **Measurements:** Any measurement data should use Quantity() and QuantityFields(), or using custom Subclass fields such as DescriptiveQuantityField() or PrecisionQuantityField()
+
 
 ## Constraints & Rules
 - Do not run time-consuming logic inside the request-response cycle of a view; pass it to Celery.
 - Always handle CORS carefully when frontend and backend environments are split (`django-cors-headers`).
-- When modifying models, immediately generate migrations using `makemigrations` and inspect them before applying.
-- Do not modify migration files after they have been applied
-- Always include migrations in the same commit as model changes
-- Maintain consistent look and feel UI with common CSS across page templates.
+- Write tests (TDD with pytest-django and Factory Boy) before implementing major feature plan stages.
+- Explicitly trace all files impacted by a change (models, forms, URLs, views, and templates) before writing code.
+- Always use Python type hints for public functions and service layers.
+- When implementing a new feature against an existing test, do NOT fix a failed test function.  Inform.
+- Use Django signals sparingly, prefer explicit service functions
+- Use `select_related()` and `prefetch_related()` to avoid N+1 queries
+- **NEVER write or edit migration files manually.** Always modify `models.py` first, then command Claude to run `python manage.py makemigrations` to let the Django framework auto-generate files.
+- **Never commit unapplied migrations.** Always test migrations locally using `python manage.py migrate` before declaring a feature complete.
