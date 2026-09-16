@@ -49,6 +49,7 @@ apps/<app_name>/
 
 ## React components
 - repeatable component for ModelChoiceField is react-select
+
 ## Code Style & Architecture Guidelines
 - **Views:** Use class-based views for complex logic, function-based for simple endpoints.
 - **Forms & Graphs:** Keep validation and rendering on the React client side. Backend views should strictly accept/return JSON payloads.
@@ -59,6 +60,7 @@ apps/<app_name>/
 - **Models:** TimeStampedModel base class for all models (adds created_at, updated_at)
 - **API:** Use APIView for DRF
 - **Serializers:** ModelSerializer with explicit fields (never fields = '__all__')
+- **Measurements:** Any measurement data should use Quantity() and QuantityFields(), or using custom Subclass fields such as DescriptiveQuantityField() or PrecisionQuantityField()
 
 
 ## Constraints & Rules
