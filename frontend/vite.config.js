@@ -10,6 +10,7 @@ export default defineConfig({
     rollupOptions: {
       input: {
         'model-select': path.resolve(__dirname, 'src/entries/model-select.jsx'),
+        'model-table': path.resolve(__dirname, 'src/entries/model-table.jsx'),
       },
       output: {
         entryFileNames: '[name].js',

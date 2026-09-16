@@ -36,5 +36,6 @@ urlpatterns = [
     path('api/fermentables/', views.FermentableListAPIView.as_view(), name="fermentable-list"),
     path('api/adjuncts/', views.AdjunctListAPIView.as_view(), name="adjunct-list"),
     path('api/yeasts/', views.YeastListAPIView.as_view(), name="yeast-list"),
+    path('api/recipes/', views.RecipeListAPIView.as_view(), name="recipe-list"),
     #TODO: Add Fermenter Page/Admin Template
 ]

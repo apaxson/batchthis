@@ -314,6 +314,33 @@ a.nav-link, a.sub-link, a.dropdown-item {
 }
 .cl-ledger tbody tr:hover { background: var(--paper-raised); }
 .cl-ledger th:first-child, .cl-ledger td:first-child { padding-left: 4px; }
+.cl-row-link { font-weight: 600; }
+
+/* ---------- Model table (React: ModelTable component) ---------- */
+.cl-model-table .cl-table-toolbar {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 12px;
+}
+.cl-table-search {
+  width: 240px;
+  max-width: 100%;
+  padding: 7px 10px;
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  background: var(--paper-raised);
+  color: var(--ink);
+  font-family: 'IBM Plex Sans', sans-serif;
+  font-size: 0.85rem;
+}
+.cl-table-search:focus { border-color: var(--focus); }
+.cl-model-table .cl-ledger th.cl-th-sortable {
+  cursor: pointer;
+  user-select: none;
+  white-space: nowrap;
+}
+.cl-model-table .cl-ledger th.cl-th-sortable:hover { color: var(--ink); }
+.cl-sort-indicator { color: var(--ink-faint); font-size: 0.7rem; }
 
 .cl-rack-tag {
   display: inline-flex;
