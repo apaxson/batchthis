@@ -5,7 +5,7 @@
 - **Lint / Format:** Ruff (Python), ESLint/Prettier (JS)
 
 ## Project Intent and Goal
-This project is meant to track, graph, test, and monitor multiple wine batches in various stages for a wine-making business, mostly for Mead and Wine with the occassional beer and cider from recipe and fermentation to bottling.
+This project is meant to track, graph, test, task with workflows, and monitor multiple wine batches in various stages for a wine-making business, mostly for Mead and Wine with the occassional beer and cider from recipe and fermentation to bottling.
 Leveraging known organic chemistry formulae reactions and wine faults, identify and troubleshoot wine flaws.  Track for future reference in workflows as to not be repeated.
 
 ## Models

@@ -13,12 +13,59 @@ from apps.batchthis.forms import BatchTestForm, BatchNoteForm, BatchAdditionForm
 from apps.batchthis.forms import RecipeAddForm, FermentableForm, AdjunctForm, YeastForm
 from django.forms.formsets import formset_factory
 from apps.batchthis.lib.utils import Utils
+from apps.batchthis.lib.faults import get_active_flags, get_rule_for, StagedFaultRule
 from django.contrib.auth.decorators import login_required
 from django.forms.models import model_to_dict, modelformset_factory
 from pint import Quantity
 
 logger = logging.getLogger(__name__)
 # Create your views here.
+
+
+# Presentation config for the instrument charts, keyed by BatchTestType.shortid
+# (see apps/batchthis/migrations/0002_default_load.py for the full set). Color
+# tokens are defined in cellar-ledger.css. Unit labels are informational only -
+# BatchTest.units isn't normalized against these yet (see docs/flagged-notifications.md).
+CHART_STYLE = {
+    'specific-gravity': {'color': 'var(--honey-line)', 'decimals': 3, 'unit': ''},
+    'ph': {'color': 'var(--must)', 'decimals': 2, 'unit': ''},
+    'so2': {'color': 'var(--slate)', 'decimals': 0, 'unit': ' ppm'},
+    'yan': {'color': 'var(--moss)', 'decimals': 0, 'unit': ' mg/L'},
+    'ta': {'color': 'var(--plum)', 'decimals': 2, 'unit': ' g/L'},
+    'temperature': {'color': 'var(--rust)', 'decimals': 1, 'unit': '°F'},
+}
+DEFAULT_CHART_STYLE = {'color': 'var(--ink-soft)', 'decimals': 2, 'unit': ''}
+
+
+def _build_series(batch, shortid, rule=None):
+    """
+    Date/value series for one BatchTestType, shaped for the instrument charts.
+    'rows' pairs them back up for the table fallback - Django templates can't
+    zip two parallel lists on their own.
+
+    If `rule` is a StagedFaultRule, 'bandMin'/'bandMax' are added: the same
+    min/max curve rule.evaluate() checks against, sampled at each reading's
+    own timestamp (elapsed hours since batch.startdate) rather than a fixed
+    time grid, so the chart can't drift out of sync with what gets flagged.
+    """
+    tests = batch.tests.filter(type__shortid=shortid).order_by('datetime')
+    series = {"shortid": shortid, "dates": [], "values": [], "rows": []}
+    is_staged = isinstance(rule, StagedFaultRule) and batch.startdate is not None
+    if is_staged:
+        series["bandMin"] = []
+        series["bandMax"] = []
+    strfmt = "%m/%d/%y"
+    for test in tests:
+        date_str = test.datetime.strftime(strfmt)
+        series["dates"].append(date_str)
+        series["values"].append(test.value)
+        series["rows"].append((date_str, test.value))
+        if is_staged:
+            elapsed_hours = (test.datetime - batch.startdate).total_seconds() / 3600
+            band_min, band_max = rule.bounds_at(elapsed_hours)
+            series["bandMin"].append(band_min)
+            series["bandMax"].append(band_max)
+    return series
 
 
 def index(request):
@@ -34,6 +81,8 @@ def index(request):
         total_volume += batch.size
         fermenter_detail[batch.fermenter.vessel.name] = {'batch': batch.name, 'size': batch.size}
 
+    flags = get_active_flags(active_batches)
+
     context = {
         'active_batches': active_batches,
         'active_fermenters': active_fermenters,
@@ -42,7 +91,8 @@ def index(request):
         'active_batch_count': active_batch_count,
         'active_fermenters_count': active_fermenters_count,
         'total_volume': total_volume,
-        'fermenter_detail': fermenter_detail
+        'fermenter_detail': fermenter_detail,
+        'flags': flags,
     }
     return render(request, 'batchthis/index.html', context=context)
 
@@ -64,40 +114,44 @@ def batch(request, pk):
         fermenters = batch.fermenter
         recipe = batch.recipe
         gravity_tests = batch.tests.filter(type__shortid='specific-gravity')
-        current_gravity = batch.startingGravity
         percent_complete = batch.percent_complete()
         thirdSugarBreak = round(batch.startingGravity - ((batch.startingGravity - batch.estimatedEndGravity) / 3), 3).magnitude
-        thirdSugarBreakPercent = round(
-            (batch.startingGravity.magnitude - thirdSugarBreak) / (batch.startingGravity.magnitude - batch.estimatedEndGravity.magnitude) * 100)
         ferm_notes = batch.notes.filter(notetype__name='Fermentation Note')
         gen_notes = batch.notes.filter(notetype__name='General Note')
         taste_notes = batch.notes.filter(notetype__name='Tasting Note')
 
-        gravityChart = {}
-        for test in gravity_tests:
-            if not "dates" in gravityChart.keys():
-                gravityChart["shortid"] = "specific-gravity"
-                gravityChart["dates"] = []
-                gravityChart["values"] = []
-            strfmt = "%m/%d/%y"
-            gravityChart["dates"].append(test.datetime.strftime(strfmt))
-            gravityChart["values"].append(test.value)
+        ph_rule = get_rule_for('ph')
+        so2_rule = get_rule_for('so2')
+
+        gravityChart = _build_series(batch, 'specific-gravity')
+        phChart = _build_series(batch, 'ph', rule=ph_rule)
+        so2Chart = _build_series(batch, 'so2')
+
+        current_gravity_value = batch.current_gravity()
+        estABV = round(Utils.potentialABV(startSG=batch.startingGravity.magnitude, endSG=current_gravity_value)[0], 1)
 
         context = {
             "batch": batch,
             "percentComplete": percent_complete,
             "gravityChart": gravityChart,
+            "phChart": phChart,
+            "so2Chart": so2Chart,
+            "currentGravity": current_gravity_value,
+            "currentPh": phChart["values"][-1] if phChart["values"] else None,
+            "currentSo2": so2Chart["values"][-1] if so2Chart["values"] else None,
+            "estABV": estABV,
+            "so2Threshold": so2_rule.minimum if so2_rule else None,
             "gravityTests": gravity_tests,
             "testTypes": testTypes,
             "fermenters": fermenters,
             "thirdSugarBreak": thirdSugarBreak,
-            "thirdSugarBreakPercent": thirdSugarBreakPercent,
             "startingGravity": batch.startingGravity,
             "endingGravity": batch.estimatedEndGravity,
             "gennotes": gen_notes,
             "fermnotes": ferm_notes,
             "tastenotes": taste_notes,
-            "recipe": recipe
+            "recipe": recipe,
+            "flags": get_active_flags([batch]),
         }
         return render(request, 'batchthis/batch.html', context=context)
 
@@ -383,27 +437,20 @@ def refractometerCorrection(request):
 
 
 def batchGraphs(request, pk):
-    # Capture each type of test.  No need to show graphs on tests not performed
+    # One instrument panel per test type this batch actually has readings for -
+    # no need to show a chart for a test that was never performed.
     batch = Batch.objects.get(pk=pk)
-    tests = batch.tests.all()
 
-    # Build data var for chart data
     testGroup = {}
-    for test in tests:
-        if not test.type.name in testGroup.keys():
-            testGroup[test.type.name] = {}
-            testGroup[test.type.name]['shortid'] = test.type.shortid
-            testGroup[test.type.name]['dates'] = []
-            testGroup[test.type.name]['values'] = []
+    for test_type in BatchTestType.objects.all():
+        series = _build_series(batch, test_type.shortid)
+        if not series['values']:
+            continue
+        series['name'] = test_type.name
+        series.update(CHART_STYLE.get(test_type.shortid, DEFAULT_CHART_STYLE))
+        testGroup[test_type.name] = series
 
-        date_format = "%m/%d/%y"
-        strdate = test.datetime.strftime(date_format)
-        testGroup[test.type.name]['dates'].append(strdate)
-        testGroup[test.type.name]['values'].append(test.value)
-
-    context = {"tests": testGroup,
-               "testTypes": testGroup.keys()
-               }
+    context = {"batch": batch, "tests": testGroup}
     return render(request, "batchthis/batchGraphs.html", context)
 
 

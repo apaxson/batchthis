@@ -348,7 +348,7 @@ class Batch(models.Model):
         verbose_name_plural = 'batches'
 
     name = models.CharField(max_length=50)
-    startdate = models.DateTimeField(auto_now=True)
+    startdate = models.DateTimeField(auto_now_add=True)
     enddate = models.DateTimeField(null=True, blank=True)
     lotId = models.CharField(max_length=7, null=True) # Bottledate L[2digityear][0paddedYearDays] = L22088
     size = DescriptiveQuantityField(base_units='liters', unit_choices=['liters','gallons'])
@@ -427,7 +427,7 @@ def addGravityTest(sender,instance,created=False,**kwargs):
             gravTest = BatchTest()
             testType = BatchTestType.objects.filter(shortid='specific-gravity')[0]
             gravTest.type = testType
-            gravTest.value = instance.startingGravity
+            gravTest.value = instance.startingGravity.magnitude
             gravTest.description = "Auto created from new batch."
             gravTest.datetime = datetime.now()
             unit = Unit.objects.filter(name__contains="specific")[0]

@@ -23,6 +23,11 @@
   <script src="{% static 'batchthis/vendor/jquery-easing/jquery.easing.min.js' %}"></script>
   <!-- Custom styles for this template-->
   <link href="{% static 'batchthis/css/sb-admin-2.min.css' %}" rel="stylesheet">
+  <!-- Cellar Ledger redesign: fonts + tokens/components, loaded after sb-admin-2 so it can override it -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+  <link href="{% static 'batchthis/css/cellar-ledger.css' %}" rel="stylesheet">
   <!-- Progress Bar markup.  TODO: Add to CSS File -->
   <style>
     .bar-step {
@@ -53,10 +58,10 @@
 
 <body id="page-top">
   <!-- Page Wrapper -->
-  <div id="wrapper">
+  <div id="wrapper" class="shell" data-collapsed="false">
     {% include 'batchthis/sidebar.html' %}
     <!-- Content Wrapper -->
-    <div id="content-wrapper" class="d-flex flex-column">
+    <div id="content-wrapper" class="d-flex flex-column cl-content-area">
 
       <!-- Main Content -->
       <div id="content">
@@ -109,6 +114,7 @@
   </script>
   <script src="{% static 'batchthis/js/utils-rpc.js' %}"></script>
   <script src="{% static 'batchthis/js/sb-admin-2.js' %}"></script>
+  <script src="{% static 'batchthis/js/cellar-ledger.js' %}"></script>
   <script src="{% static 'batchthis/vendor/chart.js/Chart.min.js' %}"></script>
   <script>
     $(document).ready(function() {

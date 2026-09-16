@@ -1,72 +1,52 @@
 {% extends 'batchthis/base.html' %}
 {% block content %}
-{% include 'batchthis/topbar.html' %}
-{% load static %}
-<div class="container-fluid">
-    <!-- Content Row -->
-    <div class="row">
-    <script src="{% static 'batchthis/vendor/chart.js/Chart.min.js' %}"></script>
-        <!-- Content Column -->
-        {# Loop through each type of test for graphing #}
-        {% if not tests %}
-        No Data Found
-        {% else %}
-            {% for test,value in tests.items %}
-            <div class="col-lg-6 mb-4">
 
-                <!-- {{ test }} Graph -->
-                <div class="card shadow mb-4">
-                    <div class="card-header py-3">
-                        <h6 class="m-0 font-weight-bold text-primary">{{ test }}</h6>
-                    </div>
-                    <div class="card-body">
-                        <div class="chart-area">
-                        <canvas id="{{ value.shortid }}Chart"></canvas>
-                        {% with value.shortid|add:"_data" as data_var %}
-                        {{ value|json_script:data_var }}
-                        {% endwith %}
-                      </div>
-                    </div>
-                </div>
-            </div>
-        <script>
-            var ctxLoc = '{{ value.shortid }}Chart';
-            var chartDataLoc = '{{ value.shortid }}_data';
-            var chartData = document.getElementById(chartDataLoc).textContent;
-            var label_val = {{ value.dates|safe }};
-            var data_val = {{ value.values }};
-
-            var ctx = document.getElementById(ctxLoc).getContext('2d')
-            var chart = new Chart(ctx, {
-                type: "line",
-                data: {
-                    labels: label_val,
-                    datasets: [{
-                        label: "{{test}} Data",
-                        data: data_val,
-                        lineTension: 0.3,
-                      backgroundColor: "rgba(78, 115, 223, 0.05)",
-                      borderColor: "rgba(78, 115, 223, 1)",
-                      pointRadius: 3,
-                      pointBackgroundColor: "rgba(78, 115, 223, 1)",
-                      pointBorderColor: "rgba(78, 115, 223, 1)",
-                      pointHoverRadius: 3,
-                      pointHoverBackgroundColor: "rgba(78, 115, 223, 1)",
-                      pointHoverBorderColor: "rgba(78, 115, 223, 1)",
-                      pointHitRadius: 10,
-                      pointBorderWidth: 2,
-                        }]
-                },
-                options: {responsive:true,
-                maintainAspectRatio: false
-                }
-            });
-        </script>
-        {% endfor %}
-        <!-- TODO Add timestamp to nodes, but keep date for labels -->
-        {% endif %}
-    </div>
+<div class="cl-page-head">
+  <div class="cl-wordmark font-display">{{ batch.name }} &mdash; all readings</div>
+  <div class="cl-batch-sub" style="margin-top:6px;">
+    <span><a href="{% url 'batch' batch.pk %}">&larr; Back to batch #{{ batch.pk }}</a></span>
+  </div>
 </div>
 
+{% if not tests %}
+  <p class="cl-empty">No test readings recorded for this batch yet. <a href="{% url 'addDetailTest' batch.pk %}">Add one</a>.</p>
+{% else %}
+  <div class="cl-instrument-grid">
+    {% for name, series in tests.items %}
+    <div class="cl-instrument">
+      <div class="cl-instrument-head">
+        <span class="cl-instrument-title">{{ name }}</span>
+      </div>
+      <div class="cl-chart-wrap">
+        <svg class="cl-chart" id="chart-{{ series.shortid }}" role="img" aria-label="{{ name }} trend"></svg>
+        <div class="cl-chart-tooltip" hidden><span class="tt-date"></span><span class="tt-val"></span></div>
+      </div>
+      {% with series.shortid|add:"_data" as data_var %}{{ series|json_script:data_var }}{% endwith %}
+      <details class="cl-table-toggle">
+        <summary>View readings as a table</summary>
+        <table class="cl-reading-table">
+          <thead><tr><th>Date</th><th>{{ name }}</th></tr></thead>
+          <tbody>{% for date, value in series.rows %}<tr><td>{{ date }}</td><td>{{ value }}</td></tr>{% endfor %}</tbody>
+        </table>
+      </details>
+    </div>
+    {% endfor %}
+  </div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', function () {
+      {% for name, series in tests.items %}
+      (function () {
+        var svg = document.getElementById('chart-{{ series.shortid }}');
+        var dataEl = document.getElementById('{{ series.shortid }}_data');
+        if (svg && dataEl) {
+          var cfg = JSON.parse(dataEl.textContent);
+          CellarLedger.renderChart(svg, cfg);
+        }
+      })();
+      {% endfor %}
+    });
+  </script>
+{% endif %}
 
 {% endblock %}

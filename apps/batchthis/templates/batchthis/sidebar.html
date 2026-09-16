@@ -1,160 +1,90 @@
 {% block sidebar %}
-<!-- Sidebar -->
-    <ul class="navbar-nav bg-gradient-primary sidebar sidebar-dark accordion" id="accordionSidebar">
+{% load static %}
+<!-- Sidebar (Cellar Ledger redesign) -->
+<aside class="cl-sidebar" aria-label="Primary">
+  <div class="cl-brand-row">
+    <a class="cl-brand" href="{% url 'index' %}">
+      <span class="cl-brand-mark" aria-hidden="true">BT</span>
+      <span class="cl-brand-text">Batch This<span>.</span></span>
+    </a>
+    <button class="cl-rail-btn js-rail-toggle" type="button" aria-label="Collapse sidebar" title="Collapse sidebar">
+      <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12.5 4 6.5 10l6 6"/></svg>
+    </button>
+  </div>
 
-      <!-- Sidebar - Brand -->
-      <a class="sidebar-brand d-flex align-items-center justify-content-center" href="index.html">
-        <div class="sidebar-brand-icon rotate-n-15">
-          <i class="fas fa-laugh-wink"></i>
-        </div>
-        <div class="sidebar-brand-text mx-3">Batch This!</div>
+  {% if user.is_authenticated %}
+  <nav class="cl-nav-scroll" aria-label="Sections">
+    <div class="cl-nav-group">
+      <a class="nav-link" href="{% url 'index' %}" title="Cellar log" {% if request.resolver_match.url_name == 'index' %}aria-current="page"{% endif %}>
+        <svg viewBox="0 0 20 20" fill="none" stroke-width="1.6" stroke-linecap="round"><line x1="3" y1="5" x2="17" y2="5"/><line x1="3" y1="10" x2="13" y2="10"/><line x1="3" y1="15" x2="15" y2="15"/></svg>
+        <span class="nav-label">Cellar log</span>
       </a>
+    </div>
 
-      <!-- Divider -->
-      <hr class="sidebar-divider my-0">
-        {% if user.is_authenticated %}
-      <!-- Nav Item - Dashboard -->
-      <li class="nav-item active">
-        <a class="nav-link" href="/batchthis">
-          <i class="fas fa-fw fa-tachometer-alt"></i>
-          <span>Dashboard</span></a>
-      </li>
+    <div class="cl-nav-group">
+      <div class="cl-nav-heading">Production</div>
 
-      <!-- Divider -->
-      <hr class="sidebar-divider">
-
-      <!-- Heading -->
-      <div class="sidebar-heading">
-        Production
-      </div>
-
-      <!-- Nav Item - Pages Collapse Menu -->
-      <li class="nav-item">
-        <a class="nav-link collapsed" href="#" data-toggle="collapse" data-target="#collapseTwo" aria-expanded="true" aria-controls="collapseTwo">
-          <i class="fas fa-fw fa-cog"></i>
-          <span>Batches</span>
+      <a class="nav-link" href="{% url 'batchListing' %}" title="Batches" {% if request.resolver_match.url_name == 'batchListing' or request.resolver_match.url_name == 'batch' %}aria-current="page"{% endif %}>
+        <svg viewBox="0 0 20 20" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3h4M8.5 3v3.2L5.3 13a2 2 0 0 0 1.8 2.9h5.8a2 2 0 0 0 1.8-2.9l-3.2-6.8V3"/></svg>
+        <span class="nav-label">Batches</span>
+      </a>
+      {% if nav_active_batches %}
+      <div class="cl-sub-list">
+        {% for b in nav_active_batches %}
+        <a class="sub-link" href="{% url 'batch' b.pk %}" {% if request.resolver_match.url_name == 'batch' and request.resolver_match.kwargs.pk == b.pk %}aria-current="page"{% endif %}>
+          <span class="tag-dot"></span><span class="nav-label">#{{ b.pk }} &middot; {{ b.name }}</span>
         </a>
-        <div id="collapseTwo" class="collapse" aria-labelledby="headingTwo" data-parent="#accordionSidebar">
-          <div class="bg-white py-2 collapse-inner rounded">
-            <h6 class="collapse-header">Custom Components:</h6>
-            <a class="collapse-item" href="{% url 'batchListing' %}">All Batches</a>
-            <a class="collapse-item" href="cards.html">Cards</a>
-          </div>
-        </div>
-      </li>
-
-      <!-- Nav Item - Utilities Collapse Menu -->
-      <li class="nav-item">
-        <a class="nav-link collapsed" href="#" data-toggle="collapse" data-target="#collapseUtilities" aria-expanded="true" aria-controls="collapseUtilities">
-          <i class="fas fa-fw fa-wrench"></i>
-          <span>Fermenters</span>
-        </a>
-        <div id="collapseUtilities" class="collapse" aria-labelledby="headingUtilities" data-parent="#accordionSidebar">
-          <div class="bg-white py-2 collapse-inner rounded">
-            <h6 class="collapse-header">Custom Utilities:</h6>
-            <a class="collapse-item" href="utilities-color.html">Colors</a>
-            <a class="collapse-item" href="utilities-border.html">Borders</a>
-            <a class="collapse-item" href="utilities-animation.html">Animations</a>
-            <a class="collapse-item" href="utilities-other.html">Other</a>
-          </div>
-        </div>
-      </li>
-      <!-- Nav Item - Pages Collapse Menu -->
-      <li class="nav-item">
-        <a class="nav-link collapsed" href="#" data-toggle="collapse" data-target="#collapseRecipes" aria-expanded="true" aria-controls="collapseRecipes">
-          <i class="fas fa-fw fa-cog"></i>
-          <span>Recipes</span>
-        </a>
-        <div id="collapseRecipes" class="collapse" aria-labelledby="headingTwo" data-parent="#accordionSidebar">
-          <div class="bg-white py-2 collapse-inner rounded">
-            <h6 class="collapse-header">Custom Components:</h6>
-            <a class="collapse-item" href="{% url 'recipeListing' %}">All Recipes</a>
-          </div>
-        </div>
-      </li>
-      <!-- Utilities/Tools -->
-      <li class="nav-item">
-        <a class="nav-link collapsed" href="#" data-toggle="collapse" data-target="#collapseTools" aria-expanded="true" aria-controls="collapseTools">
-          <i class="fas fa-fw fa-wrench"></i>
-          <span>Tools</span>
-        </a>
-        <div id="collapseTools" class="collapse" aria-labelledby="headingUtilities" data-parent="#accordionSidebar">
-          <div class="bg-white py-2 collapse-inner rounded">
-            <h6 class="collapse-header">Custom Utilities:</h6>
-            <a class="collapse-item" href="utils/refractometerCorrection">Refractometer Correction</a>
-          </div>
-        </div>
-      </li>
-      <!-- Divider -->
-      <hr class="sidebar-divider">
-
-      <!-- Heading -->
-      <div class="sidebar-heading">
-        Operations
-      </div>
-
-      <!-- Nav Item - Pages Collapse Menu -->
-      <li class="nav-item">
-        <a class="nav-link collapsed" href="#" data-toggle="collapse" data-target="#collapsePages" aria-expanded="true" aria-controls="collapsePages">
-          <i class="fas fa-fw fa-folder"></i>
-          <span>Inventory</span>
-        </a>
-        <div id="collapsePages" class="collapse" aria-labelledby="headingPages" data-parent="#accordionSidebar">
-          <div class="bg-white py-2 collapse-inner rounded">
-            <h6 class="collapse-header">Login Screens:</h6>
-            <a class="collapse-item" href="login.html">Login</a>
-            <a class="collapse-item" href="register.html">Register</a>
-            <a class="collapse-item" href="forgot-password.html">Forgot Password</a>
-            <div class="collapse-divider"></div>
-            <h6 class="collapse-header">Other Pages:</h6>
-            <a class="collapse-item" href="404.html">404 Page</a>
-            <a class="collapse-item" href="blank.html">Blank Page</a>
-          </div>
-        </div>
-      </li>
-      <!-- Nav Item Administration -->
-      <li class="nav-item">
-        <a class="nav-link collapsed" href="#" data-toggle="collapse" data-target="#collapseAdmin" aria-expanded="true" aria-controls="collapseAdmion">
-          <i class="fas fa-fw fa-folder"></i>
-          <span>Administration</span>
-        </a>
-        <div id="collapseAdmin" class="collapse" aria-labelledby="headingPages" data-parent="#accordionSidebar">
-          <div class="bg-white py-2 collapse-inner rounded">
-            <h6 class="collapse-header">Admin Tools:</h6>
-            <a class="collapse-item" href="{% url 'admin_import' %}">Import Tools</a>
-            <a class="collapse-item" href="register.html">Register</a>
-            <a class="collapse-item" href="forgot-password.html">Forgot Password</a>
-            <div class="collapse-divider"></div>
-            <h6 class="collapse-header">Other Pages:</h6>
-            <a class="collapse-item" href="404.html">404 Page</a>
-            <a class="collapse-item" href="blank.html">Blank Page</a>
-          </div>
-        </div>
-      </li>
-
-      <!-- Nav Item - Charts -->
-      <li class="nav-item">
-        <a class="nav-link" href="charts.html">
-          <i class="fas fa-fw fa-chart-area"></i>
-          <span>Charts</span></a>
-      </li>
-
-      <!-- Nav Item - Tables -->
-      <li class="nav-item">
-        <a class="nav-link" href="tables.html">
-          <i class="fas fa-fw fa-table"></i>
-          <span>Tables</span></a>
-      </li>
-
-      <!-- Divider -->
-      <hr class="sidebar-divider d-none d-md-block">
-
-      <!-- Sidebar Toggler (Sidebar) -->
-      <div class="text-center d-none d-md-inline">
-        <button class="rounded-circle border-0" id="sidebarToggle"></button>
+        {% endfor %}
       </div>
       {% endif %}
 
-    </ul>
-    <!-- End of Sidebar -->
-    {% endblock %}
+      <a class="nav-link" href="{% url 'recipeListing' %}" title="Recipes" {% if request.resolver_match.url_name == 'recipeListing' %}aria-current="page"{% endif %}>
+        <svg viewBox="0 0 20 20" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 3h7l3 3v11H5z"/><line x1="8" y1="8" x2="12.5" y2="8"/><line x1="8" y1="11" x2="12.5" y2="11"/></svg>
+        <span class="nav-label">Recipes</span>
+      </a>
+
+      <a class="nav-link is-soon" href="#" title="Fermenters &mdash; coming soon" tabindex="-1" aria-disabled="true">
+        <svg viewBox="0 0 20 20" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h8v3.5c0 1-.6 1.7-1 2.4-.6 1-.6 2.1 0 3.2.4.7 1 1.4 1 2.4V17H6v-2.5c0-1 .6-1.7 1-2.4.6-1.1.6-2.2 0-3.2-.4-.7-1-1.4-1-2.4z"/><line x1="6" y1="3" x2="14" y2="3"/></svg>
+        <span class="nav-label">Fermenters</span>
+        <span class="nav-badge">soon</span>
+      </a>
+
+      <a class="nav-link is-soon" href="#" title="Tasks &mdash; coming soon" tabindex="-1" aria-disabled="true">
+        <svg viewBox="0 0 20 20" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5.5 5.3 7 8 4"/><line x1="10" y1="5.5" x2="16" y2="5.5"/><path d="M4 12 5.3 13.5 8 10.5"/><line x1="10" y1="12" x2="16" y2="12"/></svg>
+        <span class="nav-label">Tasks</span>
+        <span class="nav-badge">soon</span>
+      </a>
+    </div>
+
+    <div class="cl-nav-group">
+      <div class="cl-nav-heading">Reference</div>
+
+      <a class="nav-link" href="{% url 'refractometerCorrection' %}" title="Refractometer correction" {% if request.resolver_match.url_name == 'refractometerCorrection' %}aria-current="page"{% endif %}>
+        <svg viewBox="0 0 20 20" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><line x1="10" y1="2.5" x2="10" y2="11"/><circle cx="10" cy="14" r="3.3"/></svg>
+        <span class="nav-label">Tools</span>
+      </a>
+
+      <a class="nav-link is-soon" href="#" title="Charts &mdash; coming soon" tabindex="-1" aria-disabled="true">
+        <svg viewBox="0 0 20 20" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="3.5,13 7.5,8.5 10.5,11 16.5,4.5"/><circle cx="16.5" cy="4.5" r="1.3" fill="currentColor" stroke="none"/></svg>
+        <span class="nav-label">Charts</span>
+        <span class="nav-badge">soon</span>
+      </a>
+
+      <a class="nav-link is-soon" href="#" title="Tables &mdash; coming soon" tabindex="-1" aria-disabled="true">
+        <svg viewBox="0 0 20 20" fill="none" stroke-width="1.6" stroke-linecap="round"><rect x="3" y="4" width="14" height="12" rx="1"/><line x1="3" y1="8.5" x2="17" y2="8.5"/><line x1="9.5" y1="4" x2="9.5" y2="16"/></svg>
+        <span class="nav-label">Tables</span>
+        <span class="nav-badge">soon</span>
+      </a>
+    </div>
+  </nav>
+
+  <div class="cl-sidebar-foot">
+    <button class="cl-collapse-toggle js-rail-toggle" type="button" title="Collapse sidebar">
+      <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12.5 4 6.5 10l6 6"/></svg>
+      <span class="nav-label">Collapse</span>
+    </button>
+  </div>
+  {% endif %}
+</aside>
+<!-- End of Sidebar -->
+{% endblock %}
