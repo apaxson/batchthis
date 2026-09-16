@@ -34,5 +34,7 @@ urlpatterns = [
     path('rpc/utils/<str:action>/', views.utilities, name="utils"),
     path('admin/import', views.admin_import, name="admin_import"),
     path('api/fermentables/', views.FermentableListAPIView.as_view(), name="fermentable-list"),
+    path('api/adjuncts/', views.AdjunctListAPIView.as_view(), name="adjunct-list"),
+    path('api/yeasts/', views.YeastListAPIView.as_view(), name="yeast-list"),
     #TODO: Add Fermenter Page/Admin Template
 ]
