@@ -14,7 +14,7 @@ urlpatterns = [
     path('batch/<int:pk>', views.batch, name='batch'),
     path('batch/<int:pk>/edit', views.addBatch, name="editBatch"),
     path('recipe/<int:pk>', views.addRecipe), #TODO create views.recipe and update view
-    path('recipe/<int:pk>/view', views.addRecipe, name="recipe"), #TODO create views.recipe and update view
+    path('recipe/<int:pk>/view', views.recipe, name="recipe"),
     path('recipe/<int:pk>/edit', views.addRecipe, name="editRecipe"),
     #path('recipe/<int:pk>/editFermentables', views.editFermentables),
     #path('recipe/<int:pk>/editFermentables', views.editModelFermentables),

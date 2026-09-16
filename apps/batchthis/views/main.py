@@ -162,10 +162,15 @@ def recipeListing(request):
     return render(request,'batchthis/recipes.html', context=context)
 
 def recipe(request, pk):
-    if request.method == "GET":
-        recipe = Recipe.objects.get_object_or_404(Recipe, pk=pk)
-
-    pass
+    recipe = get_object_or_404(Recipe, pk=pk)
+    context = {
+        'recipe': recipe,
+        'fermentables': recipe.fermentables.all(),
+        'adjuncts': recipe.adjuncts.all(),
+        'yeasts': recipe.yeasts.all(),
+        'batches': recipe.batch_set.order_by('-startdate'),
+    }
+    return render(request, 'batchthis/recipe.html', context=context)
 
 def addRecipe(request, pk=None):
     if request.method == "GET":

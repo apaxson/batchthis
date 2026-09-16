@@ -1,272 +1,170 @@
 {% extends 'batchthis/base.html' %}
 {% block content %}
-{% include 'batchthis/topbar.html' %}
-<script src="/static/batchthis/vendor/chart.js/Chart.min.js"></script>
-<div class="container-fluid">
-    <div class="row">
-        <!-- Batch Actions and Meta Card -->
-        <div class="col-xl-4 col-lg-5">
-            <div class="card shadow mb-4 h-100">
-                <!-- Card Header - Dropdown -->
-                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
-                    {% if recipe.style == "Mead" or recipe.style == "Wine" %}
-                        <i class="fas fa-wine-glass-alt fa-2x text-gray-300"></i>
-                    {% else %}
-                        <i class="fas fa-beer fa-2x text-gray-300"></i>
-                    {% endif %}
-                    <h6 class="m-0 font-weight-bold text-primary">Batch Information</h6>
-                    <div class="dropdown no-arrow">
-                        <a class="dropdown-toggle" href="#" role="button" id="dropdownMenuLink" data-toggle="dropdown"
-                           aria-haspopup="true" aria-expanded="false">
-                            <i class="fas fa-ellipsis-v fa-sm fa-fw text-gray-400"></i>
-                        </a>
-                        <div class="dropdown-menu dropdown-menu-right shadow animated--fade-in"
-                             aria-labelledby="dropdownMenuLink">
-                            <a class="dropdown-item" href="#">Edit</a>
-                            <a class="dropdown-item" href="{{ batch.id }}/activity">Activity Log</a>
-                            <div class="dropdown-divider"></div>
-                            <div class="dropdown-header">Batch Actions:</div>
-                            <a class="dropdown-item" href="{{ batch.id }}/addTest">Add Test</a>
-                            <a class="dropdown-item" href="{{ batch.id }}/addNote">Add Note</a>
-                            <a class="dropdown-item" href="{{ batch.id }}/addAddon">Add Addon</a>
 
-                            <a class="dropdown-item" href="#">End Batch</a>
-
-
-                        </div>
-                    </div>
-                </div>
-                <!-- Card Body -->
-                <div class="card-body">
-                    <div class="row">
-                        <div class="col">
-                            <table>
-                                <tbody>
-                                <tr>
-                                    <td class="font-weight-bold">Batch #:</td>
-                                    <td>{{ batch.id }}</td>
-                                </tr>
-                                <tr>
-                                    <td class="font-weight-bold">Batch Name:</td>
-                                    <td>{{ batch.name }}</td>
-                                </tr>
-                                <tr>
-                                    <td class="font-weight-bold">Batch Start:</td>
-                                    <td>{{ batch.startdate }}</td>
-                                </tr>
-                                <tr>
-                                    <td class="font-weight-bold">Batch End:</td>
-                                    <td>{{ batch.enddate }}</td>
-                                </tr>
-                                <tr>
-                                    <td class="font-weight-bold">Batch Size:</td>
-                                    <td>{{ batch.size }} {{ batch.size_units.label }}</td>
-                                </tr>
-                                <tr>
-                                    <td class="font-weight-bold">Fermenter(s):</td>
-
-                                    {% for fermenter in fermenters %}
-                                    <div class="row">
-                                        <td><a href="#">{{ fermenter.vessel.name }}</a></td>
-                                    </div>
-                                    {% endfor %}
-                                </tr>
-                                <tr>
-                                    <td class="font-weight-bold">Style:</td>
-                                    <td>{{ batch.category.style }}</td>
-                                </tr>
-                                <tr>
-                                    <td class="font-weight-bold">Category:</td>
-                                    <td>{{ batch.category }}</td>
-                                </tr>
-                                </tbody>
-                            </table>
-                            <hr/>
-                            <table>
-                                <tr>
-                                    <!-- TODO: Add Recipe to page -->
-                                    <!-- TODO: Remove static data and pull from Recipe -->
-                                    <td class="font-weight-bold">Pairing Notes:</td>
-                                    <td>Fish, Poultry</td>
-                                </tr>
-                                <tr>
-                                    <td class="font-weight-bold">Tasting Notes:</td>
-                                </tr>
-                            </table>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <!-- End Batch Actions and Meta Card -->
-        <!-- Batch Status and Completion Card -->
-        <div class="col-xl-8 col-lg-7">
-            <div class="card shadow mb-4 h-100">
-                <!-- Card Header - Dropdown -->
-                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
-                    <i class="fas fa-thermometer-three-quarters fa-2x text-gray-300"></i>
-                    <h6 class="m-0 font-weight-bold text-primary">Gravity Readings</h6>
-                    <div class="dropdown no-arrow">
-                        <a class="dropdown-toggle" href="#" role="button" id="dropdownMenuLink" data-toggle="dropdown"
-                           aria-haspopup="true" aria-expanded="false">
-                            <i class="fas fa-ellipsis-v fa-sm fa-fw text-gray-400"></i>
-                        </a>
-                        <div class="dropdown-menu dropdown-menu-right shadow animated--fade-in"
-                             aria-labelledby="dropdownMenuLink">
-                            <!-- TODO Dynamically change chart based on selection -->
-                            <div class="dropdown-header">Go To:</div>
-                            {% for type in testTypes %}
-                            <a class="dropdown-item" href="#">{{ type.name }}</a>
-                            {% endfor %}
-                            <div class="dropdown-divider"></div>
-                            <a class="dropdown-item" href="{{batch.id}}/batchGraphs">All charts</a>
-                        </div>
-                    </div>
-                </div>
-                <!-- Card Body -->
-                <div class="card-body">
-                    <h4 class="small font-weight-bold">Current Completion <span
-                            class="float-right">{{percentComplete}}%</span></h4>
-                    <div class="progress mb-4">
-                        <div class="bar-step" style="left: 0%">
-                            <div class="label-percent">{{ startingGravity }}</div>
-                        </div>
-                        <div class="bar-step" style="left: {{thirdSugarBreakPercent}}%">
-                            <div class="label-percent">{{thirdSugarBreak}} - 1/3 Sugar Break</div>
-                            <div class="label-line" style="background: red; height:24px; margin-top:-10px;"></div>
-                        </div>
-                        <div class="bar-step" style="right: 0%">
-                            <div class="label-percent">{{ endingGravity }}</div>
-                        </div>
-                        <div class="progress-bar progress-bar-success" style="width: {{ percentComplete }}%;">Estimated:
-                            {{ percentComplete }}%
-                        </div>
-                    </div>
-                    <div class="chart-area pt-4">
-                        <canvas id="{{ gravityChart.shortid }}Chart"></canvas>
-                        <script>
-            var ctxLoc = '{{ gravityChart.shortid }}Chart';
-            var chartDataLoc = '{{ gravityChart.shortid }}_data';
-            //var chartData = document.getElementById(chartDataLoc).textContent;
-            var label_val = {{ gravityChart.dates|safe }};
-            var data_val = {{ gravityChart.values }};
-
-            var ctx = document.getElementById(ctxLoc).getContext('2d')
-            var chart = new Chart(ctx, {
-                type: "line",
-                data: {
-                    labels: label_val,
-                    datasets: [{
-                        label: "Specific Gravity Data",
-                        data: data_val,
-                        lineTension: 0.3,
-                      backgroundColor: "rgba(78, 115, 223, 0.05)",
-                      borderColor: "rgba(78, 115, 223, 1)",
-                      pointRadius: 3,
-                      pointBackgroundColor: "rgba(78, 115, 223, 1)",
-                      pointBorderColor: "rgba(78, 115, 223, 1)",
-                      pointHoverRadius: 3,
-                      pointHoverBackgroundColor: "rgba(78, 115, 223, 1)",
-                      pointHoverBorderColor: "rgba(78, 115, 223, 1)",
-                      pointHitRadius: 10,
-                      pointBorderWidth: 2,
-                        }]
-                },
-                options: {responsive:true,
-                maintainAspectRatio: false
-                }
-            });
-
-                        </script>
-                    </div>
-                </div>
-            </div>
-        </div>
+<div class="cl-batch-head">
+  <div>
+    <h1 class="cl-batch-title font-display">{{ recipe.name }}</h1>
+    <div class="cl-batch-sub">
+      {% if recipe.version %}<span><span class="cl-rack-tag">v{{ recipe.version }}</span></span>{% endif %}
+      <span>{% if recipe.category %}{{ recipe.category.style.name }} &middot; {{ recipe.category }}{% else %}Style not set{% endif %}</span>
+      {% if recipe.brewer %}<span>Brewer <b>{{ recipe.brewer }}</b></span>{% endif %}
+      <span>Created <b class="cl-num">{{ recipe.dateCreated|date:"M j, Y" }}</b></span>
+      {% if recipe.dateUpdated %}<span>Updated <b class="cl-num">{{ recipe.dateUpdated|date:"M j, Y" }}</b></span>{% endif %}
+      {% if recipe.source %}<span>Source <b>{{ recipe.source }}</b></span>{% endif %}
     </div>
-    <!-- New Row -->
-    <div class="row mt-4">
-        <!-- Batch Fermentation Notes -->
-        <div class="col-xl-6 col-lg-6">
-            <div class="card shadow mb-4 h-100">
-                <!-- Card Header - Dropdown -->
-                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
-                    <i class="fas fa-clipboard-list fa-2x text-gray-300"></i>
-                    <h6 class="m-0 font-weight-bold text-primary">Fermentation Log</h6>
-                    <div class="dropdown no-arrow">
-                        <a class="dropdown-toggle" href="#" role="button" id="dropdownMenuLink" data-toggle="dropdown"
-                           aria-haspopup="true" aria-expanded="false">
-                            <i class="fas fa-ellipsis-v fa-sm fa-fw text-gray-400"></i>
-                        </a>
-                        <div class="dropdown-menu dropdown-menu-right shadow animated--fade-in"
-                             aria-labelledby="dropdownMenuLink">
-                            <a class="dropdown-item" href="{{ batch.id }}/addNote/Fermentation%20Note">Add Log Entry</a>
-                        </div>
-                    </div>
-                </div>
-                <!-- Card Body -->
-            <div class="card-body">
-                {% if fermnotes %}
-                      {% for note in fermnotes %}
-                    <div class="row">
-                        <div class="col-xs-3 col-md-5 font-weight-bold">
-                            {{ note.date|date:"Y-m-d H:i A" }}
-                        </div>
-                    </div>
-                    <div class="row">
-                        <div class="col-sm-10 offset-sm-1">
-                            {{ note.text }}
-                        </div>
-                    </div>
-                      {% endfor %}
-                    {% else %}
-                    No Notes
-                    {% endif %}
-            </div>
-            </div>
-        </div>
-        <!-- End Batch Fermentation Notes -->
-        <!-- General Notes -->
-        <div class="col-xl-6 col-lg-6">
-            <div class="card shadow mb-4 h-100">
-                <!-- Card Header - Dropdown -->
-                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
-                    <i class="fas fa-sticky-note fa-2x text-gray-300"></i>
-                    <h6 class="m-0 font-weight-bold text-primary">General Notes</h6>
-                    <div class="dropdown no-arrow">
-                        <a class="dropdown-toggle" href="#" role="button" id="dropdownMenuLink" data-toggle="dropdown"
-                           aria-haspopup="true" aria-expanded="false">
-                            <i class="fas fa-ellipsis-v fa-sm fa-fw text-gray-400"></i>
-                        </a>
-                        <div class="dropdown-menu dropdown-menu-right shadow animated--fade-in"
-                             aria-labelledby="dropdownMenuLink">
-                            <a class="dropdown-item" href="{{ batch.id }}/addNote/General%20Note">Add Note</a>
-                        </div>
-                    </div>
-                </div>
-                <!-- Card Body -->
-                <div class="card-body">
-                    {% if gennotes %}
-                      {% for note in gennotes %}
-                    <div class="row">
-                        <div class="col-xs-3 col-md-5 font-weight-bold">
-                            {{ note.date|date:"Y-m-d H:i A" }}
-                        </div>
-                    </div>
-                    <div class="row">
-                        <div class="col-sm-10 offset-sm-1">
-                            {{ note.text }}
-                        </div>
-                    </div>
-                      {% endfor %}
-                    {% else %}
-                    No Notes
-                    {% endif %}
-                </div>
-            </div>
-        </div>
-    </div>
+  </div>
+  <div class="cl-batch-actions">
+    <a href="{% url 'editRecipe' recipe.pk %}">Edit recipe</a>
+    &middot; <a href="{% url 'addBatch' %}">Start new batch</a>
+  </div>
 </div>
-<!-- End Batch Status and Completion Card -->
 
+<div class="cl-readouts">
+  <div class="cl-readout">
+    <div class="cl-readout-label">Original gravity</div>
+    <div class="cl-readout-value">{{ recipe.estOG.magnitude|floatformat:3 }}</div>
+  </div>
+  <div class="cl-readout">
+    <div class="cl-readout-label">Final gravity (est.)</div>
+    <div class="cl-readout-value">{{ recipe.estFG.magnitude|floatformat:3 }}</div>
+  </div>
+  <div class="cl-readout">
+    <div class="cl-readout-label">Est. ABV</div>
+    <div class="cl-readout-value">{{ recipe.estABV|floatformat:1 }} <small>%</small></div>
+  </div>
+  <div class="cl-readout">
+    <div class="cl-readout-label">Batch size</div>
+    <div class="cl-readout-value">{{ recipe.batchSize }}</div>
+  </div>
+</div>
+
+<div class="cl-section-head">
+  <div class="cl-section-title">Fermentables</div>
+  <div class="cl-section-note"><a href="{% url 'editFermentables' recipe.pk %}">Add/edit fermentables</a></div>
+</div>
+<div class="cl-table-scroll">
+  <table class="cl-ledger">
+    <thead>
+      <tr><th>Ingredient</th><th>Type</th><th>Amount</th><th>Use</th><th>Fermentable?</th><th>Notes</th></tr>
+    </thead>
+    <tbody>
+      {% if not fermentables %}
+      <tr><td class="cl-empty" colspan="6">No fermentables yet.</td></tr>
+      {% else %}
+      {% for item in fermentables %}
+      <tr>
+        <td class="cl-row-link">{{ item.display_name }}</td>
+        <td>{{ item.fermentable.type }}</td>
+        <td class="cl-num">{{ item.amount }}</td>
+        <td>{{ item.intended_use }}</td>
+        <td>{{ item.is_fermentable|yesno:"Yes,No" }}</td>
+        <td>{{ item.recipe_notes|default:"—" }}</td>
+      </tr>
+      {% endfor %}
+      {% endif %}
+    </tbody>
+  </table>
+</div>
+
+<div class="cl-section-head">
+  <div class="cl-section-title">Adjuncts</div>
+  <div class="cl-section-note"><a href="{% url 'editAdjuncts' recipe.pk %}">Add/edit adjuncts</a></div>
+</div>
+<div class="cl-table-scroll">
+  <table class="cl-ledger">
+    <thead>
+      <tr><th>Ingredient</th><th>Type</th><th>Amount</th><th>Time to add</th><th>Notes</th></tr>
+    </thead>
+    <tbody>
+      {% if not adjuncts %}
+      <tr><td class="cl-empty" colspan="5">No adjuncts yet.</td></tr>
+      {% else %}
+      {% for item in adjuncts %}
+      <tr>
+        <td class="cl-row-link">{{ item.adjunct.name }}</td>
+        <td>{{ item.adjunct.type }}</td>
+        <td class="cl-num">{{ item.amount }}</td>
+        <td class="cl-num">{{ item.time_to_add }}</td>
+        <td>{{ item.recipe_notes|default:"—" }}</td>
+      </tr>
+      {% endfor %}
+      {% endif %}
+    </tbody>
+  </table>
+</div>
+
+<div class="cl-section-head">
+  <div class="cl-section-title">Yeast</div>
+  <div class="cl-section-note"><a href="{% url 'editYeasts' recipe.pk %}">Add/edit yeast</a></div>
+</div>
+<div class="cl-table-scroll">
+  <table class="cl-ledger">
+    <thead>
+      <tr><th>Strain</th><th>Type</th><th>Form</th><th>Amount</th><th>Notes</th></tr>
+    </thead>
+    <tbody>
+      {% if not yeasts %}
+      <tr><td class="cl-empty" colspan="5">No yeast yet.</td></tr>
+      {% else %}
+      {% for item in yeasts %}
+      <tr>
+        <td class="cl-row-link">{{ item.yeast.name }}</td>
+        <td>{{ item.yeast.type }}</td>
+        <td>{{ item.yeast.get_form_display }}</td>
+        <td class="cl-num">{{ item.amount }}</td>
+        <td>{{ item.notes|default:"—" }}</td>
+      </tr>
+      {% endfor %}
+      {% endif %}
+    </tbody>
+  </table>
+</div>
+
+<div class="cl-cols" style="margin-top:2px;">
+  <div>
+    <div class="cl-panel">
+      <div class="cl-section-head"><div class="cl-section-title">Brewer's notes</div></div>
+      {% if recipe.notes %}
+        <div class="cl-recipe-notes">{{ recipe.notes|linebreaks }}</div>
+      {% else %}
+        <div class="cl-empty">No notes yet.</div>
+      {% endif %}
+    </div>
+    {% if recipe.pairing %}
+    <div class="cl-panel">
+      <div class="cl-section-head"><div class="cl-section-title">Food pairing</div></div>
+      <div class="cl-recipe-notes"><p>{{ recipe.pairing }}</p></div>
+    </div>
+    {% endif %}
+  </div>
+
+  <div>
+    <div class="cl-section-head">
+      <div class="cl-section-title">Batches brewed</div>
+      <div class="cl-section-note">{{ batches|length }} total</div>
+    </div>
+    <div class="cl-table-scroll">
+      <table class="cl-ledger">
+        <thead>
+          <tr><th>#</th><th>Batch</th><th>Started</th><th>Status</th></tr>
+        </thead>
+        <tbody>
+          {% if not batches %}
+          <tr><td class="cl-empty" colspan="4">No batches brewed from this recipe yet.</td></tr>
+          {% else %}
+          {% for batch in batches %}
+          <tr>
+            <td><a href="{% url 'batch' batch.pk %}"><span class="cl-rack-tag">#{{ batch.pk }}</span></a></td>
+            <td><a href="{% url 'batch' batch.pk %}" class="cl-batch-name">{{ batch.name }}</a></td>
+            <td class="cl-num">{{ batch.startdate|date:"M j, Y" }}</td>
+            <td><span class="cl-stage {% if batch.active %}cl-stage--active{% else %}cl-stage--complete{% endif %}">{% if batch.active %}Active{% else %}Complete{% endif %}</span></td>
+          </tr>
+          {% endfor %}
+          {% endif %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
 
 {% endblock %}

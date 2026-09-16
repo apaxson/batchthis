@@ -528,6 +528,10 @@ a.nav-link, a.sub-link, a.dropdown-item {
 }
 .cl-chart-tooltip .tt-date { color: var(--ink-faint); margin-right: 6px; }
 
+.cl-table-scroll { overflow-x: auto; }
+.cl-recipe-notes p { margin: 0 0 10px; font-size: 0.9rem; line-height: 1.55; }
+.cl-recipe-notes p:last-child { margin-bottom: 0; }
+
 .cl-table-toggle { margin: 6px 0 8px; font-size: 0.8rem; }
 .cl-table-toggle summary { cursor: pointer; color: var(--ink-soft); font-weight: 500; user-select: none; }
 .cl-table-toggle summary:hover { color: var(--ink); }
