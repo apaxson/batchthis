@@ -309,7 +309,7 @@ def admin_import(request):
                     obj_yeast.name = yeast.name
                     obj_yeast.version = yeast.version
                     obj_yeast.type = yeast.type
-                    obj_yeast.form = yeast.form.lower
+                    obj_yeast.form = yeast.form.lower()
                     obj_yeast.min_temp = Quantity(yeast.min_temp, "degC")
                     obj_yeast.max_temp = Quantity(yeast.max_temp, "degC")
                     obj_yeast.flocculation = yeast.flocculation

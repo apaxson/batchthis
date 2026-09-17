@@ -180,7 +180,7 @@ class Fermentable(InventoryItem):
 
 class Yeast(InventoryItem):
     type = models.CharField(max_length=20) # Ale, Champagne, Wine, Lager, etc
-    form = models.CharField(max_length=20, choices=(('dry','Dry'),('liquid','Liquid')))
+    form = models.CharField(max_length=20, choices=(('dry','Dry'),('liquid','Liquid')), verbose_name="Format")
     #min_temp = models.FloatField()
     min_temp = DescriptiveQuantityField(base_units='degC', unit_choices=['degC', 'degF'])
     #max_temp = models.FloatField()
