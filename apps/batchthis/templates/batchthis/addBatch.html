@@ -1,78 +1,97 @@
 {% extends 'batchthis/base.html' %}
 {% block content %}
-{% include 'batchthis/topbar.html' %}
-{% load crispy_forms_tags %}
-<div class="container-fluid">
-    <div class="row">
-        <div class="col">
-            {% if form.errors %}
-            <div class="alert alert-warning" role="alert">
-                {{ form.errors }}
-            </div>
-            {% endif %}
-            <form method="POST" class="post-form" id="batchform" recipe-gravity-url="{% url 'getDataFromRecipe' %}">
-                {% csrf_token %}
-                <div class = "form-row">
-                    <div class="form-group col-md-4 col-mb-0">
-                        {{ form.recipe|as_crispy_field }}
-                    </div>
-                    <div class = "form-group col-md-4 col-mb-0">
-                        {{ form.size|as_crispy_field }}
-                    </div>
-                    <div class = "form-group col-md-4 col-mb-0">
-                        {{ form.startdate|as_crispy_field }}
-                    </div>
-                </div>
-                <div class = "form-row">
-                    <div class = "form-group col-md-4 col-mb-0">
-                        {{ form.startingGravity|as_crispy_field }}
-                    </div>
-                    <div class = "form-group col-md-4 col-mb-0">
-                        {{ form.estimatedEndGravity|as_crispy_field }}
-                    </div>
-                    <div class = "form-group col-md-4 col-mb-0">
-                        {{ form.fermenter|as_crispy_field }}
-                    </div>
-                </div>
-                <div class = "form-row">
-                    <div class="form-group col-md-6 col-mb-0">
-                        {{ form.name|as_crispy_field }}
-                    </div>
-                    <button type="submit" class="btn btn-primary btn-user btn-block">Save</button>
-                </div>
-            </form>
-        </div>
-    </div>
+
+<div class="cl-page-head">
+  <div class="cl-wordmark font-display">{% if form.initial %}Edit batch{% else %}New batch{% endif %}</div>
+  <div class="cl-batch-sub" style="margin-top:6px;">
+    <span><a href="{% url 'batchListing' %}">&larr; Back to batches</a></span>
+  </div>
 </div>
 
-  <script src="https://code.jquery.com/jquery-3.3.1.min.js"></script>
-  <script>
-      function updateBatchName() {
-        rec_name_element = document.getElementById("id_recipe")
-        start_date = document.getElementById("id_startdate").value
-        size = document.getElementById("id_size").value
-        rec_name = rec_name_element.options[rec_name_element.selectedIndex].textContent
-        document.getElementById("id_name").value = rec_name + " (" + size + ") " + start_date
-      }
-    $("#id_size").change(function() { updateBatchName() })
-    $("#id_startdate").change(function () { updateBatchName() })
-    $("#id_recipe").change(function () {
-      var url = $("#batchform").attr("recipe-gravity-url");
+{% if form.non_field_errors %}
+<div class="cl-flag" style="margin-bottom:20px;">
+  <span class="cl-flag-mark">!</span>
+  <span>{{ form.non_field_errors }}</span>
+</div>
+{% endif %}
+
+<div class="cl-panel">
+  <form method="POST" class="cl-form" id="batchform" recipe-gravity-url="{% url 'getDataFromRecipe' %}">
+    {% csrf_token %}
+
+    <div class="cl-form-grid">
+      <div class="cl-field">
+        <label for="{{ form.recipe.id_for_label }}">Recipe</label>
+        {{ form.recipe }}
+        {% if form.recipe.errors %}<div class="cl-field-error">{{ form.recipe.errors }}</div>{% endif %}
+      </div>
+      <div class="cl-field">
+        <label for="{{ form.size.id_for_label }}">Batch size</label>
+        {{ form.size }}
+        {% if form.size.errors %}<div class="cl-field-error">{{ form.size.errors }}</div>{% endif %}
+      </div>
+      <div class="cl-field">
+        <label for="{{ form.startdate.id_for_label }}">Start date</label>
+        {{ form.startdate }}
+        {% if form.startdate.errors %}<div class="cl-field-error">{{ form.startdate.errors }}</div>{% endif %}
+      </div>
+
+      <div class="cl-field">
+        <label for="{{ form.startingGravity.id_for_label }}">Starting gravity</label>
+        {{ form.startingGravity }}
+        {% if form.startingGravity.errors %}<div class="cl-field-error">{{ form.startingGravity.errors }}</div>{% endif %}
+      </div>
+      <div class="cl-field">
+        <label for="{{ form.estimatedEndGravity.id_for_label }}">Estimated end gravity</label>
+        {{ form.estimatedEndGravity }}
+        {% if form.estimatedEndGravity.errors %}<div class="cl-field-error">{{ form.estimatedEndGravity.errors }}</div>{% endif %}
+      </div>
+      <div class="cl-field">
+        <label for="{{ form.fermenter.id_for_label }}">Fermenter</label>
+        {{ form.fermenter }}
+        {% if form.fermenter.errors %}<div class="cl-field-error">{{ form.fermenter.errors }}</div>{% endif %}
+      </div>
+
+      <div class="cl-field cl-field--grow">
+        <label for="{{ form.name.id_for_label }}">Name</label>
+        {{ form.name }}
+        {% if form.name.errors %}<div class="cl-field-error">{{ form.name.errors }}</div>{% endif %}
+      </div>
+    </div>
+
+    <div class="cl-form-actions">
+      <a href="{% url 'batchListing' %}" class="cl-btn cl-btn--secondary">Cancel</a>
+      <button type="submit" class="cl-btn cl-btn--primary">Save</button>
+    </div>
+  </form>
+</div>
+
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    function updateBatchName() {
+      var recipeSelect = document.getElementById('id_recipe');
+      var recipeName = recipeSelect.options[recipeSelect.selectedIndex].textContent;
+      var startDate = document.getElementById('id_startdate').value;
+      var size = document.getElementById('id_size').value;
+      document.getElementById('id_name').value = recipeName + ' (' + size + ') ' + startDate;
+    }
+
+    $('#id_size').change(updateBatchName);
+    $('#id_startdate').change(updateBatchName);
+    $('#id_recipe').change(function () {
+      var url = $('#batchform').attr('recipe-gravity-url');
       var recipeId = $(this).val();
 
-      $.ajax({                       // initialize an AJAX request
-        url: url,                    // set the url of the request
-        data: {
-          'recipe': recipeId       // Data to send
-        },
+      $.ajax({
+        url: url,
+        data: { recipe: recipeId },
         success: function (data) {
-          document.getElementById("id_startingGravity").value = data.est_og
-          document.getElementById("id_estimatedEndGravity").value = data.est_fg
-
-          updateBatchName()
-
+          document.getElementById('id_startingGravity').value = data.est_og;
+          document.getElementById('id_estimatedEndGravity').value = data.est_fg;
+          updateBatchName();
         }
       });
     });
-  </script>
+  });
+</script>
 {% endblock %}

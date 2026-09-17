@@ -564,6 +564,16 @@ a.nav-link, a.sub-link, a.dropdown-item {
   .cl-field--grow { grid-column: 1 / -1; }
 }
 
+/* ---------- Simple (non-formset) forms, e.g. addBatch ---------- */
+.cl-form-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px 16px;
+}
+.cl-form-grid .cl-field--grow { grid-column: 1 / -1; }
+@media (max-width: 900px) { .cl-form-grid { grid-template-columns: 1fr 1fr; } }
+@media (max-width: 480px) { .cl-form-grid { grid-template-columns: 1fr; } }
+
 .cl-field { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
 .cl-field label {
   font-size: 0.72rem;
@@ -577,6 +587,8 @@ a.nav-link, a.sub-link, a.dropdown-item {
 
 .cl-field input[type="text"],
 .cl-field input[type="number"],
+.cl-field input[type="date"],
+.cl-field input[type="datetime-local"],
 .cl-field select,
 .cl-field textarea {
   font-family: 'IBM Plex Sans', sans-serif;
