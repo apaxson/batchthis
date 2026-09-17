@@ -374,6 +374,7 @@ a.nav-link, a.sub-link, a.dropdown-item {
 .cl-stage--complete { color: var(--slate); }
 
 .cl-num { font-family: 'IBM Plex Mono', monospace; font-variant-numeric: tabular-nums; }
+.cl-yeast-metric { font-size: 0.78rem; white-space: nowrap; }
 
 /* ---------- Two-column layout ---------- */
 .cl-cols {
@@ -626,9 +627,9 @@ a.nav-link, a.sub-link, a.dropdown-item {
   .cl-sidebar, .cl-rail-btn svg, .cl-collapse-toggle svg { transition: none !important; }
 }
 
-.yeast-mouse-tooltip {
+.cl-mouse-tooltip {
   pointer-events: none;
 }
-.yeast-mouse-tooltip .arrow {
+.cl-mouse-tooltip .arrow {
   display: none;
 }

@@ -197,6 +197,14 @@ class Yeast(InventoryItem):
         else:
             return self.name
 
+    @property
+    def min_temp_f(self):
+        return self.min_temp.to('degF')
+
+    @property
+    def max_temp_f(self):
+        return self.max_temp.to('degF')
+
     def __str__(self):
         return self.display_name
 

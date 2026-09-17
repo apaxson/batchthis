@@ -53,7 +53,7 @@
       {% else %}
       {% for item in fermentables %}
       <tr>
-        <td class="cl-row-link">{{ item.display_name }}</td>
+        <td class="cl-row-link js-mouse-tooltip" data-toggle="tooltip" title="{{ item.fermentable.description|default:'' }}">{{ item.display_name }}</td>
         <td>{{ item.fermentable.type }}</td>
         <td class="cl-num">{{ item.amount }}</td>
         <td>{{ item.intended_use }}</td>
@@ -81,7 +81,7 @@
       {% else %}
       {% for item in adjuncts %}
       <tr>
-        <td class="cl-row-link">{{ item.adjunct.name }}</td>
+        <td class="cl-row-link js-mouse-tooltip" data-toggle="tooltip" title="{{ item.adjunct.notes|default:'' }}">{{ item.adjunct.name }}</td>
         <td>{{ item.adjunct.type }}</td>
         <td class="cl-num">{{ item.amount }}</td>
         <td class="cl-num">{{ item.time_to_add }}</td>
@@ -100,17 +100,30 @@
 <div class="cl-table-scroll">
   <table class="cl-ledger">
     <thead>
-      <tr><th>Strain</th><th>Type</th><th>Format</th><th>Amount</th><th>Notes</th></tr>
+      <tr>
+        <th>Strain</th><th>Type</th><th>Format</th>
+        <th class="cl-yeast-metric">Min Temp (F)</th>
+        <th class="cl-yeast-metric">Max Temp (F)</th>
+        <th class="cl-yeast-metric">Alcohol Tolerance (%)</th>
+        <th class="cl-yeast-metric">Flocculation</th>
+        <th class="cl-yeast-metric">Attenuation</th>
+        <th>Amount</th><th>Notes</th>
+      </tr>
     </thead>
     <tbody>
       {% if not yeasts %}
-      <tr><td class="cl-empty" colspan="5">No yeast yet.</td></tr>
+      <tr><td class="cl-empty" colspan="10">No yeast yet.</td></tr>
       {% else %}
       {% for item in yeasts %}
       <tr>
-        <td class="cl-row-link js-yeast-tooltip" data-toggle="tooltip" title="{{ item.yeast.notes|default:'' }}">{{ item.yeast.name }}</td>
+        <td class="cl-row-link js-mouse-tooltip" data-toggle="tooltip" title="{{ item.yeast.notes|default:'' }}">{{ item.yeast.name }}</td>
         <td>{{ item.yeast.type }}</td>
         <td>{{ item.yeast.get_form_display }}</td>
+        <td class="cl-num cl-yeast-metric">{{ item.yeast.min_temp_f.magnitude|floatformat:1 }}</td>
+        <td class="cl-num cl-yeast-metric">{{ item.yeast.max_temp_f.magnitude|floatformat:1 }}</td>
+        <td class="cl-num cl-yeast-metric">{{ item.yeast.alc_tolerance }}</td>
+        <td class="cl-yeast-metric">{{ item.yeast.flocculation }}</td>
+        <td class="cl-num cl-yeast-metric">{{ item.yeast.attenuation|floatformat:1 }}</td>
         <td class="cl-num">{{ item.amount }}</td>
         <td>{{ item.notes|default:"—" }}</td>
       </tr>
@@ -169,18 +182,18 @@
 
 <script>
 $(document).ready(function () {
-  var $yeastTooltips = $('.js-yeast-tooltip').filter(function () {
+  var $mouseTooltips = $('.js-mouse-tooltip').filter(function () {
     return $.trim($(this).attr('title')) !== '';
   });
 
-  $yeastTooltips.tooltip({
+  $mouseTooltips.tooltip({
     trigger: 'manual',
     placement: 'top',
     animation: false,
-    template: '<div class="tooltip yeast-mouse-tooltip" role="tooltip"><div class="arrow"></div><div class="tooltip-inner"></div></div>'
+    template: '<div class="tooltip cl-mouse-tooltip" role="tooltip"><div class="arrow"></div><div class="tooltip-inner"></div></div>'
   });
 
-  $yeastTooltips.on('mouseenter', function () {
+  $mouseTooltips.on('mouseenter', function () {
     $(this).tooltip('show');
   }).on('mousemove', function (e) {
     var tipId = $(this).attr('aria-describedby');
