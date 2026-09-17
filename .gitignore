@@ -9,3 +9,6 @@ __pycache__/
 frontend/node_modules/
 /.claude/worktrees/*
 /media/*
+/apps/batchthis/examples/adjuncts_all.xml
+/apps/batchthis/examples/fermentables_all.xml
+/apps/batchthis/examples/yeasts_all.xml
