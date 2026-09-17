@@ -108,7 +108,7 @@
       {% else %}
       {% for item in yeasts %}
       <tr>
-        <td class="cl-row-link">{{ item.yeast.name }}</td>
+        <td class="cl-row-link js-yeast-tooltip" data-toggle="tooltip" title="{{ item.yeast.notes|default:'' }}">{{ item.yeast.name }}</td>
         <td>{{ item.yeast.type }}</td>
         <td>{{ item.yeast.get_form_display }}</td>
         <td class="cl-num">{{ item.amount }}</td>
@@ -166,5 +166,40 @@
     </div>
   </div>
 </div>
+
+<script>
+$(document).ready(function () {
+  var $yeastTooltips = $('.js-yeast-tooltip').filter(function () {
+    return $.trim($(this).attr('title')) !== '';
+  });
+
+  $yeastTooltips.tooltip({
+    trigger: 'manual',
+    placement: 'top',
+    animation: false,
+    template: '<div class="tooltip yeast-mouse-tooltip" role="tooltip"><div class="arrow"></div><div class="tooltip-inner"></div></div>'
+  });
+
+  $yeastTooltips.on('mouseenter', function () {
+    $(this).tooltip('show');
+  }).on('mousemove', function (e) {
+    var tipId = $(this).attr('aria-describedby');
+    if (tipId) {
+      // Popper (used internally by the tooltip) positions the tooltip with its own
+      // "transform: translate3d(...)" — it must be cleared, or it stacks on top of
+      // the top/left below and throws the tooltip off the intended position.
+      $('#' + tipId).css({
+        position: 'fixed',
+        top: (e.clientY + 16) + 'px',
+        left: (e.clientX + 16) + 'px',
+        margin: 0,
+        transform: 'none'
+      });
+    }
+  }).on('mouseleave', function () {
+    $(this).tooltip('hide');
+  });
+});
+</script>
 
 {% endblock %}

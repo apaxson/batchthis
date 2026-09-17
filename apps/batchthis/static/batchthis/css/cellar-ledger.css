@@ -625,3 +625,10 @@ a.nav-link, a.sub-link, a.dropdown-item {
 @media (prefers-reduced-motion: reduce) {
   .cl-sidebar, .cl-rail-btn svg, .cl-collapse-toggle svg { transition: none !important; }
 }
+
+.yeast-mouse-tooltip {
+  pointer-events: none;
+}
+.yeast-mouse-tooltip .arrow {
+  display: none;
+}
