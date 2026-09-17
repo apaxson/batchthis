@@ -1,0 +1,32 @@
+{% comment %}
+Renders one YeastForm. Included both for each live formset row and, wrapped
+in a <template> around yeast_set.empty_form, as the JS-clone source for
+"Add yeast" - see editYeasts.html. Keeping one copy of this markup means the
+two can't drift out of sync.
+{% endcomment %}
+<div class="cl-formset-row cl-formset-row--yeast" data-formset-row>
+  {% if yeast_form.non_field_errors %}
+  <div class="cl-field-error">{{ yeast_form.non_field_errors }}</div>
+  {% endif %}
+  <div class="cl-field cl-field--grow">
+    <label for="{{ yeast_form.yeast_id.id_for_label }}">Yeast</label>
+    {{ yeast_form.yeast_id }}
+    <div data-react-model-select
+         data-endpoint="{% url 'yeast-list' %}"
+         data-target="#{{ yeast_form.yeast_id.id_for_label }}"
+         data-placeholder="Search yeasts&hellip;"></div>
+    {% if yeast_form.yeast_id.errors %}<div class="cl-field-error">{{ yeast_form.yeast_id.errors }}</div>{% endif %}
+  </div>
+  <div class="cl-field">
+    <label for="{{ yeast_form.amount.id_for_label }}">Amount</label>
+    {{ yeast_form.amount }}
+    {% if yeast_form.amount.errors %}<div class="cl-field-error">{{ yeast_form.amount.errors }}</div>{% endif %}
+  </div>
+  <div class="cl-field cl-field--grow">
+    <label for="{{ yeast_form.notes.id_for_label }}">Notes</label>
+    {{ yeast_form.notes }}
+  </div>
+  <div class="cl-field cl-field--check cl-field--remove">
+    <label>{{ yeast_form.DELETE }} Remove</label>
+  </div>
+</div>

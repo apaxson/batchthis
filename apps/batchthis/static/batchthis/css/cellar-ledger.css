@@ -544,6 +544,84 @@ a.nav-link, a.sub-link, a.dropdown-item {
 }
 .cl-reading-table td { font-family: 'IBM Plex Mono', monospace; }
 
+/* ---------- Forms (editFermentables, and other formset-based pages) ---------- */
+.cl-form { max-width: 100%; }
+
+.cl-formset-row {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr 1.4fr auto auto; /* default: fermentable row shape */
+  gap: 14px;
+  align-items: start;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--line-soft);
+}
+.cl-formset-row--adjunct { grid-template-columns: 2fr 1fr 1fr 1fr 1.2fr auto; }
+.cl-formset-row--yeast { grid-template-columns: 2fr 1fr 2fr auto; }
+.cl-formset-row:first-child { padding-top: 0; }
+@media (max-width: 900px) {
+  .cl-formset-row { grid-template-columns: 1fr 1fr; }
+  .cl-field--grow { grid-column: 1 / -1; }
+}
+
+.cl-field { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.cl-field label {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--ink-soft);
+  letter-spacing: 0.02em;
+}
+.cl-field--check { flex-direction: row; align-items: center; }
+.cl-field--check label { display: flex; align-items: center; gap: 6px; font-size: 0.82rem; white-space: nowrap; }
+.cl-field--remove label { color: var(--brick); }
+
+.cl-field input[type="text"],
+.cl-field input[type="number"],
+.cl-field select,
+.cl-field textarea {
+  font-family: 'IBM Plex Sans', sans-serif;
+  font-size: 0.9rem;
+  color: var(--ink);
+  background: var(--paper-raised);
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  padding: 7px 9px;
+  width: 100%;
+}
+.cl-field textarea { resize: vertical; min-height: 38px; }
+.cl-field input:focus, .cl-field select:focus, .cl-field textarea:focus {
+  outline: 2px solid var(--focus);
+  outline-offset: 1px;
+  border-color: var(--focus);
+}
+.cl-field input[type="checkbox"] { width: 16px; height: 16px; accent-color: var(--honey-line); }
+
+.cl-field-error { color: var(--brick); font-size: 0.78rem; margin-top: 2px; }
+
+/* react-select mount point replaces the hidden fermentable_id input visually */
+.cl-field [data-react-model-select] { margin-top: 2px; }
+.model-select__control { min-height: 38px !important; }
+
+.cl-form-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid var(--line);
+}
+.cl-btn {
+  font: inherit;
+  font-size: 0.88rem;
+  font-weight: 600;
+  padding: 9px 16px;
+  border-radius: 3px;
+  cursor: pointer;
+  border: 1px solid transparent;
+}
+.cl-btn--primary { background: var(--honey-line); color: var(--paper-raised); }
+.cl-btn--primary:hover { background: var(--honey); }
+.cl-btn--secondary { background: transparent; color: var(--ink); border-color: var(--line); }
+.cl-btn--secondary:hover { background: var(--paper); border-color: var(--ink-soft); }
+
 @media (prefers-reduced-motion: reduce) {
   .cl-sidebar, .cl-rail-btn svg, .cl-collapse-toggle svg { transition: none !important; }
 }

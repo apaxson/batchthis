@@ -1,0 +1,39 @@
+{% comment %}
+Renders one FermentableForm. Included both for each live formset row and, wrapped
+in a <template> around fermentable_set.empty_form, as the JS-clone source for
+"Add fermentable" - see editFermentables.html. Keeping one copy of this markup
+means the two can't drift out of sync.
+{% endcomment %}
+<div class="cl-formset-row" data-formset-row>
+  {% if fermentable_form.non_field_errors %}
+  <div class="cl-field-error">{{ fermentable_form.non_field_errors }}</div>
+  {% endif %}
+  <div class="cl-field cl-field--grow">
+    <label for="{{ fermentable_form.fermentable_id.id_for_label }}">Fermentable</label>
+    {{ fermentable_form.fermentable_id }}
+    <div data-react-model-select
+         data-endpoint="{% url 'fermentable-list' %}"
+         data-target="#{{ fermentable_form.fermentable_id.id_for_label }}"
+         data-placeholder="Search fermentables&hellip;"></div>
+    {% if fermentable_form.fermentable_id.errors %}<div class="cl-field-error">{{ fermentable_form.fermentable_id.errors }}</div>{% endif %}
+  </div>
+  <div class="cl-field">
+    <label for="{{ fermentable_form.amount.id_for_label }}">Amount</label>
+    {{ fermentable_form.amount }}
+    {% if fermentable_form.amount.errors %}<div class="cl-field-error">{{ fermentable_form.amount.errors }}</div>{% endif %}
+  </div>
+  <div class="cl-field">
+    <label for="{{ fermentable_form.intended_use_id.id_for_label }}">Usage</label>
+    {{ fermentable_form.intended_use_id }}
+  </div>
+  <div class="cl-field cl-field--grow">
+    <label for="{{ fermentable_form.recipe_notes.id_for_label }}">Notes</label>
+    {{ fermentable_form.recipe_notes }}
+  </div>
+  <div class="cl-field cl-field--check">
+    <label>{{ fermentable_form.is_fermentable }} Is fermentable?</label>
+  </div>
+  <div class="cl-field cl-field--check cl-field--remove">
+    <label>{{ fermentable_form.DELETE }} Remove</label>
+  </div>
+</div>

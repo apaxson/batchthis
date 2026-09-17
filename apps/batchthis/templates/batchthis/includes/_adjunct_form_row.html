@@ -1,0 +1,41 @@
+{% comment %}
+Renders one AdjunctForm. Included both for each live formset row and, wrapped
+in a <template> around adjunct_set.empty_form, as the JS-clone source for
+"Add adjunct" - see editAdjuncts.html. Keeping one copy of this markup means
+the two can't drift out of sync.
+{% endcomment %}
+<div class="cl-formset-row cl-formset-row--adjunct" data-formset-row>
+  {% if adjunct_form.non_field_errors %}
+  <div class="cl-field-error">{{ adjunct_form.non_field_errors }}</div>
+  {% endif %}
+  <div class="cl-field cl-field--grow">
+    <label for="{{ adjunct_form.adjunct_id.id_for_label }}">Adjunct</label>
+    {{ adjunct_form.adjunct_id }}
+    <div data-react-model-select
+         data-endpoint="{% url 'adjunct-list' %}"
+         data-target="#{{ adjunct_form.adjunct_id.id_for_label }}"
+         data-placeholder="Search adjuncts&hellip;"></div>
+    {% if adjunct_form.adjunct_id.errors %}<div class="cl-field-error">{{ adjunct_form.adjunct_id.errors }}</div>{% endif %}
+  </div>
+  <div class="cl-field">
+    <label for="{{ adjunct_form.amount.id_for_label }}">Amount</label>
+    {{ adjunct_form.amount }}
+    {% if adjunct_form.amount.errors %}<div class="cl-field-error">{{ adjunct_form.amount.errors }}</div>{% endif %}
+  </div>
+  <div class="cl-field">
+    <label for="{{ adjunct_form.intended_use_id.id_for_label }}">Usage</label>
+    {{ adjunct_form.intended_use_id }}
+  </div>
+  <div class="cl-field">
+    <label for="{{ adjunct_form.time_to_add.id_for_label }}">Time to add</label>
+    {{ adjunct_form.time_to_add }}
+    {% if adjunct_form.time_to_add.errors %}<div class="cl-field-error">{{ adjunct_form.time_to_add.errors }}</div>{% endif %}
+  </div>
+  <div class="cl-field cl-field--grow">
+    <label for="{{ adjunct_form.recipe_notes.id_for_label }}">Notes</label>
+    {{ adjunct_form.recipe_notes }}
+  </div>
+  <div class="cl-field cl-field--check cl-field--remove">
+    <label>{{ adjunct_form.DELETE }} Remove</label>
+  </div>
+</div>

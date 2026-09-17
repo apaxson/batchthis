@@ -75,7 +75,7 @@ class RecipeImportForm(forms.Form):
 class RecipeFormItem(forms.Form):
     intended_use_id = forms.ModelChoiceField(queryset=AdjunctUsage.objects.all(), label="Usage")
     amount = forms.CharField(widget=forms.TextInput(), label = "Amount", required=True)
-    recipe_notes = forms.CharField(widget=forms.Textarea, required=False)
+    recipe_notes = forms.CharField(widget=forms.Textarea(attrs={'rows': 3}), required=False)
 
     """def clean(self):
         cleaned_data = super().clean()
@@ -112,7 +112,7 @@ class YeastForm(forms.Form):
     amount = forms.CharField(widget=forms.TextInput,
                                      label = "Amount",
                                      required=True)
-    notes = forms.CharField(widget=forms.Textarea, required=False)
+    notes = forms.CharField(widget=forms.Textarea(attrs={'rows': 3}), required=False)
 
 class RecipeAddForm(forms.Form):
     class Meta:

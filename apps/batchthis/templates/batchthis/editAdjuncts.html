@@ -1,87 +1,52 @@
 {% extends 'batchthis/base.html' %}
 {% block content %}
-{% include 'batchthis/topbar.html' %}
-{% load crispy_forms_tags %}
 {% load static %}
 <script type="module" src="{% static 'batchthis/dist/model-select.js' %}"></script>
-<div class="container-fluid">
-    <div class="row">
-        <div class="col">
-            {% if form.errors %}
-            <div class="alert alert-warning" role="alert">
-                {{ form.errors }}
-            </div>
-            {% endif %}
-            <form method="POST" class="post-form" id="recipeform">
-                {% csrf_token %}
-                {{ adjunct_set.management_form }}
-                <div id="adjunct_form_set">
-                    {% for adjunct_form in adjunct_set %}
-                    <div id="adjunct_form" class = "form-group row border-left-primary">
-                        <div class = "col-md-2 col-mb-0">
-                            <label for="{{ adjunct_form.adjunct_id.id_for_label }}">Adjunct</label>
-                            {{ adjunct_form.adjunct_id }}
-                            <div data-react-model-select
-                                 data-endpoint="{% url 'adjunct-list' %}"
-                                 data-target="#{{ adjunct_form.adjunct_id.id_for_label }}"
-                                 data-placeholder="Search adjuncts..."></div>
-                        </div>
-                        {% comment %}
-                        <div class = "col-md-2 col-mb-0">
-                            {{ adjunct_form.amount_weight|as_crispy_field }}
-                        </div>
-                        <div class = "col-md-2 col-mb-0">
-                            {{ adjunct_form.amount_volume|as_crispy_field }}
-                        </div>
-                        {% endcomment %}
-                        <div class = "col-md-2 col-mb-0">
-                            {{ adjunct_form.amount|as_crispy_field }}
-                        </div>
-                        <div class = "col-md-2 col-mb-0">
-                            {{ adjunct_form.intended_use_id|as_crispy_field }}
-                        </div>
-                        <div class = "col-md-2 col-mb-0">
-                            {{ adjunct_form.time_to_add|as_crispy_field }}
-                        </div>
-                        <div class = "col-md-2 col-mb-0">
-                            {{ adjunct_form.recipe_notes|as_crispy_field }}
-                        </div>
-                        <div class = "col-md-1 col-mb-0">
-                            Remove Item {{ adjunct_form.DELETE }}
-                        </div>
-                    </div>
-                    {% endfor %}
-                </div>
-                <input type="button" class="btn btn-secondary" value = "Add Adjunct" id="addAdjunctFormButton">
-                <button type="submit" class="btn btn-primary">Save</button>
-            </form>
-        </div>
-    </div>
+
+<div class="cl-page-head">
+  <div class="cl-wordmark font-display">{{ recipe.name }} &mdash; adjuncts</div>
+  <div class="cl-batch-sub" style="margin-top:6px;">
+    <span><a href="{% url 'recipe' recipe.pk %}">&larr; Back to recipe</a></span>
+  </div>
 </div>
 
+{% if adjunct_set.non_form_errors %}
+<div class="cl-flag" style="margin-bottom:20px;">
+  <span class="cl-flag-mark">!</span>
+  <span>{{ adjunct_set.non_form_errors }}</span>
+</div>
+{% endif %}
+
+<form method="POST" class="cl-form" id="recipeform">
+  {% csrf_token %}
+  {{ adjunct_set.management_form }}
+
+  <div id="adjunct_form_set">
+    {% for adjunct_form in adjunct_set %}
+      {% include 'batchthis/includes/_adjunct_form_row.html' %}
+    {% endfor %}
+  </div>
+
+  <template id="adjunct-empty-form">
+    {% with adjunct_set.empty_form as adjunct_form %}
+      {% include 'batchthis/includes/_adjunct_form_row.html' %}
+    {% endwith %}
+  </template>
+
+  <div class="cl-form-actions">
+    <button type="button" class="cl-btn cl-btn--secondary" id="addAdjunctFormButton">Add adjunct</button>
+    <button type="submit" class="cl-btn cl-btn--primary">Save</button>
+  </div>
+</form>
+
 <script>
-      $('#addAdjunctFormButton').click(function () {
-      var adjFormTotal = $('#id_form-TOTAL_FORMS').val();
-      var newFormTotal = parseInt(adjFormTotal)+1
-      var div_id = "form_" + newFormTotal;
-      $('#adjunct_form').clone().prop("id", div_id).appendTo("#adjunct_form_set");
-      var newDiv = document.getElementById("#"+div_id);
-      $('#id_form-TOTAL_FORMS').val(newFormTotal);
-      var newSelector = document.querySelector("#"+div_id);
-      let formRegex = /form-(\d){1}-/g;
-      var newFormId = newFormTotal-1
-      newSelector.innerHTML = newSelector.innerHTML.replace(formRegex, `form-${newFormId}-`)
-      $(`#id_form-${newFormId}-amount_weight_0`).attr('value',"");
-      $(`#id_form-${newFormId}-amount_volume_0`).attr('value',"");
-      document.getElementById(`id_form-${newFormId}-adjunct_id`).value = ""
-      var newModelSelect = newSelector.querySelector('[data-react-model-select]')
-      newModelSelect.removeAttribute('data-model-select-mounted')
-      window.BatchThis.mountModelSelects(newSelector)
-      document.getElementById(`id_form-${newFormId}-intended_use_id`).selectedIndex = -1
-
-
-      });
-
-
+  document.addEventListener('DOMContentLoaded', function () {
+    CellarLedger.initFormsetAdd({
+      addButtonId: 'addAdjunctFormButton',
+      rowSetId: 'adjunct_form_set',
+      templateId: 'adjunct-empty-form',
+      totalFormsId: 'id_form-TOTAL_FORMS',
+    });
+  });
 </script>
 {% endblock %}

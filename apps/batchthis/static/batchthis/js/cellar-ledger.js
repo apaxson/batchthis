@@ -26,6 +26,37 @@
   });
 })();
 
+// Wires up an "Add row" button for a Django formset using its empty_form as the
+// clone template (rendered inside a hidden <template>, with __prefix__ placeholders -
+// see includes/_fermentable_form_row.html and editFermentables.html for the pattern).
+// Shared by editFermentables.html, editAdjuncts.html and editYeasts.html so the
+// clone/mount logic exists in one place.
+window.CellarLedger = window.CellarLedger || {};
+
+CellarLedger.initFormsetAdd = function (opts) {
+  var addButton = document.getElementById(opts.addButtonId);
+  var rowSet = document.getElementById(opts.rowSetId);
+  var template = document.getElementById(opts.templateId);
+  var totalForms = document.getElementById(opts.totalFormsId);
+  if (!addButton || !rowSet || !template || !totalForms) return;
+
+  addButton.addEventListener('click', function () {
+    var newIndex = parseInt(totalForms.value, 10);
+    var html = template.innerHTML.split('__prefix__').join(newIndex);
+    var wrapper = document.createElement('div');
+    wrapper.innerHTML = html.trim();
+    var newRow = wrapper.firstElementChild;
+    rowSet.appendChild(newRow);
+    totalForms.value = newIndex + 1;
+
+    var modelSelectMount = newRow.querySelector('[data-react-model-select]');
+    if (modelSelectMount && window.BatchThis && window.BatchThis.mountModelSelects) {
+      window.BatchThis.mountModelSelects(newRow);
+    }
+    newRow.scrollIntoView({ block: 'nearest' });
+  });
+};
+
 // Hand-drawn SVG line chart for instrument readings (specific gravity, pH, SO2, ...).
 // Used by batch.html. cfg: { dates:[...], values:[...], decimals, unit, color,
 // threshold, thresholdLabel } - threshold/thresholdLabel are optional; any point
@@ -36,7 +67,6 @@
 // reading's own timestamp (see faults.py: StagedFaultRule.bounds_at and
 // views/main.py: _build_series). Drawn as a shaded band with dashed edges; any
 // point outside its own bandMin/bandMax is a fault marker, same as `threshold`.
-window.CellarLedger = window.CellarLedger || {};
 
 CellarLedger.renderChart = function (svg, cfg) {
   var values = cfg.values, labels = cfg.dates;

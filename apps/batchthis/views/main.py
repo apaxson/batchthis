@@ -220,17 +220,24 @@ def editFermentables(request, pk=None):
                 fermentable_set = formset_factory(FermentableForm, extra=0, can_delete=True, can_delete_extra=True)
                 fermentable_set = fermentable_set(initial=recipe.fermentables.all().values())
             else:
-                fermentable_set = formset_factory(FermentableForm, extra=1)
+                # A brand-new recipe has no fermentables yet - one blank row to start.
+                fermentable_set = formset_factory(FermentableForm, extra=1, can_delete=True, can_delete_extra=True)
+                fermentable_set = fermentable_set()
         context = {'recipe': recipe, 'fermentable_set': fermentable_set}
         return render(request, 'batchthis/editFermentables.html', context)
     else:
         formset = formset_factory(FermentableForm, can_delete=True)
         fermentable_set = formset(request.POST)
-        print("form data: " + str(request.POST))
+        logger.debug("editFermentables POST for recipe_id=%s: %s", pk, request.POST)
         recipe = Recipe.objects.get(pk=pk)
         if fermentable_set.is_valid():
             fermentables = []
             for form_item in fermentable_set:
+                if not form_item.cleaned_data:
+                    # A blank extra row (e.g. added via "Add fermentable" then left
+                    # empty) - Django's formset marks it empty_permitted and skips
+                    # validation for it, so there's nothing here to save.
+                    continue
                 if not form_item.cleaned_data.get('DELETE'):
                     # Don't include items marked for deletion
                     recipeFermentable = RecipeFermentable()
@@ -247,8 +254,8 @@ def editFermentables(request, pk=None):
 
             return HttpResponseRedirect(reverse('recipe', kwargs={'pk': recipe.pk}))
         else:
-            print("not valid form")
-            return render(request, 'batchthis/editFermentables.html', {'fermentable_set': fermentable_set})
+            logger.debug("editFermentables: invalid formset for recipe_id=%s: %s", pk, fermentable_set.errors)
+            return render(request, 'batchthis/editFermentables.html', {'fermentable_set': fermentable_set, 'recipe': recipe})
 
 
 def editAdjuncts(request, pk=None):
@@ -259,7 +266,9 @@ def editAdjuncts(request, pk=None):
                 adjunct_set_form = formset_factory(AdjunctForm, extra=0, can_delete=True, can_delete_extra=True)
                 adjunct_set = adjunct_set_form(initial=recipe.adjuncts.all().values())
             else:
-                adjunct_set = formset_factory(AdjunctForm, extra=1)
+                # A brand-new recipe has no adjuncts yet - one blank row to start.
+                adjunct_set_form = formset_factory(AdjunctForm, extra=1, can_delete=True, can_delete_extra=True)
+                adjunct_set = adjunct_set_form()
         context = {'recipe': recipe, 'adjunct_set': adjunct_set}
         return render(request, 'batchthis/editAdjuncts.html', context)
     else:
@@ -269,6 +278,11 @@ def editAdjuncts(request, pk=None):
         if adjunct_set.is_valid():
             adjuncts = []
             for form_item in adjunct_set:
+                if not form_item.cleaned_data:
+                    # A blank extra row (e.g. added via "Add adjunct" then left
+                    # empty) - Django's formset marks it empty_permitted and skips
+                    # validation for it, so there's nothing here to save.
+                    continue
                 if not form_item.cleaned_data.get('DELETE'):
                     # Don't include deleted items
                     recipeAdjunct = RecipeAdjunct()
@@ -282,7 +296,8 @@ def editAdjuncts(request, pk=None):
             recipe.adjuncts.set(adjuncts)
             return HttpResponseRedirect(reverse('recipe', kwargs={'pk': recipe.pk}))
         else:
-            return render(request, 'batchthis/editAdjuncts.html', {'adjunct_set': adjunct_set})
+            logger.debug("editAdjuncts: invalid formset for recipe_id=%s: %s", pk, adjunct_set.errors)
+            return render(request, 'batchthis/editAdjuncts.html', {'adjunct_set': adjunct_set, 'recipe': recipe})
 
 
 def editYeasts(request, pk=None):
@@ -293,7 +308,9 @@ def editYeasts(request, pk=None):
                 yeast_set_form = formset_factory(YeastForm, extra=0, can_delete=True, can_delete_extra=True)
                 yeast_set = yeast_set_form(initial=recipe.yeasts.all().values())
             else:
-                yeast_set = formset_factory(YeastForm, extra=1)
+                # A brand-new recipe has no yeasts yet - one blank row to start.
+                yeast_set_form = formset_factory(YeastForm, extra=1, can_delete=True, can_delete_extra=True)
+                yeast_set = yeast_set_form()
         context = {'recipe': recipe, 'yeast_set': yeast_set}
         return render(request, 'batchthis/editYeasts.html', context)
     else:
@@ -303,6 +320,11 @@ def editYeasts(request, pk=None):
         if yeast_set.is_valid():
             yeasts = []
             for form_item in yeast_set:
+                if not form_item.cleaned_data:
+                    # A blank extra row (e.g. added via "Add yeast" then left
+                    # empty) - Django's formset marks it empty_permitted and skips
+                    # validation for it, so there's nothing here to save.
+                    continue
                 if not form_item.cleaned_data.get('DELETE'):
                     # Don't include deleted items
                     recipeYeast = RecipeYeasts()
@@ -314,7 +336,8 @@ def editYeasts(request, pk=None):
             recipe.yeasts.set(yeasts)
             return HttpResponseRedirect(reverse(viewname='recipe', kwargs={'pk': recipe.pk}))
         else:
-            return render(request, template_name='batchthis/editYeasts.html', context={'yeast_set': yeast_set})
+            logger.debug("editYeasts: invalid formset for recipe_id=%s: %s", pk, yeast_set.errors)
+            return render(request, template_name='batchthis/editYeasts.html', context={'yeast_set': yeast_set, 'recipe': recipe})
 
 
 def addBatch(request, pk=None):

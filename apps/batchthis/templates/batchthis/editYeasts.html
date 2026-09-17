@@ -1,80 +1,52 @@
 {% extends 'batchthis/base.html' %}
 {% block content %}
-{% include 'batchthis/topbar.html' %}
-{% load crispy_forms_tags %}
 {% load static %}
 <script type="module" src="{% static 'batchthis/dist/model-select.js' %}"></script>
-<div class="container-fluid">
-    <div class="row">
-        <div class="col">
-            {% if form.errors %}
-            <div class="alert alert-warning" role="alert">
-                {{ form.errors }}
-            </div>
-            {% endif %}
-            <form method="POST" class="post-form" id="recipeform">
-                {% csrf_token %}
-                {{ yeast_set.management_form }}
-                <div id="yeast_form_set">
-                    {% for yeast_form in yeast_set %}
-                    <div id="yeast_form" class = "form-group row border-left-primary">
-                        <div class = "col-md-5 col-mb-0">
-                            <label for="{{ yeast_form.yeast_id.id_for_label }}">Yeast</label>
-                            {{ yeast_form.yeast_id }}
-                            <div data-react-model-select
-                                 data-endpoint="{% url 'yeast-list' %}"
-                                 data-target="#{{ yeast_form.yeast_id.id_for_label }}"
-                                 data-placeholder="Search yeasts..."></div>
-                        </div>
-                        {% comment %}
-                        <div class = "col-md-2 col-mb-0">
-                            {{ yeast_form.amount_weight|as_crispy_field }}
-                        </div>
-                        <div class = "col-md-2 col-mb-0">
-                            {{ yeast_form.amount_volume|as_crispy_field }}
-                        </div>
-                        {% endcomment %}
-                        <div class = "col-md-2 col-mb-0">
-                            {{ yeast_form.amount|as_crispy_field }}
-                        </div>
-                        <div class = "col-md-4 col-mb-0">
-                            {{ yeast_form.notes|as_crispy_field }}
-                        </div>
-                        <div class = "col-md-1 col-mb-0">
-                            Remove Item {{ yeast_form.DELETE }}
-                        </div>
-                    </div>
-                    {% endfor %}
-                </div>
-                <input type="button" class="btn btn-secondary" value = "Add Yeast" id="addYeastFormButton">
-                <button type="submit" class="btn btn-primary">Save</button>
-            </form>
-        </div>
-    </div>
+
+<div class="cl-page-head">
+  <div class="cl-wordmark font-display">{{ recipe.name }} &mdash; yeasts</div>
+  <div class="cl-batch-sub" style="margin-top:6px;">
+    <span><a href="{% url 'recipe' recipe.pk %}">&larr; Back to recipe</a></span>
+  </div>
 </div>
 
+{% if yeast_set.non_form_errors %}
+<div class="cl-flag" style="margin-bottom:20px;">
+  <span class="cl-flag-mark">!</span>
+  <span>{{ yeast_set.non_form_errors }}</span>
+</div>
+{% endif %}
+
+<form method="POST" class="cl-form" id="recipeform">
+  {% csrf_token %}
+  {{ yeast_set.management_form }}
+
+  <div id="yeast_form_set">
+    {% for yeast_form in yeast_set %}
+      {% include 'batchthis/includes/_yeast_form_row.html' %}
+    {% endfor %}
+  </div>
+
+  <template id="yeast-empty-form">
+    {% with yeast_set.empty_form as yeast_form %}
+      {% include 'batchthis/includes/_yeast_form_row.html' %}
+    {% endwith %}
+  </template>
+
+  <div class="cl-form-actions">
+    <button type="button" class="cl-btn cl-btn--secondary" id="addYeastFormButton">Add yeast</button>
+    <button type="submit" class="cl-btn cl-btn--primary">Save</button>
+  </div>
+</form>
+
 <script>
-      $('#addYeastFormButton').click(function () {
-      var yeastFormTotal = $('#id_form-TOTAL_FORMS').val();
-      var newFormTotal = parseInt(yeastFormTotal)+1
-      var div_id = "form_" + newFormTotal;
-      $('#yeast_form').clone().prop("id", div_id).appendTo("#yeast_form_set");
-      var newDiv = document.getElementById("#"+div_id);
-      $('#id_form-TOTAL_FORMS').val(newFormTotal);
-      var newSelector = document.querySelector("#"+div_id);
-      let formRegex = /form-(\d){1}-/g;
-      var newFormId = newFormTotal-1
-      newSelector.innerHTML = newSelector.innerHTML.replace(formRegex, `form-${newFormId}-`)
-      $(`#id_form-${newFormId}-amount_weight_0`).attr('value',"");
-      $(`#id_form-${newFormId}-amount_volume_0`).attr('value',"");
-      document.getElementById(`id_form-${newFormId}-yeast_id`).value = ""
-      var newModelSelect = newSelector.querySelector('[data-react-model-select]')
-      newModelSelect.removeAttribute('data-model-select-mounted')
-      window.BatchThis.mountModelSelects(newSelector)
-
-
-      });
-
-
+  document.addEventListener('DOMContentLoaded', function () {
+    CellarLedger.initFormsetAdd({
+      addButtonId: 'addYeastFormButton',
+      rowSetId: 'yeast_form_set',
+      templateId: 'yeast-empty-form',
+      totalFormsId: 'id_form-TOTAL_FORMS',
+    });
+  });
 </script>
 {% endblock %}
