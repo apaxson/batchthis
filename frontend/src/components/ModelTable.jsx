@@ -48,11 +48,31 @@ export default function ModelTable({ endpoint, columns: columnConfig, searchPlac
       columnConfig.map((col) => ({
         accessorKey: col.key,
         header: col.label,
+        // Sorting/filtering compare the raw accessor value, not the rendered
+        // cell - a "date" column keeps an ISO (YYYY-MM-DD) value so string
+        // sort order matches chronological order, and only formats it for
+        // display below.
         enableSorting: col.sortable !== false,
         enableGlobalFilter: col.filterable !== false,
         cell: (info) => {
           const value = info.getValue()
-          const display = value === null || value === undefined || value === '' ? '—' : `${value}${col.suffix || ''}`
+          const isEmpty = value === null || value === undefined || value === ''
+          let display
+          if (isEmpty) {
+            display = '—'
+          } else if (col.type === 'date') {
+            display = new Date(`${value}T00:00:00`).toLocaleDateString(undefined, {
+              year: 'numeric',
+              month: 'short',
+              day: 'numeric',
+            })
+          } else {
+            display = `${value}${col.suffix || ''}`
+          }
+          if (col.badgeField && !isEmpty) {
+            const badgeClass = info.row.original[col.badgeField] || ''
+            return <span className={`cl-stage ${badgeClass}`}>{display}</span>
+          }
           if (col.linkField) {
             const href = info.row.original[col.linkField]
             return href ? (

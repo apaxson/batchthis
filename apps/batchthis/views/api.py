@@ -4,8 +4,8 @@ from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from ..models import Adjunct, Fermentable, Recipe, Yeast
-from ..serializers import AdjunctSerializer, FermentableSerializer, RecipeSerializer, YeastSerializer
+from ..models import Adjunct, Batch, Fermentable, Recipe, Yeast
+from ..serializers import AdjunctSerializer, BatchSerializer, FermentableSerializer, RecipeSerializer, YeastSerializer
 
 logger = logging.getLogger(__name__)
 
@@ -39,4 +39,14 @@ class RecipeListAPIView(APIView):
         recipes = Recipe.objects.select_related('category', 'category__style').all()
         serializer = RecipeSerializer(recipes, many=True)
         logger.debug("Listed %d recipes for %s", len(serializer.data), request.user)
+        return Response(serializer.data)
+
+
+class BatchListAPIView(APIView):
+    def get(self, request: Request) -> Response:
+        batches = Batch.objects.select_related(
+            'category', 'category__style', 'recipe__category', 'recipe__category__style', 'fermenter__vessel'
+        ).all()
+        serializer = BatchSerializer(batches, many=True)
+        logger.debug("Listed %d batches for %s", len(serializer.data), request.user)
         return Response(serializer.data)

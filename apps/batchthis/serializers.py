@@ -1,7 +1,7 @@
 from django.urls import reverse
 from rest_framework import serializers
 
-from .models import Adjunct, Fermentable, Recipe, Yeast
+from .models import Adjunct, Batch, Fermentable, Recipe, Yeast
 
 
 class FermentableSerializer(serializers.ModelSerializer):
@@ -58,3 +58,50 @@ class RecipeSerializer(serializers.ModelSerializer):
 
     def get_detail_url(self, obj: Recipe) -> str:
         return reverse('recipe', kwargs={'pk': obj.pk})
+
+
+class BatchSerializer(serializers.ModelSerializer):
+    style = serializers.SerializerMethodField()
+    category = serializers.SerializerMethodField()
+    fermenter = serializers.SerializerMethodField()
+    size = serializers.SerializerMethodField()
+    status = serializers.SerializerMethodField()
+    status_class = serializers.SerializerMethodField()
+    startdate = serializers.DateTimeField(format='%Y-%m-%d')
+    enddate = serializers.DateTimeField(format='%Y-%m-%d')
+    detail_url = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Batch
+        fields = ['id', 'name', 'style', 'category', 'fermenter', 'size', 'status', 'status_class',
+                  'startdate', 'enddate', 'detail_url']
+
+    def _effective_category(self, obj: Batch):
+        if obj.category:
+            return obj.category
+        if obj.recipe and obj.recipe.category:
+            return obj.recipe.category
+        return None
+
+    def get_style(self, obj: Batch) -> str:
+        category = self._effective_category(obj)
+        return category.style.name if category else ''
+
+    def get_category(self, obj: Batch) -> str:
+        category = self._effective_category(obj)
+        return str(category) if category else ''
+
+    def get_fermenter(self, obj: Batch) -> str:
+        return obj.fermenter.vessel.name
+
+    def get_size(self, obj: Batch) -> str:
+        return str(obj.size)
+
+    def get_status(self, obj: Batch) -> str:
+        return 'Active' if obj.active else 'Complete'
+
+    def get_status_class(self, obj: Batch) -> str:
+        return 'cl-stage--active' if obj.active else 'cl-stage--complete'
+
+    def get_detail_url(self, obj: Batch) -> str:
+        return reverse('batch', kwargs={'pk': obj.pk})
