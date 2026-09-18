@@ -1,16 +1,71 @@
 {% extends 'batchthis/base.html' %}
 {% block content %}
-{% include 'batchthis/topbar.html' %}
-{% load crispy_forms_tags %}
-<div class="container-fluid">
-    <div class="row">
-        <div class="col">
-            <form method="POST" class="post-form">
-                {% csrf_token %}
-                {{ form|crispy }}
-                <button type="submit" class="btn btn-primary btn-user btn-block">Save</button>
-            </form>
-        </div>
-    </div>
+
+<div class="cl-page-head">
+  <div class="cl-wordmark font-display">New test</div>
+  <div class="cl-batch-sub" style="margin-top:6px;">
+    {% if form.initial.batch %}
+    <span><a href="{% url 'batch' form.initial.batch %}">&larr; Back to batch</a></span>
+    {% else %}
+    <span><a href="{% url 'batchListing' %}">&larr; Back to batches</a></span>
+    {% endif %}
+  </div>
 </div>
+
+{% if form.non_field_errors %}
+<div class="cl-flag" style="margin-bottom:20px;">
+  <span class="cl-flag-mark">!</span>
+  <span>{{ form.non_field_errors }}</span>
+</div>
+{% endif %}
+
+<div class="cl-panel">
+  <form method="POST" class="cl-form">
+    {% csrf_token %}
+
+    <div class="cl-form-grid">
+      <div class="cl-field">
+        <label for="{{ form.datetime.id_for_label }}">Date/time</label>
+        {{ form.datetime }}
+        {% if form.datetime.errors %}<div class="cl-field-error">{{ form.datetime.errors }}</div>{% endif %}
+      </div>
+      <div class="cl-field">
+        <label for="{{ form.type.id_for_label }}">Test type</label>
+        {{ form.type }}
+        {% if form.type.errors %}<div class="cl-field-error">{{ form.type.errors }}</div>{% endif %}
+      </div>
+      <div class="cl-field">
+        <label for="{{ form.value.id_for_label }}">Value</label>
+        {{ form.value }}
+        {% if form.value.errors %}<div class="cl-field-error">{{ form.value.errors }}</div>{% endif %}
+      </div>
+
+      <div class="cl-field">
+        <label for="{{ form.description.id_for_label }}">Description</label>
+        {{ form.description }}
+        {% if form.description.errors %}<div class="cl-field-error">{{ form.description.errors }}</div>{% endif %}
+      </div>
+      <div class="cl-field">
+        <label for="{{ form.units.id_for_label }}">Units</label>
+        {{ form.units }}
+        {% if form.units.errors %}<div class="cl-field-error">{{ form.units.errors }}</div>{% endif %}
+      </div>
+      <div class="cl-field">
+        <label for="{{ form.batch.id_for_label }}">Batch</label>
+        {{ form.batch }}
+        {% if form.batch.errors %}<div class="cl-field-error">{{ form.batch.errors }}</div>{% endif %}
+      </div>
+    </div>
+
+    <div class="cl-form-actions">
+      {% if form.initial.batch %}
+      <a href="{% url 'batch' form.initial.batch %}" class="cl-btn cl-btn--secondary">Cancel</a>
+      {% else %}
+      <a href="{% url 'batchListing' %}" class="cl-btn cl-btn--secondary">Cancel</a>
+      {% endif %}
+      <button type="submit" class="cl-btn cl-btn--primary">Save</button>
+    </div>
+  </form>
+</div>
+
 {% endblock %}
