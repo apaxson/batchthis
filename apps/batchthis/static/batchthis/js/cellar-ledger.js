@@ -195,3 +195,61 @@ CellarLedger.renderChart = function (svg, cfg) {
     if (tooltip) tooltip.hidden = true;
   });
 };
+
+// Refractometer correction modal (base.html) — reusable from any page. A trigger opens it with
+// data-target-field="<selector>"; "Use this value" writes the corrected gravity into that field
+// and fires a native "change" event so any existing listener on it (e.g. addBatch.html's batch
+// name builder) still reacts.
+(function ($) {
+  if (!$) return;
+  var $modal = $('#refractometerModal');
+  if (!$modal.length) return;
+
+  var targetFieldSelector = null;
+  var lastResult = null;
+
+  function reset() {
+    lastResult = null;
+    $('#rcm-result').attr('hidden', true);
+    $('#rcm-error').attr('hidden', true);
+    $('#rcm-apply').prop('disabled', true);
+  }
+
+  $modal.on('show.bs.modal', function (event) {
+    var $trigger = $(event.relatedTarget);
+    targetFieldSelector = $trigger.data('target-field') || null;
+    reset();
+  });
+
+  $('#rcm-calculate').on('click', function () {
+    var params = {};
+    var startUnit = $('#rcm-startUnit').val();
+    var currentUnit = $('#rcm-currentUnit').val();
+    var startData = parseFloat($('#rcm-startData').val());
+    var currentData = parseFloat($('#rcm-currentData').val());
+
+    if (startUnit === 'sg') { params.startSG = startData; } else { params.startBrix = startData; }
+    if (currentUnit === 'sg') { params.currentSG = currentData; } else { params.currentBrix = currentData; }
+
+    BatchUtilsRPC.refractometerCorrection(params).done(function (data) {
+      lastResult = data;
+      $('#rcm-sg').text(parseFloat(data.sg).toFixed(3));
+      $('#rcm-abv').html(parseFloat(data.abv).toFixed(1) + ' <small>%</small>');
+      $('#rcm-result').removeAttr('hidden');
+      $('#rcm-error').attr('hidden', true);
+      $('#rcm-apply').prop('disabled', false);
+    }).fail(function () {
+      $('#rcm-result').attr('hidden', true);
+      $('#rcm-apply').prop('disabled', true);
+      $('#rcm-error').removeAttr('hidden');
+    });
+  });
+
+  $('#rcm-apply').on('click', function () {
+    if (!lastResult || !targetFieldSelector) return;
+    var $target = $(targetFieldSelector);
+    $target.val(parseFloat(lastResult.sg).toFixed(3));
+    $target[0].dispatchEvent(new Event('change', { bubbles: true }));
+    $modal.modal('hide');
+  });
+})(window.jQuery);

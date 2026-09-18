@@ -35,7 +35,10 @@
         {% if form.type.errors %}<div class="cl-field-error">{{ form.type.errors }}</div>{% endif %}
       </div>
       <div class="cl-field">
-        <label for="{{ form.value.id_for_label }}">Value</label>
+        <label for="{{ form.value.id_for_label }}" style="display:flex; justify-content:space-between; align-items:baseline; gap:8px;">
+          <span>Value</span>
+          <button type="button" id="value-refractometer-link" class="cl-link-btn" hidden data-toggle="modal" data-target="#refractometerModal" data-target-field="#{{ form.value.id_for_label }}">Use refractometer</button>
+        </label>
         {{ form.value }}
         {% if form.value.errors %}<div class="cl-field-error">{{ form.value.errors }}</div>{% endif %}
       </div>
@@ -67,5 +70,20 @@
     </div>
   </form>
 </div>
+
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    var typeSelect = document.getElementById('{{ form.type.id_for_label }}');
+    var refractoLink = document.getElementById('value-refractometer-link');
+
+    function toggleRefractoLink() {
+      var selectedText = typeSelect.options[typeSelect.selectedIndex] ? typeSelect.options[typeSelect.selectedIndex].text : '';
+      refractoLink.hidden = (selectedText !== 'Specific Gravity');
+    }
+
+    typeSelect.addEventListener('change', toggleRefractoLink);
+    toggleRefractoLink();
+  });
+</script>
 
 {% endblock %}

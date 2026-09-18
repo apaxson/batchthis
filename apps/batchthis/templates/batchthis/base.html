@@ -107,6 +107,69 @@
     </div>
   </div>
 
+  <!-- Refractometer correction modal — reusable site-wide. Open it from any page with a trigger like:
+       <button data-toggle="modal" data-target="#refractometerModal" data-target-field="#id_startingGravity">...</button>
+       and "Use this value" will write the corrected gravity into that field. -->
+  <div class="modal fade cl-modal" id="refractometerModal" tabindex="-1" role="dialog" aria-labelledby="refractometerModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="refractometerModalLabel">Refractometer correction</h5>
+          <button class="close" type="button" data-dismiss="modal" aria-label="Close">
+            <span aria-hidden="true">×</span>
+          </button>
+        </div>
+        <div class="modal-body">
+          <div class="cl-form-grid">
+            <div class="cl-field">
+              <label for="rcm-startData">Starting measurement</label>
+              <input type="number" step="any" id="rcm-startData" value="0">
+            </div>
+            <div class="cl-field">
+              <label for="rcm-startUnit">Starting unit</label>
+              <select id="rcm-startUnit">
+                <option value="bx">Brix</option>
+                <option value="sg">Specific Gravity</option>
+              </select>
+            </div>
+            <div class="cl-field">
+              <label for="rcm-currentData">Current measurement</label>
+              <input type="number" step="any" id="rcm-currentData" value="0">
+            </div>
+            <div class="cl-field">
+              <label for="rcm-currentUnit">Current unit</label>
+              <select id="rcm-currentUnit">
+                <option value="bx">Brix</option>
+                <option value="sg">Specific Gravity</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="cl-flag" id="rcm-error" hidden style="margin-top:16px;">
+            <span class="cl-flag-mark">!</span>
+            <span>Could not calculate a correction. Check your inputs and try again.</span>
+          </div>
+
+          <div class="cl-readouts" id="rcm-result" hidden style="grid-template-columns: repeat(2, 1fr); margin-top:18px; margin-bottom:0;">
+            <div class="cl-readout">
+              <div class="cl-readout-label">Corrected gravity</div>
+              <div class="cl-readout-value" id="rcm-sg">—</div>
+            </div>
+            <div class="cl-readout">
+              <div class="cl-readout-label">Est. ABV</div>
+              <div class="cl-readout-value" id="rcm-abv">— <small>%</small></div>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="cl-btn cl-btn--secondary" type="button" data-dismiss="modal">Cancel</button>
+          <button class="cl-btn cl-btn--secondary" type="button" id="rcm-calculate">Calculate</button>
+          <button class="cl-btn cl-btn--primary" type="button" id="rcm-apply" disabled>Use this value</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- Custom scripts for all pages-->
   <script>
     // URL template consumed by utils-rpc.js -- '__ACTION__' is swapped for the action name at call time.

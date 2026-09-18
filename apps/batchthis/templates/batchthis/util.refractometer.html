@@ -1,17 +1,62 @@
 {% extends 'batchthis/base.html' %}
 {% block content %}
-{% include 'batchthis/topbar.html' %}
-{% load crispy_forms_tags %}
 
-<div class="container-fluid">
-            <form method="POST" class="post-form form-group">
-                {% csrf_token %}
-                {{ form|crispy }}
-                <button type="submit" class="save btn btn-default">Calculate</button>
-            </form>
-            <div style="font-size: 140%">
-                SG: {{ sg }}
-                ABV: {{ abv }}%
-            </div>
+<div class="cl-page-head">
+  <div class="cl-wordmark font-display">Refractometer correction</div>
+  <div class="cl-batch-sub" style="margin-top:6px;">
+    <span>Corrects a Brix reading for the alcohol already present, so mid-fermentation refractometer readings match a hydrometer's specific gravity.</span>
+  </div>
 </div>
+
+{% if form.non_field_errors %}
+<div class="cl-flag" style="margin-bottom:20px;">
+  <span class="cl-flag-mark">!</span>
+  <span>{{ form.non_field_errors }}</span>
+</div>
+{% endif %}
+
+<div class="cl-panel">
+  <form method="POST" class="cl-form">
+    {% csrf_token %}
+
+    <div class="cl-form-grid">
+      <div class="cl-field">
+        <label for="{{ form.startData.id_for_label }}">Starting measurement</label>
+        {{ form.startData }}
+        {% if form.startData.errors %}<div class="cl-field-error">{{ form.startData.errors }}</div>{% endif %}
+      </div>
+      <div class="cl-field">
+        <label for="{{ form.startUnit.id_for_label }}">Starting unit</label>
+        {{ form.startUnit }}
+        {% if form.startUnit.errors %}<div class="cl-field-error">{{ form.startUnit.errors }}</div>{% endif %}
+      </div>
+      <div class="cl-field">
+        <label for="{{ form.currentData.id_for_label }}">Current measurement</label>
+        {{ form.currentData }}
+        {% if form.currentData.errors %}<div class="cl-field-error">{{ form.currentData.errors }}</div>{% endif %}
+      </div>
+      <div class="cl-field">
+        <label for="{{ form.currentUnit.id_for_label }}">Current unit</label>
+        {{ form.currentUnit }}
+        {% if form.currentUnit.errors %}<div class="cl-field-error">{{ form.currentUnit.errors }}</div>{% endif %}
+      </div>
+    </div>
+
+    <div class="cl-form-actions">
+      <button type="submit" class="cl-btn cl-btn--primary">Calculate</button>
+    </div>
+  </form>
+
+  <div class="cl-readouts" style="grid-template-columns: repeat(2, 1fr); margin-top:20px; margin-bottom:0;">
+    <div class="cl-readout">
+      <div class="cl-readout-label">Corrected gravity</div>
+      <div class="cl-readout-value">{{ sg }}</div>
+    </div>
+    <div class="cl-readout">
+      <div class="cl-readout-label">Est. ABV</div>
+      <div class="cl-readout-value">{{ abv }} <small>%</small></div>
+    </div>
+  </div>
+</div>
+
 {% endblock %}

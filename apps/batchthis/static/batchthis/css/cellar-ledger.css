@@ -639,9 +639,44 @@ a.nav-link, a.sub-link, a.dropdown-item {
   .cl-sidebar, .cl-rail-btn svg, .cl-collapse-toggle svg { transition: none !important; }
 }
 
+.cl-link-btn {
+  font: inherit;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--honey-line);
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+}
+.cl-link-btn:hover { color: var(--honey); text-decoration: underline; }
+
 .cl-mouse-tooltip {
   pointer-events: none;
 }
 .cl-mouse-tooltip .arrow {
   display: none;
+}
+
+/* ---------- Cellar Ledger modal chrome (e.g. #refractometerModal) ---------- */
+.cl-modal .modal-content {
+  background: var(--paper-raised);
+  color: var(--ink);
+  border: 1px solid var(--line);
+  border-radius: 3px;
+}
+.cl-modal .modal-header,
+.cl-modal .modal-footer {
+  border-color: var(--line);
+}
+.cl-modal .modal-title {
+  font-family: 'Fraunces', 'Iowan Old Style', Georgia, serif;
+  font-weight: 600;
+}
+.cl-modal .modal-footer {
+  gap: 8px;
+}
+.cl-modal .close {
+  color: var(--ink);
+  text-shadow: none;
 }

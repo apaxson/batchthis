@@ -37,7 +37,10 @@
       </div>
 
       <div class="cl-field">
-        <label for="{{ form.startingGravity.id_for_label }}">Starting gravity</label>
+        <label for="{{ form.startingGravity.id_for_label }}" style="display:flex; justify-content:space-between; align-items:baseline; gap:8px;">
+          <span>Starting gravity</span>
+          <button type="button" class="cl-link-btn" data-toggle="modal" data-target="#refractometerModal" data-target-field="#{{ form.startingGravity.id_for_label }}">Use refractometer</button>
+        </label>
         {{ form.startingGravity }}
         {% if form.startingGravity.errors %}<div class="cl-field-error">{{ form.startingGravity.errors }}</div>{% endif %}
       </div>
