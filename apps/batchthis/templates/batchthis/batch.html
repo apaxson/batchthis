@@ -123,32 +123,36 @@
 </div>
 
 <div class="cl-cols" style="margin-top:24px;">
-  <div class="cl-panel">
-    <div class="cl-section-head"><div class="cl-section-title">Fermentation log</div><div class="cl-section-note"><a href="{% url 'addDetailNoteType' batch.pk 'Fermentation Note' %}">Add entry</a></div></div>
-    {% if fermnotes %}
-      {% for note in fermnotes %}
-      <div style="margin-bottom:10px;">
-        <div class="cl-num" style="font-size:0.8rem;color:var(--ink-soft);">{{ note.date|date:"Y-m-d H:i A" }}</div>
-        <div>{{ note.text }}</div>
-      </div>
-      {% endfor %}
-    {% else %}
-      <div class="cl-empty">No fermentation log entries.</div>
-    {% endif %}
+  <div>
+    <div class="cl-panel">
+      <div class="cl-section-head"><div class="cl-section-title">Fermentation log</div><div class="cl-section-note"><a href="{% url 'addDetailNoteType' batch.pk 'Fermentation Note' %}">Add entry</a></div></div>
+      {% if fermnotes %}
+        {% for note in fermnotes %}
+        <div style="margin-bottom:10px;">
+          <div class="cl-num" style="font-size:0.8rem;color:var(--ink-soft);">{{ note.date|date:"Y-m-d H:i A" }}</div>
+          <div>{{ note.text }}</div>
+        </div>
+        {% endfor %}
+      {% else %}
+        <div class="cl-empty">No fermentation log entries.</div>
+      {% endif %}
+    </div>
   </div>
 
-  <div class="cl-panel">
-    <div class="cl-section-head"><div class="cl-section-title">General notes</div><div class="cl-section-note"><a href="{% url 'addDetailNoteType' batch.pk 'General Note' %}">Add note</a></div></div>
-    {% if gennotes %}
-      {% for note in gennotes %}
-      <div style="margin-bottom:10px;">
-        <div class="cl-num" style="font-size:0.8rem;color:var(--ink-soft);">{{ note.date|date:"Y-m-d H:i A" }}</div>
-        <div>{{ note.text }}</div>
-      </div>
-      {% endfor %}
-    {% else %}
-      <div class="cl-empty">No general notes.</div>
-    {% endif %}
+  <div>
+    <div class="cl-panel">
+      <div class="cl-section-head"><div class="cl-section-title">General notes</div><div class="cl-section-note"><a href="{% url 'addDetailNoteType' batch.pk 'General Note' %}">Add note</a></div></div>
+      {% if gennotes %}
+        {% for note in gennotes %}
+        <div style="margin-bottom:10px;">
+          <div class="cl-num" style="font-size:0.8rem;color:var(--ink-soft);">{{ note.date|date:"Y-m-d H:i A" }}</div>
+          <div>{{ note.text }}</div>
+        </div>
+        {% endfor %}
+      {% else %}
+        <div class="cl-empty">No general notes.</div>
+      {% endif %}
+    </div>
   </div>
 </div>
 
