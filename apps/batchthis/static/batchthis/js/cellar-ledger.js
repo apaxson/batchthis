@@ -253,3 +253,42 @@ CellarLedger.renderChart = function (svg, cfg) {
     $modal.modal('hide');
   });
 })(window.jQuery);
+
+// Mouse-following tooltips (e.g. yeast/fermentable/adjunct names showing their notes) —
+// used on recipe.html and the includes/recipe_additions.html partial (addRecipe2.html).
+(function ($) {
+  if (!$) return;
+  $(document).ready(function () {
+    var $mouseTooltips = $('.js-mouse-tooltip').filter(function () {
+      return $.trim($(this).attr('title')) !== '';
+    });
+    if (!$mouseTooltips.length) return;
+
+    $mouseTooltips.tooltip({
+      trigger: 'manual',
+      placement: 'top',
+      animation: false,
+      template: '<div class="tooltip cl-mouse-tooltip" role="tooltip"><div class="arrow"></div><div class="tooltip-inner"></div></div>'
+    });
+
+    $mouseTooltips.on('mouseenter', function () {
+      $(this).tooltip('show');
+    }).on('mousemove', function (e) {
+      var tipId = $(this).attr('aria-describedby');
+      if (tipId) {
+        // Popper (used internally by the tooltip) positions the tooltip with its own
+        // "transform: translate3d(...)" — it must be cleared, or it stacks on top of
+        // the top/left below and throws the tooltip off the intended position.
+        $('#' + tipId).css({
+          position: 'fixed',
+          top: (e.clientY + 16) + 'px',
+          left: (e.clientX + 16) + 'px',
+          margin: 0,
+          transform: 'none'
+        });
+      }
+    }).on('mouseleave', function () {
+      $(this).tooltip('hide');
+    });
+  });
+})(window.jQuery);

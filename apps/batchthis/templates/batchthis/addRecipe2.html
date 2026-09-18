@@ -1,90 +1,107 @@
 {% extends 'batchthis/base.html' %}
 {% block content %}
-{% include 'batchthis/topbar.html' %}
-{% load crispy_forms_tags %}
-{% load static %}
-<div class="container-fluid">
-    <div class="row">
-        <div class="col">
-            {% if form.errors %}
-            <div class="alert alert-warning" role="alert">
-                {{ form.errors }}
-            </div>
-            {% endif %}
-            <form method="POST" class="post-form" id="recipeform" categories-url="{% url 'categoryFilterByStyle' %}">
-                {% csrf_token %}
-                <div class="form-row">
-                    <div class="form-group col-md-12 col-mb-0">
-                        {{ form.name|as_crispy_field }}
-                    </div>
-                </div>
-                <div class="form-row">
-                    <div class="form-group col-md-3 col-mb-0">
-                        {{ form.dateCreated|as_crispy_field }}
-                    </div>
-                    <div class="form-group col-md-3 col-mb-0">
-                        {{ form.estOG|as_crispy_field }}
-                    </div>
-                    <div class="form-group col-md-3 col-mb-0">
-                        {{ form.estFG|as_crispy_field }}
-                    </div>
-                    <div class="form-group col-md-3 col-mb-0">
-                        {{ form.estABV|as_crispy_field }}
-                    </div>
-                </div>
 
-                <div class="form-group row">
-                    <div class="col-md-6 col-mb-0">
-                        <div class="form-group row">
-                            <div class="col-md-8 col-mb-0">
-                                {{ form.batchSize|as_crispy_field }}
-                            </div>
-                        </div>
-                        <div class="form-group row">
-                            <div class="col-md-6 col-mb-0">
-                                {{ form.style|as_crispy_field }}
-                            </div>
-                            <div class="col-md-6 col-mb-0">
-                                {{ form.category|as_crispy_field }}
-                            </div>
-                        </div>
-                        <div class="form-group row mt-5">
-                            <button type="submit" class="btn btn-primary btn-user btn-block">Save</button>
-                        </div>
-                    </div>
-                    <div class="col-md-6 col-mb-0">
-                        {{ form.notes|as_crispy_field }}
-                    </div>
-                </div>
-            </form>
-            <!-- Fermentables -->
-            <!--TODO: replace with a list of fermentables-->
-            <div id="fermentables">
-
-            </div>
-            {% if recipe %} {# if we have a recipe, show the fermentables/adjuncts/yeasts #}
-
-            {% include 'batchthis/includes/recipe_additions.html' %}
-
-            {% endif %} {# if recipe #}
-    </div>
+<div class="cl-page-head">
+  <div class="cl-wordmark font-display">{% if recipe %}Edit recipe{% else %}New recipe{% endif %}</div>
+  <div class="cl-batch-sub" style="margin-top:6px;">
+    {% if recipe %}
+    <span><a href="{% url 'recipe' recipe.pk %}">&larr; Back to recipe</a></span>
+    {% else %}
+    <span><a href="{% url 'recipeListing' %}">&larr; Back to recipes</a></span>
+    {% endif %}
+  </div>
 </div>
-<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+
+{% if form.non_field_errors %}
+<div class="cl-flag" style="margin-bottom:20px;">
+  <span class="cl-flag-mark">!</span>
+  <span>{{ form.non_field_errors }}</span>
+</div>
+{% endif %}
+
+<div class="cl-panel">
+  <form method="POST" class="cl-form" id="recipeform" categories-url="{% url 'categoryFilterByStyle' %}">
+    {% csrf_token %}
+
+    <div class="cl-form-grid">
+      <div class="cl-field cl-field--grow">
+        <label for="{{ form.name.id_for_label }}">Recipe name</label>
+        {{ form.name }}
+        {% if form.name.errors %}<div class="cl-field-error">{{ form.name.errors }}</div>{% endif %}
+      </div>
+
+      <div class="cl-field">
+        <label for="{{ form.dateCreated.id_for_label }}">Created date</label>
+        {{ form.dateCreated }}
+        {% if form.dateCreated.errors %}<div class="cl-field-error">{{ form.dateCreated.errors }}</div>{% endif %}
+      </div>
+      <div class="cl-field">
+        <label for="{{ form.estOG.id_for_label }}">Original gravity</label>
+        {{ form.estOG }}
+        {% if form.estOG.errors %}<div class="cl-field-error">{{ form.estOG.errors }}</div>{% endif %}
+      </div>
+      <div class="cl-field">
+        <label for="{{ form.estFG.id_for_label }}">Final gravity</label>
+        {{ form.estFG }}
+        {% if form.estFG.errors %}<div class="cl-field-error">{{ form.estFG.errors }}</div>{% endif %}
+      </div>
+
+      <div class="cl-field">
+        <label for="{{ form.estABV.id_for_label }}">Estimated ABV (%)</label>
+        {{ form.estABV }}
+        {% if form.estABV.errors %}<div class="cl-field-error">{{ form.estABV.errors }}</div>{% endif %}
+      </div>
+      <div class="cl-field">
+        <label for="{{ form.batchSize.id_for_label }}">Batch size</label>
+        {{ form.batchSize }}
+        {% if form.batchSize.errors %}<div class="cl-field-error">{{ form.batchSize.errors }}</div>{% endif %}
+      </div>
+      <div class="cl-field">
+        <label for="{{ form.style.id_for_label }}">Style</label>
+        {{ form.style }}
+        {% if form.style.errors %}<div class="cl-field-error">{{ form.style.errors }}</div>{% endif %}
+      </div>
+
+      <div class="cl-field">
+        <label for="{{ form.category.id_for_label }}">Category</label>
+        {{ form.category }}
+        {% if form.category.errors %}<div class="cl-field-error">{{ form.category.errors }}</div>{% endif %}
+      </div>
+      <div class="cl-field cl-field--grow">
+        <label for="{{ form.notes.id_for_label }}">Recipe notes</label>
+        {{ form.notes }}
+        {% if form.notes.errors %}<div class="cl-field-error">{{ form.notes.errors }}</div>{% endif %}
+      </div>
+    </div>
+
+    <div class="cl-form-actions">
+      {% if recipe %}
+      <a href="{% url 'recipe' recipe.pk %}" class="cl-btn cl-btn--secondary">Cancel</a>
+      {% else %}
+      <a href="{% url 'recipeListing' %}" class="cl-btn cl-btn--secondary">Cancel</a>
+      {% endif %}
+      <button type="submit" class="cl-btn cl-btn--primary">Save</button>
+    </div>
+  </form>
+</div>
+
+{% if recipe %}
+{% include 'batchthis/includes/recipe_additions.html' %}
+{% endif %}
+
 <script>
-    $("#id_style").change(function () {
-      var url = $("#recipeform").attr("categories-url");
+  document.addEventListener('DOMContentLoaded', function () {
+    $('#id_style').on('change', function () {
+      var url = $('#recipeform').attr('categories-url');
       var styleId = $(this).val();
 
-      $.ajax({                       // initialize an AJAX request
-        url: url,                    // set the url of the request (= localhost:8000/hr/ajax/load-cities/)
-        data: {
-          'style': styleId       // add the country id to the GET parameters
-        },
-        success: function (data) {   // `data` is the return of the `load_cities` view function
-          $("#id_category").html(data);  // replace the contents of the city input with the data that came from the server
+      $.ajax({
+        url: url,
+        data: { style: styleId },
+        success: function (data) {
+          $('#id_category').html(data);
         }
       });
-
     });
 
     function calculateEstimatedABV() {
@@ -93,32 +110,12 @@
       if (isNaN(startSG) || isNaN(endSG)) {
         return;
       }
-      BatchUtilsRPC.potentialABV({startSG: startSG, endSG: endSG}).done(function (data) {
+      BatchUtilsRPC.potentialABV({ startSG: startSG, endSG: endSG }).done(function (data) {
         $('#id_estABV').val(data.abv.toFixed(1));
       });
     }
     $('#id_estOG, #id_estFG').on('change blur', calculateEstimatedABV);
-
+  });
 </script>
-<script>
-      $('#addFermentableFormButton').click(function () {
-      var fermFormTotal = $('#id_ferm-TOTAL_FORMS').val();
-      $('#fermentable_form').clone().prop("id", "ferm_form_" + fermFormTotal).appendTo("#fermentable_form_set");
-      $('#id_ferm-TOTAL_FORMS').val(parseInt(fermFormTotal) + 1);
-      });
 
-      $('#addAdjunctFormButton').click(function () {
-      var adjFormTotal = $('#id_adj-TOTAL_FORMS').val();
-      $('#adjunct_form').clone().prop("id", "adjunct_form_" + adjFormTotal).appendTo("#adjunct_form_set");
-      $('#id_adj-TOTAL_FORMS').val(parseInt(adjFormTotal) + 1);
-      });
-
-      $('#addYeastFormButton').click(function () {
-      var yeastFormTotal = $('#id_yeast-TOTAL_FORMS').val();
-      $('#yeast_form').clone().prop("id", "yeast_form_" + yeastFormTotal).appendTo("#yeast_form_set");
-      $('#id_yeast-TOTAL_FORMS').val(parseInt(yeastFormTotal) +1);
-      })
-
-
-</script>
 {% endblock %}
