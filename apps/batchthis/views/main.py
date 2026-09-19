@@ -412,12 +412,12 @@ def batchNote(request, pk=None, noteType=None):
         if pk:
             form.fields['batch'].queryset = Batch.objects.filter(pk=pk)
             form.initial['batch'] = pk
+        else:
+            form.fields['batch'].queryset = Batch.objects.all()
         if noteType:
             noteTypes = BatchNoteType.objects.filter(name=noteType)
             form.fields['notetype'].queryset = noteTypes
             form.initial['notetype'] = noteTypes[0].pk
-        else:
-            form.fields['batch'].queryset = Batch.objects.all()
     else:
         form = BatchNoteForm(request.POST)
         form.save()
@@ -426,9 +426,10 @@ def batchNote(request, pk=None, noteType=None):
 
 
 def activity(request, pk=None):
-    batch = Batch.objects.get(pk=pk)
-    activity = batch.activity.all().order_by('datetime')
+    batch = get_object_or_404(Batch, pk=pk)
+    activity = batch.activity.all().order_by('-datetime')
     context = {
+        'batch': batch,
         'activity': activity
     }
     return render(request, "batchthis/activity.html", context=context)

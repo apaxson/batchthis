@@ -1,40 +1,35 @@
 {% extends 'batchthis/base.html' %}
 {% block content %}
-{% include 'batchthis/topbar.html' %}
-<div class="container-fluid">
-    <div class="row">
-        <!-- TODO Add "Back Button" -->
-        <!-- Batch Actions and Meta Card -->
-        <div class="col-xs-12 w-100">
-            <div class="card shadow mb-4 h-100">
-                <!-- Card Header - Dropdown -->
-                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
-                        <i class="fas fa-note fa-2x text-gray-300"></i>
-                    <h6 class="m-0 font-weight-bold text-primary">Activity Log</h6>
-                </div>
-                <!-- Card Body -->
-                <div class="card-body">
-                    <!-- {% if activity %} -->
-                      {% for note in activity %}
-                    <div class="row">
-                        <div class="col-xs-3 col-md-5 font-weight-bold">
-                            {{ note.datetime|date:"Y-m-d H:i A" }}
-                        </div>
-                    </div>
-                    <div class="row">
-                        <div class="col-sm-10 offset-sm-1">
-                            {{ note.text }}
-                        </div>
-                    </div>
-                      {% endfor %}
-                    <!--{% else %}
-                    No Activity
-                    {% endif %}-->
-                </div>
-            </div>
-        </div>
-        <!-- End Card -->
-    </div>
+
+<div class="cl-page-head">
+  <div class="cl-wordmark font-display">{{ batch.name }} &mdash; activity log</div>
+  <div class="cl-batch-sub" style="margin-top:6px;">
+    <span><a href="{% url 'batch' batch.pk %}">&larr; Back to batch #{{ batch.pk }}</a></span>
+  </div>
 </div>
-<!-- End Activity Note -->
+
+<div class="cl-section-head">
+  <div class="cl-section-title">Activity</div>
+  <div class="cl-section-note">{{ activity|length }} total</div>
+</div>
+<div class="cl-table-scroll">
+  <table class="cl-ledger">
+    <thead>
+      <tr><th>Date/time</th><th>Entry</th></tr>
+    </thead>
+    <tbody>
+      {% if not activity %}
+      <tr><td class="cl-empty" colspan="2">No activity yet.</td></tr>
+      {% else %}
+      {% for note in activity %}
+      <tr>
+        <td class="cl-num" style="white-space:nowrap;">{{ note.datetime|date:"M j, Y g:i A" }}</td>
+        <td>{{ note.text }}</td>
+      </tr>
+      {% endfor %}
+      {% endif %}
+    </tbody>
+  </table>
+</div>
+
 {% endblock %}
