@@ -50,6 +50,19 @@ apps/<app_name>/
 ## React components
 - repeatable component for ModelChoiceField is react-select
 
+## Cellar Ledger UI Redesign (Django template pages)
+Server-rendered pages under `apps/batchthis/templates/batchthis/` are being migrated one at a time to the "Cellar Ledger" design system. When asked to redesign/update the look of a page, or convert it away from crispy-forms/topbar:
+- **Design system files:** `apps/batchthis/static/batchthis/css/cellar-ledger.css` (tokens + all `cl-*` classes) and `apps/batchthis/static/batchthis/js/cellar-ledger.js` (shared interactive behavior — sidebar collapse, formset add/remove rows, mouse-following tooltips, the refractometer modal). Both are loaded globally via `base.html`, so new shared behavior belongs there, not duplicated per-page.
+- **Verify which template is actually live before redesigning.** This app has dead/legacy template files still sitting in the tree (e.g. `addRecipe.html` is unreferenced by any view — the real template is `addRecipe2.html`) and duplicate URL `name=` entries in `urls.py` (e.g. `editRecipe` is defined twice; `reverse()` silently resolves to whichever is declared last). Grep the view's actual `render()` call rather than assuming from the filename.
+- **Redesigned pages never** `{% include 'batchthis/topbar.html' %}` — `base.html`'s sidebar replaced it. Leaving it in on a still-legacy page renders a stale, duplicate top nav.
+- **Forms:** drop crispy-forms entirely (no `{% load crispy_forms_tags %}`, no `|as_crispy_field`). Hand-roll each field as `.cl-field` (label + `{{ form.x }}` + `.cl-field-error`), inside `.cl-panel` > `<form class="cl-form">` > `.cl-form-grid` (3-col, `.cl-field--grow` to span a row), non-field errors in one `.cl-flag`, actions in `.cl-form-actions` (`.cl-btn--secondary` Cancel / `.cl-btn--primary` Save). Reference: `addBatch.html`.
+- **Repeating formset rows** (add/remove a row, e.g. recipe fermentables/adjuncts/yeasts) use `.cl-formset-row`, not `.cl-form-grid` — reference `editYeasts.html`/`editFermentables.html`/`editAdjuncts.html`.
+- **List/detail tables** use `.cl-section-head` + `.cl-table-scroll` + `.cl-ledger` — reference `recipe.html`. When the same rows are displayed on more than one page (e.g. `includes/recipe_additions.html`), reuse that exact table markup rather than inventing new markup for it.
+- **Hover tooltips** on a name/label cell (showing a related model's notes) just need `class="... js-mouse-tooltip" data-toggle="tooltip" title="{{ obj.notes|default:'' }}"` — the show/follow-cursor/hide behavior is already wired up globally in `cellar-ledger.js`. Don't reimplement it per page.
+- **A modal that needs to hand a computed value back to an arbitrary field on the calling page** should follow the existing pattern: one global modal defined in `base.html` (see `#refractometerModal`) + logic in `cellar-ledger.js`, triggered from any page with `data-toggle="modal" data-target="#theModal" data-target-field="#target_field_id"`. Don't build a one-off modal per page.
+- **Before adding new CSS**, check `cellar-ledger.css` for an existing `.cl-*` class that already covers it.
+- **After a redesign, verify live in a browser** (not just a template diff) — start the dev server, log in with a throwaway session (`SessionStore` + `SESSION_KEY`/`BACKEND_SESSION_KEY`/`HASH_SESSION_KEY`, since `ALLOWED_HOSTS` only permits `127.0.0.1`/`192.168.1.35`, not `localhost`), and exercise any JS behavior (AJAX cascades, tooltips, modals) with Playwright/screenshots, not just a page-load check.
+
 ## Code Style & Architecture Guidelines
 - **Views:** Use class-based views for complex logic, function-based for simple endpoints.
 - **Forms & Graphs:** Keep validation and rendering on the React client side. Backend views should strictly accept/return JSON payloads.
