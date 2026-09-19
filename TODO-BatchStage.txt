@@ -1,0 +1,281 @@
+TODO-BatchStage
+================
+Plan for tracking a batch's workflow timeline (pitch -> fermentation ->
+aging -> filtering -> bottling) so we can measure how long a batch spent
+in each phase. Sketched 2026-09-18. NOT STARTED - no code changes made yet.
+This file is the reference to pick back up from.
+
+
+GOAL
+----
+* When a batch is made, log timestamped transitions between production
+  stages (Pitch, Primary, Secondary, Racking, Aging, Filtering, Bottling).
+* Be able to compute elapsed time between any two stages for a batch
+  (e.g. time between pitch and bottling).
+* Eventually (phase 2, not required for v1): let a Recipe declare an
+  *expected* stage timeline to compare actual batches against - see the
+  "RECIPE WORKFLOW (VESSEL CHAIN)" section below for the fleshed-out
+  design (updated 2026-09-19, per Aaron).
+
+
+WHAT ALREADY EXISTS (found while tracing this - don't re-invent these)
+------------------------------------------------------------------
+* `BatchStage` model already exists (apps/batchthis/models.py:67). Just a
+  `name` field. Registered in admin.py, seeded with ZERO rows, referenced
+  by nothing else in the codebase. This is the lookup table for the stage
+  vocabulary - reuse/extend it, don't build a new parallel one.
+* `batch_stages` list (models.py:35, PRI/SEC/TER/RAC/AGE) is dead code -
+  never assigned to any field. It's the intended seed vocabulary for
+  `BatchStage` rows, just never wired up. Delete it once BatchStage is
+  seeded with real rows (extend with Pitch/Filtering/Bottling, which
+  aren't in this list).
+* `Batch.complete()` (models.py:378) sets enddate/active=False but is
+  never called from any view. This is the hook for "batch reached its
+  final stage."
+* `Batch.transfer(src_vessel, dst_vessel)` (models.py:375) is a `pass`
+  stub, clearly meant for the vessel move that happens on
+  racking/aging transitions.
+* `BatchTest` (dated + type FK + batch FK) and `BatchNote` (dated +
+  notetype FK + batch FK) are the existing precedent for "append-only,
+  timestamped, typed log entry against a batch." A stage-transition log
+  is structurally the same shape - copy this pattern.
+* `RecipeAdjunct.time_to_add` (minutes-since-batch-start) is the existing
+  idiom for "offset from batch start" planning data - reusable later for
+  the phase-2 recipe-side expected timeline.
+
+BUG FOUND ALONG THE WAY (separate from this feature, but blocks it)
+---------------------------------------------------------------
+* `Batch.startdate` is `models.DateTimeField(auto_now_add=True)`.
+  `addBatch` view (views/main.py:349) already tries to set it from the
+  form, but Django silently discards any assigned value on an
+  auto_now_add field - it's always "now" at creation and can never be
+  edited. This field also feeds the fault-checking engine's elapsed-time
+  math (lib/faults.py:100-102) and recipe.html's batch ordering.
+  If startdate is meant to double as the "Pitch" timestamp, this needs
+  fixing first (auto_now_add=True -> default=timezone.now, editable).
+  Confirm with Aaron before bundling this fix into the stage-tracking
+  work vs. filing it separately.
+
+
+MODEL CHANGES
+-------------
+1. Extend `BatchStage`:
+   - add `shortid` (SlugField, unique, auto-slug on save - same pattern
+     as BatchTestType) so code can reference stages by stable id instead
+     of matching on display name.
+   - add `sort_order` (PositiveSmallIntegerField) for a defined sequence.
+   - new data migration seeds: Pitch, Primary Fermentation, Secondary
+     Fermentation, Racking, Tertiary/Aging, Filtering, Bottling.
+     (Supersedes the dead `batch_stages` list - delete that list after.)
+
+2. New `BatchStageEvent` model:
+   - batch    = FK(Batch, on_delete=CASCADE, related_name='stage_events')
+   - stage    = FK(BatchStage, on_delete=models.SET("_del"))  # matches
+                every other lookup FK in this app
+   - timestamp = DateTimeField(auto_now_add=False)  # user-entered, like
+                BatchTest.datetime / BatchNote.date - people log these
+                after the fact
+   - vessel   = FK(Vessel, null=True, blank=True, on_delete=SET_NULL)
+                # optional - ties into the Batch.transfer() stub for
+                racking/aging vessel moves
+   - notes    = CharField(max_length=250, blank=True)
+   - Meta.ordering = ['timestamp']
+
+3. Fix `Batch.startdate`: auto_now_add=True -> default=timezone.now,
+   editable. (See bug note above - confirm scope with Aaron first.)
+
+4. `Batch` convenience methods:
+   - stage_durations() -> pairs consecutive stage_events into
+     (stage, start, end, duration)
+   - current_stage_event property
+   - Skip a denormalized `current_stage` cache field unless a list page
+     actually needs the perf - don't add it speculatively.
+
+5. Wire up `Batch.complete()`: call it from the new stage-logging
+   service function when a terminal stage (Bottling) is recorded.
+
+
+OPEN DECISIONS (ask Aaron / decide before coding)
+--------------------------------------------------
+[ ] Reuse existing `BatchStage` vs. build a fresh lookup table.
+    -> Recommend: reuse, it's already the right shape.
+[ ] Auto-log "Pitch" on batch creation (mirrors the existing
+    addGravityTest post_save signal that auto-creates a gravity
+    BatchTest) vs. require an explicit first log entry.
+    -> Signal approach matches existing precedent in this file, but
+       CLAUDE.md's current convention prefers explicit service functions
+       over new signals. Leaning toward explicit service-function call
+       from the view, at the cost of one extra manual step per batch.
+[ ] Add BatchStageEvent.vessel now vs. later.
+    -> Recommend: add the nullable field now (cheap), don't wire
+       automatic vessel-status swapping yet.
+[ ] Fix Batch.startdate auto_now_add bug as part of this work vs. as its
+    own separate fix/ticket.
+[ ] Recipe-side expected workflow (vessel chain) - phase 2, not required
+    for v1. Design fleshed out below in "RECIPE WORKFLOW (VESSEL CHAIN)".
+[ ] vessel_role as free-text label vs. FK to a small lookup table of
+    reusable role names ("Primary Fermenter", "Aging Vessel", ...).
+    -> Recommend: free-text CharField for v1 (simplest); revisit as an
+       FK only if roles need to be reused/reported on across recipes.
+[ ] Reorder UI: drag-and-drop vs. simple up/down buttons on each row.
+    -> Recommend: up/down buttons for v1 (no new drag library, less JS),
+       drag-and-drop later if it's actually annoying to use.
+
+
+RECIPE WORKFLOW (VESSEL CHAIN) - PHASE 2
+-----------------------------------------
+Per Aaron (2026-09-19): the recipe-level workflow is a chain of vessel
+occupancy, linked by the transition/action that moves the batch from one
+vessel into the next:
+
+    (pitch) -> FermentationVessel1 -> (racking) -> AgingVessel1
+             -> (course filtering) -> AgingVessel2 -> (fining)
+             -> BottlingVessel1 -> (bottle)
+
+Read as a sequence of steps, where each step names the vessel the batch
+sits in and the action that moved it there. The chain needs to support
+add / change / reorder.
+
+Model: `RecipeVesselStep` (ordered rows per recipe, no separate "edge"
+model needed - a strictly linear chain, no branching, so the previous
+row in sort order IS the "from" vessel and the current row is the "to"
+vessel; no need to store both ends explicitly):
+  - recipe      = FK(Recipe, on_delete=CASCADE, related_name='vessel_steps')
+  - sort_order  = PositiveSmallIntegerField
+  - stage       = FK(BatchStage, on_delete=SET("_del"))  # the transition
+                  INTO this step - Pitch / Racking / Course filtering /
+                  Fining / Bottle - reuses the same BatchStage vocabulary
+                  as BatchStageEvent (see main section above), so recipe
+                  plan and actual batch log speak the same language.
+  - vessel_role = CharField(max_length=50, blank=True)  # descriptive
+                  slot label, e.g. "Fermentation Vessel 1", "Aging
+                  Vessel 2" - NOT an FK to Vessel, since a recipe is a
+                  reusable template, not tied to one physical vessel.
+                  Blank on a terminal step (e.g. the final "Bottle" row)
+                  to mean "batch leaves vessel tracking here, done."
+  - notes       = CharField(max_length=250, blank=True)
+  - Meta.ordering = ['sort_order']
+
+Worked example (as rows, matching Aaron's chain above):
+  1. stage=Pitch,             vessel_role="Fermentation Vessel 1"
+  2. stage=Racking,           vessel_role="Aging Vessel 1"
+  3. stage=Course Filtering,  vessel_role="Aging Vessel 2"
+  4. stage=Fining,            vessel_role="Bottling Vessel 1"
+  5. stage=Bottle,            vessel_role=""   (terminal - no vessel after)
+
+Tie-in to the v1 BatchStageEvent design (main section above): when an
+actual batch logs a BatchStageEvent, add an optional nullable FK
+`recipe_step = FK(RecipeVesselStep, null=True, blank=True,
+on_delete=SET_NULL)` on BatchStageEvent, so an actual logged event can
+point back at which planned step it fulfilled. That's what makes
+expected-vs-actual comparison possible later (e.g. "recipe said Racking
+happens ~day 7, this batch did it on day 9"). Optional for v1 of the
+vessel-chain feature itself, but cheap to add at the same time.
+
+BatchStage extension needed for this to work: "Bottle" needs to exist as
+a real BatchStage row (it's already in the v1 seed list above), and any
+new transition names Aaron wants (e.g. "Course Filtering", "Fining" -
+these are more specific than the generic "Filtering" seeded in v1) can
+just be additional BatchStage rows - no schema change, just data.
+
+UI (add / change / reorder), Cellar Ledger conventions:
+  - New recipe sub-page `editVesselSteps.html`, following the exact
+    formset pattern in editFermentables.html / editAdjuncts.html /
+    editYeasts.html (.cl-formset-row, add-row button wired through
+    CellarLedger.initFormsetAdd in cellar-ledger.js).
+  - NEW shared behavior needed (doesn't exist yet): move-up/move-down
+    reordering for formset rows. None of the existing formset pages
+    reorder rows today (fermentables/adjuncts/yeasts have no inherent
+    sequence). Add a `CellarLedger.initFormsetReorder()` helper to
+    cellar-ledger.js (renumbers hidden `sort_order` inputs and re-orders
+    row DOM nodes on click) rather than writing page-specific JS, per
+    the "new shared behavior belongs in cellar-ledger.js" rule.
+  - Link from recipe.html into this sub-page, same as the existing
+    "fermentables / adjuncts / yeasts" edit links.
+
+Files impacted (phase 2, additive to the v1 list below):
+  * apps/batchthis/models.py - add RecipeVesselStep; add
+    BatchStageEvent.recipe_step FK (nullable)
+  * apps/batchthis/migrations/ - new migration(s)
+  * apps/batchthis/admin.py - register RecipeVesselStep
+  * apps/batchthis/forms.py - RecipeVesselStepForm (ModelForm) +
+    inlineformset_factory, mirroring the Fermentable/Adjunct/Yeast
+    formsets already in this file
+  * apps/batchthis/views/main.py - editVesselSteps view, mirroring
+    editFermentables/editAdjuncts/editYeasts
+  * apps/batchthis/urls.py - route for editVesselSteps
+  * apps/batchthis/templates/batchthis/editVesselSteps.html (new)
+  * apps/batchthis/templates/batchthis/includes/_vessel_step_form_row.html (new)
+  * apps/batchthis/templates/batchthis/recipe.html - link to the new
+    sub-page; optionally render the chain read-only (e.g. a simple
+    .cl-ledger table or an inline arrow diagram)
+  * apps/batchthis/static/batchthis/js/cellar-ledger.js -
+    CellarLedger.initFormsetReorder() helper (new shared behavior)
+  * apps/batchthis/factories.py - RecipeVesselStepFactory
+  * apps/batchthis/tests/test_recipe_vessel_steps.py (new) - add/edit/
+    reorder steps, terminal step (blank vessel_role) handling
+
+
+FILES IMPACTED (v1 scope - no recipe-plan / phase 2 items)
+------------------------------------------------------------
+* apps/batchthis/models.py
+    - extend BatchStage (shortid, sort_order)
+    - add BatchStageEvent
+    - fix Batch.startdate
+    - add Batch.stage_durations() / current_stage_event
+    - delete dead `batch_stages` list once BatchStage is seeded
+* apps/batchthis/migrations/
+    - new migration(s) via `python manage.py makemigrations`
+      (schema change + seed-data RunPython, like 0002_default_load.py)
+    - NEVER hand-write migration files - see CLAUDE.md
+* apps/batchthis/admin.py
+    - register BatchStageEvent (BatchStage is already registered)
+* apps/batchthis/forms.py
+    - new BatchStageForm (ModelForm on BatchStageEvent, reuse the
+      existing DateTimeWidget already defined at the top of this file)
+      matching the shape of BatchTestForm / BatchNoteForm
+* apps/batchthis/views/main.py
+    - new batchStage(request, pk=None) view mirroring batchTest/batchNote
+    - new log_stage_event() service function (calls batch.complete() on
+      terminal stage) - per CLAUDE.md, prefer this over a signal
+* apps/batchthis/urls.py
+    - addStage / addDetailStage routes, mirroring addTest/addDetailTest
+* apps/batchthis/templates/batchthis/batch.html
+    - "Add stage" link in .cl-batch-actions
+    - new "Stage timeline" .cl-panel using .cl-ledger
+      (Stage / Timestamp / Elapsed / Vessel / Notes)
+* apps/batchthis/templates/batchthis/addBatchStage.html (new)
+    - Cellar Ledger form page, follow addBatch.html as the reference
+* apps/batchthis/factories.py
+    - BatchFactory (doesn't exist yet - batches are currently only built
+      through the addBatch view in tests, never a factory)
+    - BatchStageFactory
+    - BatchStageEventFactory
+* apps/batchthis/tests/test_batch_stage_events.py (new)
+    - stage logging via the service function/view
+    - duration calculation across a sequence of events
+    - terminal-stage completion (enddate/active set via complete())
+    - regression test for the startdate fix (create a batch with a
+      specific past startdate via the view, assert it's persisted
+      exactly, not overridden to "now")
+
+
+SUGGESTED ORDER OF WORK (TDD - write the test for each step first)
+--------------------------------------------------------------
+1. Fix Batch.startdate bug + regression test (small, isolated, unblocks
+   everything else that treats startdate as the pitch anchor).
+2. Extend BatchStage (shortid, sort_order) + seed migration + BatchFactory
+   + BatchStageFactory.
+3. BatchStageEvent model + migration + BatchStageEventFactory +
+   stage_durations()/current_stage_event tests.
+4. log_stage_event() service function + terminal-stage completion test.
+5. BatchStageForm + batchStage view + urls.
+6. batch.html "Stage timeline" panel + addBatchStage.html template.
+--- phase 2 (vessel-chain recipe workflow, see section above) ---
+7. RecipeVesselStep model + migration + RecipeVesselStepFactory + tests
+   (add/edit/reorder, terminal blank-vessel_role step).
+8. CellarLedger.initFormsetReorder() shared JS helper.
+9. RecipeVesselStepForm + inline formset + editVesselSteps view/urls.
+10. editVesselSteps.html + _vessel_step_form_row.html templates; link
+    from recipe.html.
+11. BatchStageEvent.recipe_step FK + expected-vs-actual comparison UI.
