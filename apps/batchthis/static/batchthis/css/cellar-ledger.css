@@ -406,6 +406,18 @@ a.nav-link, a.sub-link, a.dropdown-item {
 .cl-fermenter-meta { color: var(--ink-soft); font-size: 0.8rem; }
 .cl-empty { color: var(--ink-faint); font-size: 0.85rem; padding: 4px 0; }
 
+.cl-kv-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--line-soft);
+  font-size: 0.9rem;
+}
+.cl-kv-row:last-child { border-bottom: none; }
+.cl-kv-label { color: var(--ink-soft); }
+.cl-kv-value { font-weight: 600; }
+
 /* ---------- Flagged notifications ---------- */
 .cl-flag {
   display: flex;
