@@ -130,7 +130,7 @@ vessel into the next:
 
     (pitch) -> FermentationVessel1 -> (racking) -> AgingVessel1
              -> (course filtering) -> AgingVessel2 -> (fining)
-             -> BottlingVessel1 -> (bottle)
+             -> BottlingVessel1 -> (sterile filter) -> Bottle
 
 Read as a sequence of steps, where each step names the vessel the batch
 sits in and the action that moved it there. The chain needs to support
