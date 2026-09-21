@@ -2,16 +2,23 @@ TODO-BatchStage
 ================
 Plan for tracking a batch's workflow timeline (pitch -> fermentation ->
 aging -> filtering -> bottling) so we can measure how long a batch spent
-in each phase. Sketched 2026-09-18. NOT STARTED - no code changes made yet.
-This file is the reference to pick back up from.
+in each phase. Sketched 2026-09-18. On 2026-09-21 Aaron resolved the
+three remaining open questions: Racking repeatability, the final
+transition's name ("Complete Batch"), and graph shape (fixed for v1,
+every recipe) - see "CANONICAL WORKFLOW GRAPH" and "OPEN DECISIONS"
+below. All discrepancies raised by the WineWorkflow.png diagram are now
+resolved; most remaining open items already have a stated "-> Recommend:"
+default (see "OPEN DECISIONS"), except whether to bundle the
+Batch.startdate fix into this work or file it separately, which still
+needs an actual call. NOT STARTED - no code changes made yet. This file
+is the reference to pick back up from.
 
 
 GOAL
 ----
 * When a batch is made, log timestamped transitions between production
   stages (Pitch, Racking, Fine Filtering, Course Filtering, Sterile
-  Filtering, plus whatever the final Bottling->Completed edge is named -
-  see "CANONICAL WORKFLOW GRAPH" below).
+  Filtering, Complete Batch - see "CANONICAL WORKFLOW GRAPH" below).
 * Be able to compute elapsed time between any two stages for a batch
   (e.g. time between pitch and bottling).
 * Eventually (phase 2, not required for v1): let a Recipe declare an
@@ -45,7 +52,7 @@ WHAT ALREADY EXISTS (found while tracing this - don't re-invent these)
   * SUPERSEDED by the diagram below (apps/batchthis/docs/WineWorkflow.png) -
     see "CANONICAL WORKFLOW GRAPH" for the authoritative shape and how it
     differs from this informal description (racking repeatability,
-    Sterile Filtering's real role, the unlabeled final transition).
+    Sterile Filtering's real role, the final transition's name).
 * `Batch.complete()` (models.py:378) sets enddate/active=False but is
   never called from any view. This is the hook for "batch reached its
   final stage."
@@ -68,18 +75,26 @@ boxes are STATES, labeled arrows are TRANSITIONS - and it resolves the
 informal "Transitions" note above into something concrete enough to
 model directly:
 
-    Start --Pitch--> Fermentation --Racking--> Aging --Sterile Filtering--> Bottling --(unlabeled)--> Completed
+    Start --Pitch--> Fermentation --Racking--> Aging --Sterile Filtering--> Bottling --Complete Batch--> Completed
                                                   ^  |
                                      Fine Filtering|  |  (Aging -> Aging loop)
                                                   ^  |
                                    Course Filtering|  |  (Aging -> Aging loop)
+                                                  ^  |
+                                           Racking|  |  (Aging -> Aging loop - additional
+                                                  ^  |   vessel moves; confirmed by Aaron
+                                                  ^  |   2026-09-21, see resolved question below)
 
 States: Fermentation, Aging, Bottling, Completed. (`Start` is a
 pseudostate, not a real batch state.)
 
 Transitions (name: from_state -> to_state):
   * Pitch:             (Start) -> Fermentation
-  * Racking:           Fermentation -> Aging
+  * Racking:           Fermentation -> Aging   (the first racking - moves
+                        the batch out of Fermentation)
+  * Racking (repeat):  Aging -> Aging          (loop, same transition type
+                        as above - zero or more additional vessel moves
+                        during Aging; see resolved question below)
   * Fine Filtering:    Aging -> Aging          (loop - 1.5-1 micron)
   * Course Filtering:  Aging -> Aging          (loop - 5-10 micron)
   * Sterile Filtering: Aging -> Bottling       (0.5 micron - this is
@@ -87,7 +102,10 @@ Transitions (name: from_state -> to_state):
                         NOT just a bottling-technique attribute like I
                         originally guessed - the diagram draws it as its
                         own real transition)
-  * (unlabeled):        Bottling -> Completed
+  * Complete Batch:     Bottling -> Completed   (manual transition that
+                        closes out the batch process; confirmed by Aaron
+                        2026-09-21, see resolved question below - wires
+                        into Batch.complete(), MODEL CHANGES #5)
 
 This changed twice while sketching this doc, worth remembering:
   1. First version had no Sterile Filtering at all - Aging went straight
@@ -101,16 +119,30 @@ This changed twice while sketching this doc, worth remembering:
 
 Discrepancies / open questions raised by the diagram (don't silently
 resolve these - ask Aaron):
-  [ ] The diagram draws Racking as a single one-directional edge
+  [x] The diagram draws Racking as a single one-directional edge
       (Fermentation -> Aging, happens once). The earlier informal note
       says "multiple rackings could happen as needed." Is Racking
       actually repeatable (e.g. Aging -> Aging, like the two Filtering
       transitions), and the diagram is just simplifying, or is Racking
       really a one-time event and the note was describing something else?
-  [ ] Bottling -> Completed has no label. Intentional (nothing to log,
+      RESOLVED by Aaron (2026-09-21): the diagram is simplifying. Racking
+      normally happens once (Fermentation -> Aging), but one or more
+      *additional* rackings can occur - same end state (still Aging),
+      just a different vessel. Each one gets logged (its own
+      BatchStageEvent row, not deduped/merged with the first), and it
+      "restarts the timer" - i.e. it closes out however long the batch
+      had been in the prior vessel and starts the clock fresh for the
+      new one. See "Implementation implications" note right after this
+      list, and the updated diagram/transitions list above.
+  [x] Bottling -> Completed has no label. Intentional (nothing to log,
       just elapsed time until "done")? Or does it need a real transition
       name (e.g. "Capping", "Corking", "Sealing")?
-  [ ] Is this diagram THE fixed canonical graph for every batch/recipe
+      RESOLVED by Aaron (2026-09-21): it needs a real name - "Complete
+      Batch", a manual transition that closes out and finishes the batch
+      process. Wires into `Batch.complete()` (MODEL CHANGES #5 below):
+      logging a "Complete Batch" BatchStageEvent is what should trigger
+      it, not reaching Bottling/Sterile Filtering.
+  [x] Is this diagram THE fixed canonical graph for every batch/recipe
       (same shape always, only the loop counts and vessel choices vary
       per batch), or is it one example and other recipes could have a
       genuinely different graph shape? This materially changes the
@@ -118,6 +150,39 @@ resolve these - ask Aaron):
       really only means "how many Aging<->Filtering loop iterations and
       which vessel each time" - a much smaller feature than a generic
       graph/chain editor.
+      RESOLVED by Aaron (2026-09-21): fixed for this initial iteration -
+      every recipe follows the WineWorkflow.png shape (Pitch ->
+      Fermentation -> Racking -> Aging -> [Filtering loops] -> Sterile
+      Filtering -> Bottling -> Complete Batch -> Completed). Custom
+      per-recipe workflow shapes are a future possibility, explicitly not
+      v1/phase-2 scope. This confirms the smaller UI scope: "add/change/
+      reorder" means loop count and vessel choice only, and confirms the
+      already-sketched `RecipeVesselStep` design below (a strictly linear
+      ordered chain, no branching) needs no rework - it was already built
+      on this assumption. Also confirms the CharField-choices
+      recommendation for states, just below - see that paragraph.
+
+Implementation implications of the Racking resolution above:
+  * No BatchStage schema change needed for this. Keep Racking as ONE
+    transition row (from_state=Fermentation, to_state=Aging) and just log
+    it again for each additional vessel move, the same way Fine/Course
+    Filtering already loop Aging -> Aging with a single row each. Since
+    v1 is descriptive-only (see "Enforce the graph" open decision below -
+    from_state isn't validated against the batch's actual current state
+    at log time), a repeat Racking event's `from_state` label being
+    technically "Fermentation" even though it really happened from Aging
+    is a pre-existing kind of imprecision, not a new problem - same as
+    Sterile Filtering's row not knowing which Aging vessel it's leaving.
+  * "Timers restarted" needs no extra design - it falls out of the
+    already-sketched `stage_durations()` behavior (MODEL CHANGES #4
+    below): pairing *consecutive* BatchStageEvent rows chronologically
+    means every new event (Racking or otherwise) automatically closes the
+    duration segment that was open and starts a fresh one at its own
+    timestamp. A batch racked three times during Aging just produces four
+    duration segments instead of one long "Aging" span.
+  * `Batch.current_state` (to_state of the most recent event) is
+    unaffected either way - it's Aging whether this is the first racking
+    or the fourth.
 
 Design implication for BatchStage: since the diagram cleanly separates
 STATES (boxes) from TRANSITIONS (labeled arrows), `BatchStage` should
@@ -138,9 +203,11 @@ validation for its own sake.
 States themselves (Fermentation/Aging/Bottling/Completed) are few and
 tied to the fixed graph shape, not open-ended user data like the other
 "Type" lookup tables in this app (BatchTestType, BatchNoteType, ...) -
-recommend a plain CharField `choices` for state values rather than a
-full lookup model, unless the "different recipes, different graphs"
-question above comes back "yes, graphs vary."
+plain CharField `choices` for state values, not a full lookup model.
+CONFIRMED by Aaron's "fixed graph for v1" answer above (2026-09-21) - the
+graph-varies-per-recipe case that would have called for a lookup model
+instead isn't in scope. Revisit if/when custom per-recipe workflows
+become real.
 
 
 BUG FOUND ALONG THE WAY (separate from this feature, but blocks it)
@@ -169,13 +236,14 @@ MODEL CHANGES
      Start") and `to_state` (CharField choices) per transition.
    - new data migration seeds, matching the diagram exactly:
        Pitch             (from: -,        to: Fermentation)
-       Racking           (from: Fermentation, to: Aging)
+       Racking           (from: Fermentation, to: Aging)  # single row,
+                          reused for repeat vessel-moves during Aging too
+                          - don't add a second "Racking (repeat)" row
        Fine Filtering    (from: Aging,    to: Aging)   # 1.5-1 micron
        Course Filtering  (from: Aging,    to: Aging)   # 5-10 micron
        Sterile Filtering (from: Aging,    to: Bottling) # 0.5 micron
-     Plus whatever name is chosen for the unlabeled Bottling->Completed
-     edge (open question above) - don't seed a guess, confirm with Aaron
-     first.
+       Complete Batch    (from: Bottling, to: Completed) # manual, closes
+                          the batch out - see MODEL CHANGES #5
      (Supersedes the dead `batch_stages` list, AND supersedes this file's
      own earlier seed list draft of "Pitch, Primary Fermentation,
      Secondary Fermentation, Racking, Tertiary/Aging, Filtering,
@@ -207,11 +275,12 @@ MODEL CHANGES
      actually needs the perf - don't add it speculatively.
 
 5. Wire up `Batch.complete()`: call it from the new stage-logging
-   service function when the batch reaches the terminal state
-   (Completed) - i.e. when the unlabeled Bottling->Completed transition
-   is recorded, NOT when Sterile Filtering/Bottling is reached (Bottling
-   is an intermediate state now, not the terminal one - see "CANONICAL
-   WORKFLOW GRAPH" above).
+   service function when the "Complete Batch" transition is recorded
+   (Bottling -> Completed), NOT when Sterile Filtering/Bottling is
+   reached (Bottling is an intermediate state now, not the terminal one -
+   see "CANONICAL WORKFLOW GRAPH" above). "Complete Batch" is a manual
+   transition someone logs to close the batch out - it doesn't fire
+   automatically off of reaching Bottling.
 
 
 OPEN DECISIONS (ask Aaron / decide before coding)
@@ -246,15 +315,25 @@ OPEN DECISIONS (ask Aaron / decide before coding)
     from_state/to_state fields; states are a small fixed CharField
     choices set, not their own lookup table. See "CANONICAL WORKFLOW
     GRAPH" above.
-[ ] Racking repeatability: diagram shows it as one-time
+[x] Racking repeatability: diagram shows it as one-time
     (Fermentation->Aging only), earlier note said it could repeat.
-    Needs Aaron's call - see "CANONICAL WORKFLOW GRAPH" above.
-[ ] Name (if any) for the unlabeled Bottling->Completed transition.
-[ ] Is the WineWorkflow.png graph fixed/canonical for every batch and
+    RESOLVED by Aaron (2026-09-21): repeatable, one transition type
+    (Fermentation->Aging), logged again for each additional vessel move
+    during Aging, no schema change needed. See "CANONICAL WORKFLOW GRAPH"
+    above (the resolved discrepancy and its "Implementation implications"
+    note).
+[x] Name (if any) for the unlabeled Bottling->Completed transition.
+    RESOLVED by Aaron (2026-09-21): "Complete Batch" - see "CANONICAL
+    WORKFLOW GRAPH" above (resolved discrepancy) and MODEL CHANGES #5.
+[x] Is the WineWorkflow.png graph fixed/canonical for every batch and
     recipe, or just one example shape? Determines whether the phase-2
     recipe workflow needs a real generic graph editor or just a "how
     many Aging<->Filtering loops, which vessel each time" UI. See
     "CANONICAL WORKFLOW GRAPH" above.
+    RESOLVED by Aaron (2026-09-21): fixed for v1, every recipe uses this
+    shape. Custom per-recipe workflows are a future possibility, not in
+    scope now. See the resolved discrepancy in "CANONICAL WORKFLOW
+    GRAPH" above for the full answer.
 [ ] Enforce the graph (e.g. refuse to log Racking unless current_state
     is Fermentation) vs. just record whatever the user logs and let the
     graph be descriptive/reporting-only.
@@ -294,17 +373,16 @@ vessel; no need to store both ends explicitly):
   - sort_order  = PositiveSmallIntegerField
   - stage       = FK(BatchStage, on_delete=SET("_del"))  # the transition
                   INTO this step - Pitch / Racking / Course Filtering /
-                  Fine Filtering / Sterile Filtering / (unlabeled final)
-                  - reuses the same BatchStage vocabulary as
+                  Fine Filtering / Sterile Filtering / Complete Batch -
+                  reuses the same BatchStage vocabulary as
                   BatchStageEvent (see main section above), so recipe
                   plan and actual batch log speak the same language.
   - vessel_role = CharField(max_length=50, blank=True)  # descriptive
                   slot label, e.g. "Fermentation Vessel 1", "Aging
                   Vessel 2" - NOT an FK to Vessel, since a recipe is a
                   reusable template, not tied to one physical vessel.
-                  Blank on the terminal step (the final, currently-
-                  unnamed Bottling->Completed row) to mean "batch leaves
-                  vessel tracking here, done."
+                  Blank on the terminal step (the final "Complete Batch"
+                  row) to mean "batch leaves vessel tracking here, done."
   - notes       = CharField(max_length=250, blank=True)
   - Meta.ordering = ['sort_order']
 
@@ -314,7 +392,7 @@ Worked example (as rows, matching the WineWorkflow.png chain above):
   3. stage=Course Filtering,  vessel_role="Aging Vessel 2"
   4. stage=Fine Filtering,    vessel_role="Aging Vessel 3"
   5. stage=Sterile Filtering, vessel_role="Bottling Vessel 1"
-  6. stage=<TBD - unlabeled Bottling->Completed edge>, vessel_role=""
+  6. stage=Complete Batch, vessel_role=""
      (terminal - no vessel after; batch is Completed)
 Row 3/4 are the repeatable Aging<->Filtering loop - a real recipe might
 have more or fewer of these, and in either order (Course then Fine, or
@@ -330,12 +408,11 @@ expected-vs-actual comparison possible later (e.g. "recipe said Racking
 happens ~day 7, this batch did it on day 9"). Optional for v1 of the
 vessel-chain feature itself, but cheap to add at the same time.
 
-BatchStage extension needed for this to work: all five named transitions
-(Pitch, Racking, Fine Filtering, Course Filtering, Sterile Filtering) are
-already in the v1 seed list above per the WineWorkflow.png diagram - no
-schema change needed here, just data. The one gap is the unlabeled
-Bottling->Completed edge, which still needs a name before it can be
-seeded (see open questions in "CANONICAL WORKFLOW GRAPH" above).
+BatchStage extension needed for this to work: all six named transitions
+(Pitch, Racking, Fine Filtering, Course Filtering, Sterile Filtering,
+Complete Batch) are now in the v1 seed list above per the WineWorkflow.png
+diagram plus Aaron's naming call - no schema change needed here, just
+data. No remaining gap.
 
 UI (add / change / reorder), Cellar Ledger conventions:
   - New recipe sub-page `editVesselSteps.html`, following the exact
