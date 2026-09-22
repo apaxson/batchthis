@@ -21,6 +21,7 @@ from django.dispatch import receiver
 from django.db.models.signals import post_save, m2m_changed
 from django.utils.text import slugify
 from django.core.files.storage import FileSystemStorage
+from django.utils import timezone
 from pint import Quantity
 from quantityfield.fields import QuantityField
 from .fields import DescriptiveQuantityField
@@ -100,6 +101,11 @@ class Vessel(models.Model):
     STATUS_ACTIVE = 'In Use'
     STATUS_READY = "Clean/Ready"
     STATUS_DIRTY = "Needs Cleaning"
+    STATUS_CHOICES = (
+        (STATUS_READY, STATUS_READY),
+        (STATUS_ACTIVE, STATUS_ACTIVE),
+        (STATUS_DIRTY, STATUS_DIRTY),
+    )
 
     def __str__(self):
         return self.name + " (" + str(self.max_size) + self.max_size_units.identifier + ")"
@@ -108,8 +114,42 @@ class Vessel(models.Model):
     max_size_units = models.ForeignKey(Unit, related_name="fermenter_max_size_units", on_delete=models.SET("_del"))
     used_size = models.IntegerField(blank=True, null=True)
     used_size_units = models.ForeignKey(Unit, blank=True, null=True,related_name="fermenter_used_size_units", on_delete=models.SET("_del"))
-    status = models.CharField(max_length=15, default=STATUS_READY)
+    status = models.CharField(max_length=15, choices=STATUS_CHOICES, default=STATUS_READY)
     intended_use = models.CharField(max_length=30)
+
+    @property
+    def current_status_event(self):
+        # Meta.ordering on VesselStatusEvent is oldest-first (a readable history
+        # log), so the latest event needs its own explicit descending order.
+        return self.status_events.order_by('-timestamp').first()
+
+    def time_in_current_status(self):
+        event = self.current_status_event
+        if event is None:
+            return None
+        return timezone.now() - event.timestamp
+
+
+class VesselStatusEvent(models.Model):
+    """
+    Append-only, timestamped log of a Vessel's status transitions - same shape
+    as BatchTest/BatchNote. See TODO-VesselLifecycle.txt. Nothing writes to
+    this yet in this first pass; Vessel.status itself is still the only thing
+    read anywhere.
+    """
+    class Meta:
+        ordering = ['timestamp']
+        verbose_name = 'vessel status event'
+
+    def __str__(self):
+        fmt = "%m/%d/%y-%H:%M"
+        return f"{self.vessel} -> {self.status} ({self.timestamp.strftime(fmt)})"
+
+    vessel = models.ForeignKey(Vessel, on_delete=models.CASCADE, related_name='status_events')
+    status = models.CharField(max_length=15, choices=Vessel.STATUS_CHOICES)
+    timestamp = models.DateTimeField(default=timezone.now)
+    batch = models.ForeignKey('Batch', null=True, blank=True, on_delete=models.SET_NULL)
+    notes = models.CharField(max_length=250, blank=True)
 
 
 class InventoryItem(models.Model):

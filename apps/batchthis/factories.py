@@ -14,6 +14,7 @@ from .models import (
     Recipe,
     Unit,
     Vessel,
+    VesselStatusEvent,
     Yeast,
 )
 
@@ -93,6 +94,14 @@ class VesselFactory(factory.django.DjangoModelFactory):
     max_size_units = factory.SubFactory(UnitFactory, identifier="gal", label="gal", name="Gallons", category=Unit.VOLUME)
     status = Vessel.STATUS_READY
     intended_use = "PRI"
+
+
+class VesselStatusEventFactory(factory.django.DjangoModelFactory):
+    class Meta:
+        model = VesselStatusEvent
+
+    vessel = factory.SubFactory(VesselFactory)
+    status = Vessel.STATUS_READY
 
 
 class FermenterFactory(factory.django.DjangoModelFactory):
