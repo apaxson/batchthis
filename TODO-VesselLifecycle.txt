@@ -109,14 +109,14 @@ MODEL CHANGES
      itself is already the current-value cache; don't add a second one
      speculatively.
 
-4. `log_vessel_status(vessel, status, batch=None, notes='')` service
+4. `set_vessel_status(vessel, status, batch=None, notes='')` service
    function (location TBD - likely near the Batch views in
    views/main.py, mirroring where TODO-BatchStage.txt puts
    `log_stage_event()`): sets `vessel.status`, saves it, and creates the
    matching `VesselStatusEvent` row in one place. This is the single
    place status is ever allowed to change going forward.
 
-5. Wire explicit calls to `log_vessel_status()`:
+5. Wire explicit calls to `set_vessel_status()`:
    - Batch creation / (re)assignment to a fermenter -> STATUS_ACTIVE
    - `Batch.complete()` and `Batch.transfer()` (implementation depends
      on OPEN DECISIONS below) -> STATUS_DIRTY on the vessel being
@@ -144,7 +144,7 @@ OPEN DECISIONS (ask Aaron / decide before coding)
        itself.
 [ ] Enforce a strict transition state machine (e.g. reject
     Active -> Active, require Dirty before Ready) vs. let
-    `log_vessel_status()` accept any status unconditionally.
+    `set_vessel_status()` accept any status unconditionally.
     -> Recommend: no enforcement in v1 (log whatever's passed) -
        add validation later only if bad data actually shows up.
 [ ] Vessel detail page URL/view naming and whether it lives under a
@@ -158,7 +158,7 @@ OPEN DECISIONS (ask Aaron / decide before coding)
     get the same lifecycle wiring now, or just `Fermenter` for v1
     (matching that `Batch.fermenter` is the only vessel relation that
     exists on Batch today)?
-    -> Recommend: build `VesselStatusEvent`/`log_vessel_status()`
+    -> Recommend: build `VesselStatusEvent`/`set_vessel_status()`
        generically against `Vessel` (already type-agnostic), but only
        wire the automatic ACTIVE/DIRTY call sites for `Fermenter` in
        v1, since that's the only vessel type actually in use by Batch
@@ -180,9 +180,9 @@ FILES IMPACTED
 * apps/batchthis/admin.py
     - register VesselStatusEvent
 * apps/batchthis/views/main.py
-    - `log_vessel_status()` service function
+    - `set_vessel_status()` service function
     - new `vessel(request, pk)` detail view
-    - wire explicit `log_vessel_status()` calls at batch create /
+    - wire explicit `set_vessel_status()` calls at batch create /
       complete / transfer call sites
 * apps/batchthis/urls.py
     - `vessel/<int:pk>` route, name `vessel`
@@ -198,7 +198,7 @@ FILES IMPACTED
 * apps/batchthis/factories.py
     - VesselStatusEventFactory
 * apps/batchthis/tests/test_vessel_status_events.py (new)
-    - log_vessel_status() creates event + updates vessel.status
+    - set_vessel_status() creates event + updates vessel.status
     - batch creation -> ACTIVE
     - Batch.complete() / Batch.transfer() -> DIRTY on vacated vessel
     - manual clean action -> READY
@@ -213,7 +213,7 @@ SUGGESTED ORDER OF WORK (TDD - write the test for each step first)
    just a schema tightening) + migration.
 2. VesselStatusEvent model + migration + VesselStatusEventFactory +
    current_status_event/time_in_current_status() tests.
-3. log_vessel_status() service function + tests.
+3. set_vessel_status() service function + tests.
 4. Wire explicit calls at batch create / complete / transfer sites;
    delete setActiveFermenter signal; regression test for the old bug.
 5. Vessel detail view + urls + vessel.html template (status + history).

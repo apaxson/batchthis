@@ -5,6 +5,7 @@ from django.http import HttpResponseRedirect, HttpResponse, JsonResponse
 from django.views.generic import FormView
 from django.views.generic.detail import SingleObjectMixin
 from django.contrib import messages
+from django.db import transaction
 import logging
 from apps.batchthis.models import Batch, Fermenter, BatchTestType, BatchNoteType, Vessel, Unit, Recipe, Fermentable, AdjunctUsage, RecipeYeasts,RecipeFermentable,RecipeAdjunct
 from django.shortcuts import get_object_or_404
@@ -13,6 +14,7 @@ from apps.batchthis.forms import BatchTestForm, BatchNoteForm, BatchAdditionForm
 from apps.batchthis.forms import RecipeAddForm, FermentableForm, AdjunctForm, YeastForm
 from django.forms.formsets import formset_factory
 from apps.batchthis.lib.utils import Utils
+from apps.batchthis.services import set_vessel_status
 from apps.batchthis.lib.faults import get_active_flags, get_rule_for, StagedFaultRule
 from django.contrib.auth.decorators import login_required
 from django.forms.models import model_to_dict, modelformset_factory
@@ -351,11 +353,21 @@ def addBatch(request, pk=None):
             batch.startingGravity = Quantity(float(form.cleaned_data['startingGravity']), 'sg')
             batch.estimatedEndGravity = Quantity(float(form.cleaned_data['estimatedEndGravity']), 'sg')
             batch.fermenter = form.cleaned_data['fermenter']
-            newbatch = batch.save()
-            batch.recipe = form.cleaned_data['recipe']
-            batch.save()
+            try:
+                # Batch and vessel status commit together, or neither does.
+                with transaction.atomic():
+                    batch.save()
+                    batch.recipe = form.cleaned_data['recipe']
+                    batch.save()
+                    set_vessel_status(batch.fermenter.vessel, Vessel.STATUS_ACTIVE, batch=batch, notes="Batch created")
+            except Exception:
+                logger.exception("addBatch: failed to create batch %r on fermenter %s", batch.name, batch.fermenter)
+                form.add_error(None, "Couldn't create the batch. Nothing was saved - please try again.")
+                return render(request, template_name='batchthis/addBatch.html', context={'form': form})
+            logger.info("addBatch: created batch %s '%s' in vessel '%s'", batch.pk, batch.name, batch.fermenter.vessel.name)
             return HttpResponseRedirect(reverse('batch', kwargs={'pk': batch.pk}))
         else:
+            logger.debug("addBatch: invalid form: %s", form.errors)
             return render(request, template_name='batchthis/addBatch.html', context={'form': form})
     else:
         if pk:
@@ -368,7 +380,6 @@ def addBatch(request, pk=None):
         else:
             #form = BatchAddForm()
             form = BatchAddForm()
-            form.fields['fermenter'].queryset = Fermenter.objects.filter(vessel__status=Vessel.STATUS_READY)
         return render(request, "batchthis/addBatch.html", {'form': form})
 
 

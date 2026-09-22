@@ -415,9 +415,27 @@ class Batch(models.Model):
     def transfer(self,src_vessel, dst_vessel):
         pass
 
-    def complete(self):
-        self.enddate = datetime.now()
-        self.active = False
+    def complete(self) -> None:
+        """
+        Mark the batch finished and flag its fermentation vessel for cleaning.
+        Both commit together, or neither does.
+        """
+        # Local import: services.py imports this module.
+        from django.core.exceptions import ValidationError
+        from django.db import transaction
+        from .services import set_vessel_status
+
+        logger.debug(f"Batch.complete: batch={self.pk} '{self.name}' active={self.active}")
+        if not self.active:
+            logger.error(f"Batch.complete: batch {self.pk} '{self.name}' is already complete")
+            raise ValidationError(f"Batch '{self.name}' is already complete.")
+
+        with transaction.atomic():
+            self.enddate = timezone.now()
+            self.active = False
+            self.save()
+            set_vessel_status(self.fermenter.vessel, Vessel.STATUS_DIRTY, batch=self, notes="Batch completed")
+        logger.info(f"Batch '{self.name}' completed; vessel '{self.fermenter.vessel.name}' needs cleaning")
 
     def current_gravity(self):
         gravity_tests = self.tests.filter(type__shortid='specific-gravity')
@@ -430,26 +448,6 @@ class Batch(models.Model):
         est_fg = self.estimatedEndGravity.magnitude
         current_gravity = self.current_gravity()
         return round((self.startingGravity.magnitude - current_gravity) / (self.startingGravity.magnitude - est_fg) * 100)
-
-
-# If a batch is saved on a fermenter that isn't currently active,
-# set it active
-@receiver(post_save, sender=Batch)
-def setActiveFermenter(sender,instance,**kwargs):
-    logger.debug(f"Received Batch save.  Instance: {instance} \n Sender: {sender}")
-    if instance.active:
-        if instance.fermenter.vessel.status != Vessel.STATUS_ACTIVE:
-            instance.fermenter.vessel.status = Vessel.STATUS_ACTIVE
-            instance.fermenter.vessel.save()
-            logger.info(f"Received Batch Save.  Moved Fermenter '{instance.fermenter.vessel.name}' to ACTIVE")
-            logger.debug(f"Batch Saved:  Instance: {instance} Fermenter: {instance.fermenter} Fermenter State: {instance.fermenter.vessel.status}")
-    if not instance.active:
-        #TODO this is a bad way to do this.  This implies any edits to an inactive batch will cause the assigned fermenter to DIRTY
-        # Use a workflow or state-engine in the future.
-        if instance.fermenter.vessel.status is Vessel.STATUS_ACTIVE:
-            instance.fermenter.vessel.status = Vessel.STATUS_DIRTY
-            instance.fermenter.save()
-            logger.info(f"Received Batch Save.  Moved Fermenter '{instance.fermenter.vessel.name}' to DIRTY")
 
 
 class BatchTest(models.Model):

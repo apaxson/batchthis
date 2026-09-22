@@ -53,9 +53,13 @@ WHAT ALREADY EXISTS (found while tracing this - don't re-invent these)
     see "CANONICAL WORKFLOW GRAPH" for the authoritative shape and how it
     differs from this informal description (racking repeatability,
     Sterile Filtering's real role, the final transition's name).
-* `Batch.complete()` (models.py:378) sets enddate/active=False but is
-  never called from any view. This is the hook for "batch reached its
-  final stage."
+* `Batch.complete()` saves enddate/active=False and, in the same
+  transaction, calls `set_vessel_status()` (services.py) to mark the
+  fermenter's vessel "Needs Cleaning" (done in the Vessel Lifecycle pass,
+  2026-09-22; raises ValidationError if the batch is already complete).
+  It's still never called from any view - there is deliberately no
+  "Complete batch" UI yet. That UI belongs to THIS plan, as the "Complete
+  Batch" transition (MODEL CHANGES #5), not to the Vessel Lifecycle work.
 * `Batch.transfer(src_vessel, dst_vessel)` (models.py:375) is a `pass`
   stub, clearly meant for the vessel move that happens on
   racking/aging transitions.
@@ -281,6 +285,10 @@ MODEL CHANGES
    see "CANONICAL WORKFLOW GRAPH" above). "Complete Batch" is a manual
    transition someone logs to close the batch out - it doesn't fire
    automatically off of reaching Bottling.
+   `Batch.complete()` already handles the vessel side (-> Needs Cleaning
+   via set_vessel_status()), so the stage-logging function should only
+   call it, not touch vessel status itself. Build the "Complete batch"
+   action/UI as part of this step.
 
 
 OPEN DECISIONS (ask Aaron / decide before coding)
