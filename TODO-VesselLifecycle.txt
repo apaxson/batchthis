@@ -221,3 +221,56 @@ SUGGESTED ORDER OF WORK (TDD - write the test for each step first)
    test.
 7. Link "Current Vessel" panel on batch.html to the new vessel detail
    page.
+8. (Later, after 5-7) "Out of Service" state + Vessel management page -
+   see TODO section below.
+
+
+TODO: FOURTH STATE - OUT OF SERVICE (added 2026-09-22, NOT STARTED)
+------------------------------------------------------------------------
+Per Aaron: a vessel needs a fourth status for when it's pulled from use -
+under repair, has a problem that needs fixing, or is decommissioned/
+replaced. This is NOT part of the normal workflow (Clean/Ready -> In Use
+-> Needs Cleaning -> Clean/Ready); nothing in the batch workflow sets or
+clears it automatically. It's only set/cleared by hand, from a dedicated
+Vessel state/management page.
+
+To decide / watch out for before coding:
+[x] Label + constant. RESOLVED by Aaron (2026-09-22): the label is
+    "Out of Service" -> `STATUS_OUT = "Out of Service"` on Vessel. It's 14
+    chars, so it fits the existing `max_length=15` on `Vessel.status` and
+    `VesselStatusEvent.status` - no field widening needed, only the
+    `choices=` AlterField migration (via makemigrations, never by hand).
+[ ] Repair vs. decommissioned: one state with notes, or two? A repaired
+    vessel comes back; a decommissioned/replaced one never does. Options:
+    - one "Out of Service" status + the reason in VesselStatusEvent.notes
+    - "Out of Service" (temporary) + a separate `retired` flag / terminal
+      "Decommissioned" status that hides the vessel from lists
+    The history log should never be deleted either way - retire, don't
+    delete, so old batches' VesselStatusEvent rows stay intact.
+[ ] Entry rules: block (or require confirmation) putting a vessel that's
+    In Use with an active batch out of service - its batch would be
+    orphaned. Likely only allowed from Clean/Ready or Needs Cleaning.
+[ ] Exit rules: returning to service probably goes to Needs Cleaning
+    (safe default after a repair) rather than straight to Clean/Ready.
+    This is the first real transition rule - set_vessel_status() accepts
+    any status in v1, so these checks live in the management action (or
+    trigger the "state machine enforcement" open decision above).
+[ ] Reason/notes required when taking a vessel out of service (reuse
+    VesselStatusEvent.notes, make it required for this transition).
+
+Already safe without extra work:
+* BatchAddForm only offers Clean/Ready fermenters, so an out-of-service
+  vessel is automatically excluded from new batches.
+
+Also impacted when built:
+* Vessel.STATUS_CHOICES (models.py) + migration.
+* Vessel management page (the vessel detail/list page from steps 5-6, or
+  a separate management view) - "Take out of service" / "Return to
+  service" actions with a reason field; Cellar Ledger styling.
+* Status badge CSS in cellar-ledger.css - new variant for this state.
+* Vessel-type status icons (img/*-tank-{active,dirty,ready}.svg) - need
+  a 4th "out of service" variant per vessel type.
+* index.html dashboard counts (active_fermenters etc.) - decide whether
+  out-of-service vessels are shown/counted.
+* Tests: set/clear via the management action, excluded from BatchAddForm,
+  blocked while In Use with an active batch, history preserved on retire.
