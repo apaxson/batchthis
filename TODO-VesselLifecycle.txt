@@ -7,7 +7,7 @@ independent of (but linked to) a vessel's detail page. Sketched
 reference to pick back up from.
 
 Companion to TODO-BatchStage.txt, which tracks a BATCH's production
-stages (Pitch -> Primary -> ... -> Bottling). This file tracks a
+stages (pitch -> fermentation -> aging -> filtering -> bottling). This file tracks a
 VESSEL's physical state instead. The two are related (a batch entering
 a vessel is part of why the vessel goes Active; a batch leaving/
 completing is part of why the vessel goes to Needs Cleaning) but are
