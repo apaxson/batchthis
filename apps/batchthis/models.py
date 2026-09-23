@@ -77,6 +77,10 @@ class BatchStage(models.Model):
     ]
     FROM_STATE_CHOICES = [("", "Start")] + STATE_CHOICES
 
+    # Seeded shortids that code relies on (see Batch.full_aging()).
+    RACKING = "racking"
+    FILTERING_SHORTIDS = frozenset({"coarse-filtering", "fine-filtering", "sterile-filtering"})
+
     class Meta:
         ordering = ['sort_order']
 
@@ -567,20 +571,28 @@ class Batch(models.Model):
         event = self.current_stage_event
         return event.stage.to_state if event else None
 
-    def stage_durations(self) -> list["StageSegment"]:
+    def _timeline_events(self) -> list["BatchStageEvent"]:
+        # Reuse prefetch_related('stage_events') when the caller has done it, so a
+        # page showing several durations for a batch doesn't query once per duration.
+        if 'stage_events' in getattr(self, '_prefetched_objects_cache', {}):
+            return list(self.stage_events.all())
+        return list(self.stage_events.select_related('stage', 'vessel'))
+
+    def vessel_durations(self) -> list["VesselStay"]:
         """
-        The batch's timeline: one segment per stage event, running until the next
-        event. The newest segment stays open and is measured up to now. Complete
-        Batch ends the timeline rather than starting a segment of its own.
+        "Time in vessel": one stay per stage event, running until the next event -
+        so every transfer (Racking, any Filtering) starts a new stay. The newest
+        stay stays open and is measured up to now. Complete Batch ends the
+        timeline rather than starting a stay of its own.
         """
-        events = list(self.stage_events.select_related('stage', 'vessel'))
+        events = self._timeline_events()
         now = timezone.now()
-        segments = []
+        stays = []
         for i, event in enumerate(events):
             if event.stage.to_state == BatchStage.STATE_COMPLETED:
                 continue
             end = events[i + 1].timestamp if i + 1 < len(events) else None
-            segments.append(StageSegment(
+            stays.append(VesselStay(
                 event=event,
                 state=event.stage.to_state,
                 vessel=event.vessel,
@@ -588,8 +600,28 @@ class Batch(models.Model):
                 end=end,
                 duration=(end or now) - event.timestamp,
             ))
-        logger.debug(f"stage_durations: batch={self.pk} {len(events)} events -> {len(segments)} segments")
-        return segments
+        logger.debug(f"vessel_durations: batch={self.pk} {len(events)} events -> {len(stays)} stays")
+        return stays
+
+    def full_aging(self) -> "Span | None":
+        """
+        "Full aging": from the first Racking until the first filtering of any kind
+        (Coarse, Fine or Sterile). Later rackings don't restart it, and nothing
+        after that first filtering extends it. Open (measured up to now) until a
+        filtering is logged; None before the first Racking.
+        """
+        events = self._timeline_events()
+        start = next((e.timestamp for e in events if e.stage.shortid == BatchStage.RACKING), None)
+        if start is None:
+            return None
+        end = next(
+            (e.timestamp for e in events
+             if e.stage.shortid in BatchStage.FILTERING_SHORTIDS and e.timestamp >= start),
+            None,
+        )
+        span = Span(start=start, end=end, duration=(end or timezone.now()) - start)
+        logger.debug(f"full_aging: batch={self.pk} {span}")
+        return span
 
     def current_gravity(self):
         gravity_tests = self.tests.filter(type__shortid='specific-gravity')
@@ -629,19 +661,24 @@ class BatchStageEvent(models.Model):
     notes = models.CharField(max_length=250, blank=True)
 
 
-@dataclass
-class StageSegment:
-    """One span of Batch.stage_durations(): time spent in `state` after `event`."""
-    event: BatchStageEvent
-    state: str
-    vessel: Vessel | None
+@dataclass(kw_only=True)
+class Span:
+    """A measured stretch of a batch's timeline, e.g. Batch.full_aging()."""
     start: datetime
-    end: datetime | None  # None while the segment is still open
+    end: datetime | None  # None while still open; duration is then measured up to now
     duration: timedelta
 
     @property
     def is_open(self) -> bool:
         return self.end is None
+
+
+@dataclass(kw_only=True)
+class VesselStay(Span):
+    """One entry of Batch.vessel_durations(): time in `vessel`, in `state`, after `event`."""
+    event: BatchStageEvent
+    state: str
+    vessel: Vessel | None
 
 
 class BatchTest(models.Model):
