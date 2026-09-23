@@ -1,0 +1,77 @@
+{% extends 'batchthis/base.html' %}
+{% block content %}
+
+<div class="cl-page-head">
+  <div class="cl-wordmark font-display">Edit batch</div>
+  <div class="cl-batch-sub" style="margin-top:6px;">
+    <span><a href="{% url 'batch' batch.pk %}">&larr; Back to batch #{{ batch.pk }}</a></span>
+  </div>
+</div>
+
+{% if form.non_field_errors %}
+<div class="cl-flag" style="margin-bottom:20px;">
+  <span class="cl-flag-mark">!</span>
+  <span>{{ form.non_field_errors }}</span>
+</div>
+{% endif %}
+
+<div class="cl-panel">
+  <form method="POST" class="cl-form">
+    {% csrf_token %}
+
+    <div class="cl-form-grid">
+      <div class="cl-field cl-field--grow">
+        <label for="{{ form.name.id_for_label }}">Name</label>
+        {{ form.name }}
+        {% if form.name.errors %}<div class="cl-field-error">{{ form.name.errors }}</div>{% endif %}
+      </div>
+
+      <div class="cl-field">
+        <label for="{{ form.recipe.id_for_label }}">Recipe</label>
+        {{ form.recipe }}
+        {% if form.recipe.errors %}<div class="cl-field-error">{{ form.recipe.errors }}</div>{% endif %}
+      </div>
+      <div class="cl-field">
+        <label for="{{ form.size.id_for_label }}">Batch size</label>
+        {{ form.size }}
+        {% if form.size.errors %}<div class="cl-field-error">{{ form.size.errors }}</div>{% endif %}
+      </div>
+      <div class="cl-field"></div>
+
+      <div class="cl-field">
+        <label for="{{ form.startingGravity.id_for_label }}" style="display:flex; justify-content:space-between; align-items:baseline; gap:8px;">
+          <span>Starting gravity</span>
+          <button type="button" class="cl-link-btn" data-toggle="modal" data-target="#refractometerModal" data-target-field="#{{ form.startingGravity.id_for_label }}">Use refractometer</button>
+        </label>
+        {{ form.startingGravity }}
+        {% if form.startingGravity.errors %}<div class="cl-field-error">{{ form.startingGravity.errors }}</div>{% endif %}
+      </div>
+      <div class="cl-field">
+        <label for="{{ form.estimatedEndGravity.id_for_label }}">Estimated end gravity</label>
+        {{ form.estimatedEndGravity }}
+        {% if form.estimatedEndGravity.errors %}<div class="cl-field-error">{{ form.estimatedEndGravity.errors }}</div>{% endif %}
+      </div>
+    </div>
+
+    <div class="cl-form-actions">
+      <a href="{% url 'batch' batch.pk %}" class="cl-btn cl-btn--secondary">Cancel</a>
+      <button type="submit" class="cl-btn cl-btn--primary">Save</button>
+    </div>
+  </form>
+</div>
+
+<div class="cl-panel">
+  <div class="cl-section-head">
+    <div class="cl-section-title">Not editable here</div>
+  </div>
+  <div class="cl-kv-row"><span class="cl-kv-label">Current vessel</span><span class="cl-kv-value"><a href="{% url 'vessel' batch.current_vessel.pk %}">{{ batch.current_vessel.name }}</a></span></div>
+  <div class="cl-kv-row"><span class="cl-kv-label">Started in</span><span class="cl-kv-value">{{ batch.fermenter.vessel.name }}</span></div>
+  <div class="cl-kv-row"><span class="cl-kv-label">Start date</span><span class="cl-kv-value cl-num">{{ batch.startdate|date:"M j, Y g:i A" }}</span></div>
+  <p class="cl-empty" style="margin-top:10px;">
+    The vessel changes only through the batch workflow{% if batch.active %} &mdash;
+    <a href="{% url 'addDetailStage' batch.pk %}">Log stage</a> or <a href="{% url 'transferBatch' batch.pk %}">Transfer batch</a>{% endif %}
+    &mdash; so vessel status and the stage timeline stay correct. The start date anchors the timeline and fault checks.
+  </p>
+</div>
+
+{% endblock %}

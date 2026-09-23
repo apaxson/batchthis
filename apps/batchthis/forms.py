@@ -13,6 +13,7 @@ from .services import allowed_next_stages
 from .models import Fermentable, Adjunct, Yeast, Recipe, AdjunctUsage, RecipeFermentable
 from django.forms.widgets import NumberInput, DateInput
 from django.utils import timezone
+from pint import Quantity
 from quantityfield.fields import QuantityFormField, QuantityWidget
 from .fields import DescriptiveQuantityFormField, PrecisionQuantityWidget, PrecisionTextWidget
 import logging
@@ -73,6 +74,47 @@ class BatchAddForm(forms.Form):
         if start == timezone.localdate():
             return timezone.now()
         return timezone.make_aware(datetime.datetime.combine(start, datetime.time.min))
+
+class BatchEditForm(forms.Form):
+    """
+    Correct an existing batch's details. Deliberately has no fermenter/vessel
+    or start date: vessel moves go through Log stage / Transfer batch (so
+    vessel status and stage events stay right), and startdate anchors the
+    timeline and fault checks.
+    """
+    name = forms.CharField(max_length=50, widget=forms.TextInput(attrs={'placeholder': 'Name of Batch'}))
+    recipe = forms.ModelChoiceField(queryset=Recipe.objects.all(), required=False, empty_label="No recipe")
+    size = forms.CharField(widget=forms.TextInput(attrs={'placeholder': 'i.e. 6 gallons'}), label="Batch Size")
+    startingGravity = forms.CharField(widget=PrecisionTextWidget(precision=3, base_units='sg'), label="Starting Gravity")
+    estimatedEndGravity = forms.CharField(widget=PrecisionTextWidget(precision=3, base_units='sg'), label="Estimated End Gravity")
+
+    def clean_size(self) -> str:
+        size = self.cleaned_data['size'].strip()
+        try:
+            quantity = Quantity(size.lower())
+            is_volume = quantity.check('[volume]')
+        except Exception:
+            logger.debug("BatchEditForm: unparseable size %r", size)
+            raise ValidationError("Enter a volume, e.g. 6 gallons or 20 liters.")
+        if not is_volume or quantity.magnitude <= 0:
+            raise ValidationError("Enter a volume, e.g. 6 gallons or 20 liters.")
+        return size
+
+    def _clean_gravity(self, field: str) -> float:
+        try:
+            value = float(self.cleaned_data[field])
+        except (TypeError, ValueError):
+            raise ValidationError("Enter a specific gravity, e.g. 1.090.")
+        if value <= 0:
+            raise ValidationError("Enter a specific gravity, e.g. 1.090.")
+        return value
+
+    def clean_startingGravity(self) -> float:
+        return self._clean_gravity('startingGravity')
+
+    def clean_estimatedEndGravity(self) -> float:
+        return self._clean_gravity('estimatedEndGravity')
+
 
 class BatchStageForm(forms.Form):
     """

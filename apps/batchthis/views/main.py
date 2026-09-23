@@ -12,7 +12,7 @@ from django.utils import timezone
 from django.db.models import Prefetch
 from apps.batchthis.models import Batch, BatchStage, BatchStageEvent, Fermenter, BatchTestType, BatchNoteType, Vessel, Unit, Recipe, Fermentable, AdjunctUsage, RecipeYeasts,RecipeFermentable,RecipeAdjunct
 from django.shortcuts import get_object_or_404
-from apps.batchthis.forms import BatchTestForm, BatchNoteForm, BatchAdditionForm, RefractometerCorrectionForm, BatchAddForm, \
+from apps.batchthis.forms import BatchTestForm, BatchNoteForm, BatchAdditionForm, RefractometerCorrectionForm, BatchAddForm, BatchEditForm, \
     BatchCategory
 from apps.batchthis.forms import RecipeAddForm, FermentableForm, AdjunctForm, YeastForm, BatchStageForm, BatchTransferForm
 from django.forms.formsets import formset_factory
@@ -381,7 +381,7 @@ def editYeasts(request, pk=None):
             return render(request, template_name='batchthis/editYeasts.html', context={'yeast_set': yeast_set, 'recipe': recipe})
 
 
-def addBatch(request, pk=None):
+def addBatch(request):
     if request.method == "POST":
         form = BatchAddForm(request.POST)
         if form.is_valid():
@@ -410,17 +410,49 @@ def addBatch(request, pk=None):
             logger.debug("addBatch: invalid form: %s", form.errors)
             return render(request, template_name='batchthis/addBatch.html', context={'form': form})
     else:
-        if pk:
-            batch = Batch.objects.get(pk=pk)
-            form = BatchAddForm(initial=model_to_dict(batch))
-            #form = BatchForm(batch)
-            #form.fermenter = batch.fermenter
-            #form.startdate = batch.startdate
-            #pdb.set_trace()
-        else:
-            #form = BatchAddForm()
-            form = BatchAddForm()
+        form = BatchAddForm()
         return render(request, "batchthis/addBatch.html", {'form': form})
+
+
+@login_required
+def editBatch(request, pk):
+    """
+    Correct an existing batch in place. Vessel and start date are shown
+    read-only - see BatchEditForm for why.
+    """
+    batch = get_object_or_404(Batch.objects.select_related('fermenter__vessel', 'vessel', 'recipe'), pk=pk)
+    initial = {
+        'name': batch.name,
+        'recipe': batch.recipe_id,
+        'size': str(batch.size),
+        # Plain strings in the same format the fields post back, so has_changed() is accurate.
+        'startingGravity': f"{batch.startingGravity.magnitude:.3f}",
+        'estimatedEndGravity': f"{batch.estimatedEndGravity.magnitude:.3f}",
+    }
+    if request.method == "POST":
+        form = BatchEditForm(request.POST, initial=initial)
+        if form.is_valid():
+            if not form.has_changed():
+                logger.debug("editBatch: batch %s '%s' submitted with no changes", pk, batch.name)
+                return HttpResponseRedirect(reverse('batch', kwargs={'pk': pk}))
+            batch.name = form.cleaned_data['name']
+            batch.recipe = form.cleaned_data['recipe']
+            batch.size = form.cleaned_data['size']
+            batch.startingGravity = Quantity(form.cleaned_data['startingGravity'], 'sg')
+            batch.estimatedEndGravity = Quantity(form.cleaned_data['estimatedEndGravity'], 'sg')
+            try:
+                # Only the edited fields: never rewrites vessel/fermenter/startdate/active.
+                batch.save(update_fields=['name', 'recipe', 'size', 'startingGravity', 'estimatedEndGravity'])
+            except Exception:
+                logger.exception("editBatch: failed to save batch %s '%s'", pk, batch.name)
+                form.add_error(None, "Couldn't save the batch. Nothing was changed - please try again.")
+                return render(request, 'batchthis/editBatch.html', {'form': form, 'batch': batch})
+            logger.info("editBatch: updated batch %s '%s' (%s)", pk, batch.name, ", ".join(form.changed_data))
+            return HttpResponseRedirect(reverse('batch', kwargs={'pk': pk}))
+        logger.debug("editBatch: invalid form for batch %s: %s", pk, form.errors)
+    else:
+        form = BatchEditForm(initial=initial)
+    return render(request, 'batchthis/editBatch.html', {'form': form, 'batch': batch})
 
 
 def batchTest(request, pk=None):
