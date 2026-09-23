@@ -77,27 +77,34 @@ def _build_series(batch, shortid, rule=None):
 def index(request):
     recent_batches = Batch.objects.all()[:5]
     total_batch_count = Batch.objects.all().count()
-    active_batches = Batch.objects.filter(active=True)
+    # select_related covers batch.current_vessel for both the view and the template.
+    active_batches = Batch.objects.filter(active=True).select_related('vessel', 'fermenter__vessel')
     active_batch_count = len(active_batches)
-    active_fermenters = Fermenter.objects.filter(vessel__status=Vessel.STATUS_ACTIVE)
-    active_fermenters_count = len(active_fermenters)
     total_volume = 0
-    fermenter_detail = {}
+    vessels_in_use = []
     for batch in active_batches:
         total_volume += batch.size
-        fermenter_detail[batch.fermenter.vessel.name] = {'batch': batch.name, 'size': batch.size}
+        vessel = batch.current_vessel
+        if vessel.status == Vessel.STATUS_OUT:
+            # A vessel holding a batch can't be taken out of service through the
+            # app, so this means the data was changed some other way.
+            logger.error("index: active batch %s '%s' is in out-of-service vessel %s '%s'",
+                         batch.pk, batch.name, vessel.pk, vessel.name)
+            continue
+        vessels_in_use.append({'vessel': vessel, 'batch': batch})
+    vessels_in_use_count = len({row['vessel'].pk for row in vessels_in_use})
+    logger.debug("index: %d active batches in %d vessels", active_batch_count, vessels_in_use_count)
 
     flags = get_active_flags(active_batches)
 
     context = {
         'active_batches': active_batches,
-        'active_fermenters': active_fermenters,
         'recent_batches': recent_batches,
         'total_batch_count': total_batch_count,
         'active_batch_count': active_batch_count,
-        'active_fermenters_count': active_fermenters_count,
+        'vessels_in_use_count': vessels_in_use_count,
         'total_volume': total_volume,
-        'fermenter_detail': fermenter_detail,
+        'vessels_in_use': vessels_in_use,
         'flags': flags,
     }
     return render(request, 'batchthis/index.html', context=context)
