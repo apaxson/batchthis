@@ -74,7 +74,7 @@ Server-rendered pages under `apps/batchthis/templates/batchthis/` are being migr
 - **Models:** TimeStampedModel base class for all models (adds created_at, updated_at)
 - **API:** Use APIView for DRF
 - **Serializers:** ModelSerializer with explicit fields (never fields = '__all__')
-- **Measurements:** Any measurement data should use Quantity() and QuantityFields(), or using custom Subclass fields such as DescriptiveQuantityField() or PrecisionQuantityField()
+- **Units of Measurement:** Any measurement data should use batchthis.fields.DescriptiveQuantityField().  The default storage in models.py for the database should always convert to metric, but redisplay based on entered measurement.  See batchthis.models.Batch.size for an example.
 
 
 ## Constraints & Rules
