@@ -1,4 +1,5 @@
 import pdb
+import datetime
 
 from django.forms import ModelForm, inlineformset_factory
 from django.db.models import Q, CharField
@@ -60,6 +61,15 @@ class BatchAddForm(forms.Form):
     startingGravity = forms.CharField(widget=PrecisionTextWidget(precision=3, base_units='sg'), label="Starting Gravity", required=True)
     estimatedEndGravity = forms.CharField(widget=PrecisionTextWidget(precision=3, base_units='sg'), label="Estimated End Gravity", required=True)
     recipe = forms.ModelChoiceField(queryset=Recipe.objects.all())
+
+    def clean_startdate(self) -> datetime.datetime:
+        # The form only asks for a date, but Batch.startdate is a datetime used for
+        # hours-elapsed fault checks: today means right now, an earlier date means
+        # the start of that day.
+        start = self.cleaned_data['startdate']
+        if start == timezone.localdate():
+            return timezone.now()
+        return timezone.make_aware(datetime.datetime.combine(start, datetime.time.min))
 
 # class BatchForm(forms.ModelForm):
 #     class Meta:

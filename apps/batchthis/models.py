@@ -444,7 +444,10 @@ class Batch(models.Model):
         verbose_name_plural = 'batches'
 
     name = models.CharField(max_length=50)
-    startdate = models.DateTimeField(auto_now_add=True)
+    # Set once when the batch is created and never touched by later saves. Not
+    # auto_now_add: that discards the start date entered on the Add Batch form.
+    # Batch creation is not Pitch - pitching is logged as its own stage event.
+    startdate = models.DateTimeField(default=timezone.now)
     enddate = models.DateTimeField(null=True, blank=True)
     lotId = models.CharField(max_length=7, null=True) # Bottledate L[2digityear][0paddedYearDays] = L22088
     size = DescriptiveQuantityField(base_units='liters', unit_choices=['liters','gallons'])

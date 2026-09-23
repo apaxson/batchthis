@@ -8,10 +8,11 @@ transition's name ("Complete Batch"), and graph shape (fixed for v1,
 every recipe) - see "CANONICAL WORKFLOW GRAPH" and "OPEN DECISIONS"
 below. All discrepancies raised by the WineWorkflow.png diagram are now
 resolved; most remaining open items already have a stated "-> Recommend:"
-default (see "OPEN DECISIONS"), except whether to bundle the
-Batch.startdate fix into this work or file it separately, which still
-needs an actual call. NOT STARTED - no code changes made yet. This file
-is the reference to pick back up from.
+default (see "OPEN DECISIONS").
+
+STATUS (2026-09-23): IN PROGRESS on branch implement-staging-workflows.
+Step 1 of SUGGESTED ORDER OF WORK (Batch.startdate fix) is DONE. Steps
+2+ not started. This file is the reference to pick back up from.
 
 
 GOAL
@@ -238,6 +239,24 @@ BUG FOUND ALONG THE WAY (separate from this feature, but blocks it)
   fixing first (auto_now_add=True -> default=timezone.now, editable).
   Confirm with Aaron before bundling this fix into the stage-tracking
   work vs. filing it separately.
+  FIXED 2026-09-23 (migration 0033), as step 1 of this work:
+  * `startdate = DateTimeField(default=timezone.now)`. A default only
+    fills the value at creation, so later saves never change it (the
+    reason auto_now_add was used) - but an entered start date is kept.
+  * BatchAddForm.clean_startdate(): the form asks for a date only; today
+    -> the current time, an earlier date -> start of that day (current
+    Django timezone, UTC today). Aaron's choice, so hours-based fault
+    checks stay accurate for same-day batches.
+  * Side effect: startdate is editable now, so the (still broken) Edit
+    Batch form pre-fills it instead of showing it blank.
+  * Tests: apps/batchthis/tests/test_batch_startdate.py.
+  * Batch creation is NOT Pitch (Aaron, 2026-09-23) - see the "Auto-log
+    Pitch" decision below. startdate = when the batch record starts;
+    the Pitch BatchStageEvent timestamp is when fermentation starts.
+    Follow-up: once Pitch events exist, lib/faults.py's elapsed-hours
+    math (and batch_fault_series() in views/main.py) should anchor on
+    the Pitch timestamp, falling back to startdate for batches with no
+    Pitch logged.
 
 
 MODEL CHANGES
@@ -286,8 +305,8 @@ MODEL CHANGES
    - notes    = CharField(max_length=250, blank=True)
    - Meta.ordering = ['timestamp']
 
-3. Fix `Batch.startdate`: auto_now_add=True -> default=timezone.now,
-   editable. (See bug note above - confirm scope with Aaron first.)
+3. [DONE 2026-09-23] Fix `Batch.startdate`: auto_now_add=True ->
+   default=timezone.now. (See bug note above.)
 
 4. `Batch` convenience methods:
    - stage_durations() -> pairs consecutive stage_events into
@@ -375,9 +394,11 @@ OPEN DECISIONS (ask Aaron / decide before coding)
 --------------------------------------------------
 [ ] Reuse existing `BatchStage` vs. build a fresh lookup table.
     -> Recommend: reuse, it's already the right shape.
-[ ] Auto-log "Pitch" on batch creation (mirrors the existing
+[x] Auto-log "Pitch" on batch creation (mirrors the existing
     addGravityTest post_save signal that auto-creates a gravity
     BatchTest) vs. require an explicit first log entry.
+    RESOLVED (Aaron, 2026-09-23): NO auto-log. Creating a batch does not
+    pitch it; Pitch is an explicit first stage event.
     -> Signal approach matches existing precedent in this file, but
        CLAUDE.md's current convention prefers explicit service functions
        over new signals. Leaning toward explicit service-function call
@@ -389,8 +410,9 @@ OPEN DECISIONS (ask Aaron / decide before coding)
     Transfer action built in this workflow (MODEL CHANGES #6), so the
     field is needed now and Racking + all Filtering transitions SHOULD
     call transfer().
-[ ] Fix Batch.startdate auto_now_add bug as part of this work vs. as its
+[x] Fix Batch.startdate auto_now_add bug as part of this work vs. as its
     own separate fix/ticket.
+    RESOLVED: done as step 1 of this work (2026-09-23).
 [ ] Recipe-side expected workflow (vessel chain) - phase 2, not required
     for v1. Design fleshed out below in "RECIPE WORKFLOW (VESSEL CHAIN)".
 [ ] vessel_role as free-text label vs. FK to a small lookup table of
@@ -590,8 +612,7 @@ FILES IMPACTED (v1 scope - no recipe-plan / phase 2 items)
 
 SUGGESTED ORDER OF WORK (TDD - write the test for each step first)
 --------------------------------------------------------------
-1. Fix Batch.startdate bug + regression test (small, isolated, unblocks
-   everything else that treats startdate as the pitch anchor).
+1. [DONE 2026-09-23] Fix Batch.startdate bug + regression test.
 2. Extend BatchStage (shortid, sort_order, transfers_batch) + seed migration + BatchFactory
    + BatchStageFactory.
 3. BatchStageEvent model + migration + BatchStageEventFactory +
