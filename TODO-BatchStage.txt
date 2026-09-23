@@ -11,14 +11,17 @@ resolved; most remaining open items already have a stated "-> Recommend:"
 default (see "OPEN DECISIONS").
 
 STATUS (2026-09-23): IN PROGRESS on branch implement-staging-workflows.
-Step 1 of SUGGESTED ORDER OF WORK (Batch.startdate fix) is DONE. Steps
-2+ not started. This file is the reference to pick back up from.
+Steps 1-2 of SUGGESTED ORDER OF WORK are DONE (Batch.startdate fix;
+BatchStage transitions seeded). Steps 3+ not started. This file is the
+reference to pick back up from.
+Naming (Aaron, 2026-09-23): "Coarse Filtering" - "Course Filtering" was a
+typo in the earlier drafts and the diagram; never use it.
 
 
 GOAL
 ----
 * When a batch is made, log timestamped transitions between production
-  stages (Pitch, Racking, Fine Filtering, Course Filtering, Sterile
+  stages (Pitch, Racking, Fine Filtering, Coarse Filtering, Sterile
   Filtering, Complete Batch - see "CANONICAL WORKFLOW GRAPH" below).
 * Be able to compute elapsed time between any two stages for a batch
   (e.g. time between pitch and bottling).
@@ -46,7 +49,7 @@ WHAT ALREADY EXISTS (found while tracing this - don't re-invent these)
     * multiple rackings could happen as needed during a batch
   * _filtering_ - the action that happens after the 'Aging' stage
     * multiple filterings could happen as needed during a batch to be placed into a different aging tank that is 'clean'
-    * 'Course Filtering' is a filter at 5micron to 10micron
+    * 'Coarse Filtering' is a filter at 5micron to 10micron
     * 'Fine Filtering' is a filter at 1.5micron to 1micron
     * 'Sterile Filtering' is a filter at 0.5 micron meant for bottling
   * _bottling_ - the final action that happens after aging
@@ -96,7 +99,7 @@ model directly:
                                                   ^  |
                                      Fine Filtering|  |  (Aging -> Aging loop)
                                                   ^  |
-                                   Course Filtering|  |  (Aging -> Aging loop)
+                                   Coarse Filtering|  |  (Aging -> Aging loop)
                                                   ^  |
                                            Racking|  |  (Aging -> Aging loop - additional
                                                   ^  |   vessel moves; confirmed by Aaron
@@ -113,7 +116,7 @@ Transitions (name: from_state -> to_state):
                         as above - zero or more additional vessel moves
                         during Aging; see resolved question below)
   * Fine Filtering:    Aging -> Aging          (loop - 1.5-1 micron)
-  * Course Filtering:  Aging -> Aging          (loop - 5-10 micron)
+  * Coarse Filtering:  Aging -> Aging          (loop - 5-10 micron)
   * Sterile Filtering: Aging -> Bottling       (0.5 micron - this is
                         what actually advances the batch out of Aging;
                         NOT just a bottling-technique attribute like I
@@ -182,7 +185,7 @@ resolve these - ask Aaron):
 Implementation implications of the Racking resolution above:
   * No BatchStage schema change needed for this. Keep Racking as ONE
     transition row (from_state=Fermentation, to_state=Aging) and just log
-    it again for each additional vessel move, the same way Fine/Course
+    it again for each additional vessel move, the same way Fine/Coarse
     Filtering already loop Aging -> Aging with a single row each. Since
     v1 is descriptive-only (see "Enforce the graph" open decision below -
     from_state isn't validated against the batch's actual current state
@@ -261,8 +264,20 @@ BUG FOUND ALONG THE WAY (separate from this feature, but blocks it)
 
 MODEL CHANGES
 -------------
-1. Extend `BatchStage` (holds TRANSITIONS, not states - see "CANONICAL
-   WORKFLOW GRAPH" above):
+1. [DONE 2026-09-23] Extend `BatchStage` (holds TRANSITIONS, not states -
+   see "CANONICAL WORKFLOW GRAPH" above).
+   AS BUILT: migrations 0034_batchstage_transitions (schema) and
+   0035_default_load2 (seed rows - a hand-written RunPython data migration,
+   a ONE-TIME exception to CLAUDE.md's "never hand-write migrations" rule,
+   approved by Aaron; named "default_load2" as the 2nd default-data load
+   after 0002_default_load). Also added `description` (micron specs etc.).
+   States are BatchStage.STATE_* constants (CharField choices);
+   from_state blank = Start. Seed order: Pitch, Racking, Coarse Filtering,
+   Fine Filtering, Sterile Filtering, Complete Batch (coarse before fine).
+   BatchStage is VIEW-ONLY in Django admin (Aaron) - rows are fixed and
+   looked up by shortid. Dead `batch_stages` list deleted.
+   Tests: apps/batchthis/tests/test_batch_stages.py.
+   Original plan:
    - add `shortid` (SlugField, unique, auto-slug on save - same pattern
      as BatchTestType) so code can reference stages by stable id instead
      of matching on display name.
@@ -279,7 +294,7 @@ MODEL CHANGES
                           transfers during Aging too - don't add a
                           second "Racking (repeat)" row
        Fine Filtering    (from: Aging,    to: Aging)   # 1.5-1 micron  transfers_batch: yes
-       Course Filtering  (from: Aging,    to: Aging)   # 5-10 micron   transfers_batch: yes
+       Coarse Filtering  (from: Aging,    to: Aging)   # 5-10 micron   transfers_batch: yes
        Sterile Filtering (from: Aging,    to: Bottling) # 0.5 micron   transfers_batch: yes
        Complete Batch    (from: Bottling, to: Completed)               transfers_batch: no
                           # manual, closes the batch out - see
@@ -335,7 +350,7 @@ MODEL CHANGES
      transfer", not "vessel move".
    - Transitions that transfer the batch (RESOLVED by Aaron 2026-09-23):
        Racking            Fermentation -> Aging, and the Aging -> Aging loop
-       Course Filtering   Aging -> Aging
+       Coarse Filtering   Aging -> Aging
        Fine Filtering     Aging -> Aging
        Sterile Filtering  Aging -> Bottling
      i.e. Racking and every Filtering transition moves the batch into
@@ -382,7 +397,7 @@ MODEL CHANGES
        * Tests: transfers the batch and logs the reason; missing reason /
          dst not Clean/Ready / completed batch are rejected with a
          message and change nothing; no BatchStageEvent is created.
-   - Tests: each transferring transition (Racking, Course/Fine/Sterile
+   - Tests: each transferring transition (Racking, Coarse/Fine/Sterile
      Filtering) calls transfer() and stores dst on the event; a missing
      dst is a form error; a rejected transfer (dst not Clean/Ready, batch
      complete) rolls back the stage event too; Pitch/Complete Batch leave
@@ -463,16 +478,16 @@ occupancy, linked by the transition/action that moves the batch from one
 vessel into the next. Aaron's original example used placeholder verb
 names ("fining", "bottle") before the WineWorkflow.png diagram existed;
 superseded below by the diagram's real vocabulary (Pitch / Racking /
-Fine Filtering / Course Filtering / Sterile Filtering):
+Fine Filtering / Coarse Filtering / Sterile Filtering):
 
     (pitch) -> FermentationVessel1 -> (racking) -> AgingVessel1
-             -> (course filtering) -> AgingVessel2 -> (fine filtering)
+             -> (coarse filtering) -> AgingVessel2 -> (fine filtering)
              -> AgingVessel3 -> (sterile filtering) -> BottlingVessel1
              -> (?) -> Completed
 
 Read as a sequence of steps, where each step names the vessel the batch
 sits in and the action that moved it there. The Filtering segment
-(Course/Fine, in any order, zero or more times per the canonical graph's
+(Coarse/Fine, in any order, zero or more times per the canonical graph's
 Aging->Aging loops) is the part of the chain that's genuinely variable
 per batch - the recipe template can show a typical/expected pass count,
 but the actual batch may loop through it a different number of times
@@ -486,7 +501,7 @@ vessel; no need to store both ends explicitly):
   - recipe      = FK(Recipe, on_delete=CASCADE, related_name='vessel_steps')
   - sort_order  = PositiveSmallIntegerField
   - stage       = FK(BatchStage, on_delete=SET("_del"))  # the transition
-                  INTO this step - Pitch / Racking / Course Filtering /
+                  INTO this step - Pitch / Racking / Coarse Filtering /
                   Fine Filtering / Sterile Filtering / Complete Batch -
                   reuses the same BatchStage vocabulary as
                   BatchStageEvent (see main section above), so recipe
@@ -503,14 +518,14 @@ vessel; no need to store both ends explicitly):
 Worked example (as rows, matching the WineWorkflow.png chain above):
   1. stage=Pitch,             vessel_role="Fermentation Vessel 1"
   2. stage=Racking,           vessel_role="Aging Vessel 1"
-  3. stage=Course Filtering,  vessel_role="Aging Vessel 2"
+  3. stage=Coarse Filtering,  vessel_role="Aging Vessel 2"
   4. stage=Fine Filtering,    vessel_role="Aging Vessel 3"
   5. stage=Sterile Filtering, vessel_role="Bottling Vessel 1"
   6. stage=Complete Batch, vessel_role=""
      (terminal - no vessel after; batch is Completed)
 Row 3/4 are the repeatable Aging<->Filtering loop - a real recipe might
-have more or fewer of these, and in either order (Course then Fine, or
-Fine then Course, or just one of them repeated) - they're shown once
+have more or fewer of these, and in either order (Coarse then Fine, or
+Fine then Coarse, or just one of them repeated) - they're shown once
 each here only as an example.
 
 Tie-in to the v1 BatchStageEvent design (main section above): when an
@@ -523,7 +538,7 @@ happens ~day 7, this batch did it on day 9"). Optional for v1 of the
 vessel-chain feature itself, but cheap to add at the same time.
 
 BatchStage extension needed for this to work: all six named transitions
-(Pitch, Racking, Fine Filtering, Course Filtering, Sterile Filtering,
+(Pitch, Racking, Fine Filtering, Coarse Filtering, Sterile Filtering,
 Complete Batch) are now in the v1 seed list above per the WineWorkflow.png
 diagram plus Aaron's naming call - no schema change needed here, just
 data. No remaining gap.
@@ -613,8 +628,9 @@ FILES IMPACTED (v1 scope - no recipe-plan / phase 2 items)
 SUGGESTED ORDER OF WORK (TDD - write the test for each step first)
 --------------------------------------------------------------
 1. [DONE 2026-09-23] Fix Batch.startdate bug + regression test.
-2. Extend BatchStage (shortid, sort_order, transfers_batch) + seed migration + BatchFactory
-   + BatchStageFactory.
+2. [DONE 2026-09-23] Extend BatchStage (shortid, sort_order, from/to
+   state, transfers_batch, description) + seed migration (0035_default_load2)
+   + BatchStageFactory. (BatchFactory already existed.)
 3. BatchStageEvent model + migration + BatchStageEventFactory +
    stage_durations()/current_stage_event tests.
 4. log_stage_event() service function + terminal-stage completion test

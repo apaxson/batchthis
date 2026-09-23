@@ -7,6 +7,7 @@ from .models import (
     AdjunctUsage,
     Batch,
     BatchCategory,
+    BatchStage,
     BatchStyle,
     BatchTestType,
     Fermentable,
@@ -110,6 +111,18 @@ class FermenterFactory(factory.django.DjangoModelFactory):
         model = Fermenter
 
     vessel = factory.SubFactory(VesselFactory)
+
+
+class BatchStageFactory(factory.django.DjangoModelFactory):
+    # The six real workflow stages are seeded by migration 0035_default_load2;
+    # use this for extra, throwaway stages in tests.
+    class Meta:
+        model = BatchStage
+
+    name = factory.Sequence(lambda n: f"Stage{n}")
+    sort_order = factory.Sequence(lambda n: 100 + n)
+    from_state = BatchStage.STATE_AGING
+    to_state = BatchStage.STATE_AGING
 
 
 class BatchTestTypeFactory(factory.django.DjangoModelFactory):

@@ -2,7 +2,7 @@ import pdb
 
 from django.core.files.uploadedfile import UploadedFile
 from apps.batchthis.models import AdjunctType, AdjunctUsage, Adjunct, Fermentable, FermentableType, Yeast
-from apps.batchthis.models import BatchStage, Recipe, BatchCategory, BatchStyle
+from apps.batchthis.models import Recipe, BatchCategory, BatchStyle
 from apps.batchthis.lib.bslib import Recipe as R
 from apps.batchthis.lib.bslib import Fermentable as F
 from apps.batchthis.lib.bslib import Adjunct as A

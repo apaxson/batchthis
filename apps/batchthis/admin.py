@@ -16,7 +16,24 @@ admin.site.register(BatchNote)
 admin.site.register(BatchTest)
 admin.site.register(BatchStyle)
 admin.site.register(BatchCategory)
-admin.site.register(BatchStage)
+
+
+@admin.register(BatchStage)
+class BatchStageAdmin(admin.ModelAdmin):
+    # View-only: the workflow graph is fixed (seeded by 0035_default_load2) and code
+    # looks stages up by shortid, so editing rows here would break the workflow.
+    list_display = ('sort_order', 'name', 'shortid', 'from_state', 'to_state', 'transfers_batch', 'description')
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False
+
+
 admin.site.register(AdjunctType)
 admin.site.register(AdjunctUsage)
 admin.site.register(Adjunct)

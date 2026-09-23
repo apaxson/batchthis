@@ -33,14 +33,6 @@ logger = logging.getLogger(__name__)
 #TODO Refactor "fermenter" to generic "Vessel" and add "Vessel use" to be 'fermenter','aging','serving',etc.
 #TODO add "Packaging" to identify how the batch was finished
 
-batch_stages = [
-    ('PRI', "Primary Fermentation"),
-    ('SEC', "Secondary Fermentation"),
-    ('TER', "Tertiary Fermentation"),
-    ('RAC', "Racking"),
-    ('AGE', " Long-term Aging")
-]
-
 use_options = (("WTR", "Water Agent"),
                    ("BTL", "Bottling"),
                    ("PRI", "Primary"),
@@ -66,10 +58,43 @@ class PrecisionQuantityField(QuantityField):
 
 
 class BatchStage(models.Model):
-    name = models.CharField(max_length=20)
+    """
+    One TRANSITION (arrow) of the fixed batch workflow graph - see
+    TODO-BatchStage.txt, "CANONICAL WORKFLOW GRAPH". The rows are seeded by
+    migration 0035_default_load2; code refers to them by `shortid`.
+    """
+    # The workflow's STATES (boxes). A blank from_state means Start.
+    STATE_FERMENTATION = "Fermentation"
+    STATE_AGING = "Aging"
+    STATE_BOTTLING = "Bottling"
+    STATE_COMPLETED = "Completed"
+    STATE_CHOICES = [
+        (STATE_FERMENTATION, STATE_FERMENTATION),
+        (STATE_AGING, STATE_AGING),
+        (STATE_BOTTLING, STATE_BOTTLING),
+        (STATE_COMPLETED, STATE_COMPLETED),
+    ]
+    FROM_STATE_CHOICES = [("", "Start")] + STATE_CHOICES
+
+    class Meta:
+        ordering = ['sort_order']
 
     def __str__(self):
         return self.name
+
+    def save(self, *args, **kwargs):
+        if not self.shortid:
+            self.shortid = slugify(self.name)
+        super().save(*args, **kwargs)
+
+    name = models.CharField(max_length=20)
+    shortid = models.SlugField(unique=True)
+    sort_order = models.PositiveSmallIntegerField(default=0)
+    from_state = models.CharField(max_length=15, choices=FROM_STATE_CHOICES, blank=True)
+    to_state = models.CharField(max_length=15, choices=STATE_CHOICES)
+    # Logging this transition moves the batch into another clean vessel (Batch.transfer()).
+    transfers_batch = models.BooleanField(default=False)
+    description = models.CharField(max_length=100, blank=True)
 
 # Create your models here.
 class Unit(models.Model):
