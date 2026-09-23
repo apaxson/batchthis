@@ -119,6 +119,44 @@ class BatchStageForm(forms.Form):
         return cleaned
 
 
+class BatchTransferForm(forms.Form):
+    """
+    Ad-hoc batch transfer outside the workflow (services.transfer_batch()).
+    Stage defaults to "no stage change"; the alternatives are the allowed next
+    stages that transfer the batch.
+    """
+    dst_vessel = forms.ModelChoiceField(
+        queryset=Vessel.objects.filter(status=Vessel.STATUS_READY),
+        label="Destination vessel",
+        widget=forms.HiddenInput(),
+        error_messages={
+            'required': "Choose a clean, ready destination vessel.",
+            'invalid_choice': f"That vessel isn't {Vessel.STATUS_READY}. Pick a clean, ready vessel.",
+        },
+    )
+    stage = forms.ModelChoiceField(
+        queryset=BatchStage.objects.none(),
+        required=False,
+        error_messages={'invalid_choice': "That stage can't be logged with a transfer right now."},
+    )
+    timestamp = forms.DateTimeField(
+        label="Date/time", widget=DateTimeWidget(), input_formats=['%Y-%m-%dT%H:%M', '%Y-%m-%d %H:%M'],
+    )
+    reason = forms.CharField(
+        max_length=250,
+        error_messages={'required': "A reason is required to transfer a batch outside the workflow."},
+    )
+
+    def __init__(self, *args, batch: Batch, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.batch = batch
+        self.fields['stage'].queryset = BatchStage.objects.filter(
+            pk__in=[stage.pk for stage in allowed_next_stages(batch) if stage.transfers_batch]
+        )
+        state = batch.current_state
+        self.fields['stage'].empty_label = f"No stage change (stay in {state})" if state else "No stage change"
+
+
 # class BatchForm(forms.ModelForm):
 #     class Meta:
 #         model = Batch

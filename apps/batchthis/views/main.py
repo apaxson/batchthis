@@ -14,12 +14,12 @@ from apps.batchthis.models import Batch, BatchStage, BatchStageEvent, Fermenter,
 from django.shortcuts import get_object_or_404
 from apps.batchthis.forms import BatchTestForm, BatchNoteForm, BatchAdditionForm, RefractometerCorrectionForm, BatchAddForm, \
     BatchCategory
-from apps.batchthis.forms import RecipeAddForm, FermentableForm, AdjunctForm, YeastForm, BatchStageForm
+from apps.batchthis.forms import RecipeAddForm, FermentableForm, AdjunctForm, YeastForm, BatchStageForm, BatchTransferForm
 from django.forms.formsets import formset_factory
 from apps.batchthis.lib.utils import Utils
 from apps.batchthis.services import (
     set_vessel_status, take_vessel_out_of_service, return_vessel_to_service, status_before_out_of_service,
-    transition_stage_event,
+    transition_stage_event, transfer_batch,
 )
 from apps.batchthis.lib.faults import get_active_flags, get_rule_for, StagedFaultRule
 from django.contrib.auth.decorators import login_required
@@ -152,7 +152,8 @@ def batch(request, pk):
         vessel_stays = batch.vessel_durations()
         full_aging = batch.full_aging()
         stage_events = list(batch.stage_events.all())
-        last_event = stage_events[-1] if stage_events else None
+        # Transfer-only events (no stage) don't change the batch's stage.
+        last_event = next((e for e in reversed(stage_events) if e.stage is not None), None)
         logger.debug("batch: pk=%s %d stage events, %d vessel stays, full_aging=%s",
                      pk, len(stage_events), len(vessel_stays), full_aging)
 
@@ -505,6 +506,34 @@ def batchStage(request, pk):
         ),
     }
     return render(request, "batchthis/addBatchStage.html", context)
+
+
+@login_required
+def batchTransfer(request, pk):
+    """Ad-hoc transfer outside the workflow - e.g. to empty a vessel that has to go Out of Service."""
+    batch = get_object_or_404(Batch.objects.select_related('vessel', 'fermenter__vessel'), pk=pk)
+    if request.method == 'POST':
+        form = BatchTransferForm(request.POST, batch=batch)
+        if not batch.active:
+            form.add_error(None, f"Batch '{batch.name}' is complete and can't be transferred.")
+        elif form.is_valid():
+            data = form.cleaned_data
+            try:
+                transfer_batch(
+                    batch, data['dst_vessel'],
+                    reason=data['reason'], stage=data['stage'], timestamp=data['timestamp'],
+                )
+            except ValidationError as e:
+                form.add_error(None, e.messages)
+            except Exception:
+                logger.exception("batchTransfer: failed for batch %s", pk)
+                form.add_error(None, "Couldn't transfer the batch. Nothing was saved - please try again.")
+            else:
+                return HttpResponseRedirect(reverse('batch', kwargs={'pk': pk}))
+        logger.debug("batchTransfer: batch %s form errors: %s", pk, form.errors.as_data())
+    else:
+        form = BatchTransferForm(batch=batch, initial={'timestamp': timezone.localtime().replace(second=0, microsecond=0)})
+    return render(request, "batchthis/transferBatch.html", {'batch': batch, 'form': form})
 
 
 def activity(request, pk=None):

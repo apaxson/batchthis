@@ -506,13 +506,15 @@ class Batch(models.Model):
         *,
         timestamp: datetime | None = None,
         log_activity: bool = True,
+        reason: str = "",
     ) -> None:
         """
         Move the batch from src_vessel into dst_vessel (any vessel type): src
         -> Needs Cleaning, dst -> In Use, batch.vessel -> dst, plus one
         ActivityLog entry on the batch. All of it commits together, or none.
         timestamp (default now) stamps the vessel status history. The stage
-        workflow passes log_activity=False: its own entry covers the move.
+        workflow passes log_activity=False: its own entry covers the move. An
+        optional reason (ad-hoc transfers) is added to the notes and the entry.
         """
         from django.core.exceptions import ValidationError
         from django.db import transaction
@@ -541,12 +543,14 @@ class Batch(models.Model):
         with transaction.atomic():
             self.vessel = dst_vessel
             self.save(update_fields=['vessel'])
+            why = f" - {reason}" if reason else ""
             set_vessel_status(src_vessel, Vessel.STATUS_DIRTY, batch=self,
-                              notes=f"Batch transferred to {dst_vessel.name}", timestamp=timestamp)
+                              notes=f"Batch transferred to {dst_vessel.name}{why}"[:250], timestamp=timestamp)
             set_vessel_status(dst_vessel, Vessel.STATUS_ACTIVE, batch=self,
-                              notes=f"Batch transferred from {src_vessel.name}", timestamp=timestamp)
+                              notes=f"Batch transferred from {src_vessel.name}{why}"[:250], timestamp=timestamp)
             if log_activity:
-                add_activity_log(self, f"Transferred from [{src_vessel.name}] to [{dst_vessel.name}]", timestamp=timestamp)
+                text = f"Transferred from [{src_vessel.name}] to [{dst_vessel.name}]" + (f" :: {reason}" if reason else "")
+                add_activity_log(self, text, timestamp=timestamp)
         logger.info(f"Batch '{self.name}' transferred from '{src_vessel.name}' to '{dst_vessel.name}'")
 
     def complete(self, *, timestamp: datetime | None = None) -> None:
@@ -576,7 +580,11 @@ class Batch(models.Model):
 
     @property
     def current_stage_event(self) -> "BatchStageEvent | None":
-        return self.stage_events.select_related('stage', 'vessel').order_by('-timestamp', '-pk').first()
+        """The newest workflow stage event (transfer-only events don't change the stage)."""
+        return (
+            self.stage_events.filter(stage__isnull=False)
+            .select_related('stage', 'vessel').order_by('-timestamp', '-pk').first()
+        )
 
     @property
     def current_state(self) -> str | None:
@@ -601,13 +609,17 @@ class Batch(models.Model):
         events = self._timeline_events()
         now = timezone.now()
         stays = []
+        state = None
         for i, event in enumerate(events):
-            if event.stage.to_state == BatchStage.STATE_COMPLETED:
+            if event.stage is not None:
+                state = event.stage.to_state
+            if state == BatchStage.STATE_COMPLETED:
                 continue
             end = events[i + 1].timestamp if i + 1 < len(events) else None
             stays.append(VesselStay(
                 event=event,
-                state=event.stage.to_state,
+                # A transfer-only event keeps the state the batch was already in.
+                state=state,
                 vessel=event.vessel,
                 start=event.timestamp,
                 end=end,
@@ -624,12 +636,12 @@ class Batch(models.Model):
         filtering is logged; None before the first Racking.
         """
         events = self._timeline_events()
-        start = next((e.timestamp for e in events if e.stage.shortid == BatchStage.RACKING), None)
+        start = next((e.timestamp for e in events if e.stage and e.stage.shortid == BatchStage.RACKING), None)
         if start is None:
             return None
         end = next(
             (e.timestamp for e in events
-             if e.stage.shortid in BatchStage.FILTERING_SHORTIDS and e.timestamp >= start),
+             if e.stage and e.stage.shortid in BatchStage.FILTERING_SHORTIDS and e.timestamp >= start),
             None,
         )
         span = Span(start=start, end=end, duration=(end or timezone.now()) - start)
@@ -662,10 +674,16 @@ class BatchStageEvent(models.Model):
 
     def __str__(self):
         fmt = "%m/%d/%y-%H:%M"
-        return f"{self.batch} - {self.stage} ({self.timestamp.strftime(fmt)})"
+        return f"{self.batch} - {self.label} ({self.timestamp.strftime(fmt)})"
+
+    @property
+    def label(self) -> str:
+        return self.stage.name if self.stage else "Transfer"
 
     batch = models.ForeignKey(Batch, on_delete=models.CASCADE, related_name='stage_events')
-    stage = models.ForeignKey(BatchStage, on_delete=models.PROTECT, related_name='events')
+    # Blank = an ad-hoc transfer outside the workflow (services.transfer_batch()):
+    # the batch changed vessel but not stage.
+    stage = models.ForeignKey(BatchStage, on_delete=models.PROTECT, related_name='events', null=True, blank=True)
     # Editable and defaulted, not auto_now_add - stages are often logged after the fact.
     timestamp = models.DateTimeField(default=timezone.now)
     # The vessel the batch is in AFTER this event: the transfer destination for
@@ -690,8 +708,12 @@ class Span:
 class VesselStay(Span):
     """One entry of Batch.vessel_durations(): time in `vessel`, in `state`, after `event`."""
     event: BatchStageEvent
-    state: str
+    state: str | None  # None only for a transfer before Pitch
     vessel: Vessel | None
+
+    @property
+    def label(self) -> str:
+        return self.event.label
 
 
 class BatchTest(models.Model):

@@ -139,7 +139,7 @@ def return_vessel_to_service(vessel: Vessel, notes: str = "") -> VesselStatusEve
 
 def add_batch_log(
     batch: Batch,
-    stage: BatchStage,
+    stage: Optional[BatchStage],
     *,
     timestamp: datetime,
     vessel: Optional[Vessel],
@@ -149,7 +149,7 @@ def add_batch_log(
     event = BatchStageEvent.objects.create(
         batch=batch, stage=stage, timestamp=timestamp, vessel=vessel, notes=notes
     )
-    logger.debug(f"add_batch_log: batch={batch.pk} stage={stage.shortid!r} vessel={getattr(vessel, 'pk', None)} at {timestamp}")
+    logger.debug(f"add_batch_log: batch={batch.pk} stage={getattr(stage, 'shortid', None)!r} vessel={getattr(vessel, 'pk', None)} at {timestamp}")
     return event
 
 
@@ -184,6 +184,19 @@ def allowed_next_stages(batch: Batch) -> list[BatchStage]:
     return stages
 
 
+def _timestamp_problem(batch: Batch, timestamp: datetime, what: str) -> Optional[str]:
+    """Stages and transfers can be backdated, but not into the future or before the batch's latest event."""
+    if timestamp > timezone.now():
+        return f"{what} can't be logged in the future."
+    latest = batch.stage_events.select_related('stage').order_by('-timestamp', '-pk').first()
+    if latest is not None and timestamp < latest.timestamp:
+        return (f"{what} can't be earlier than the batch's latest stage or transfer "
+                f"({latest.label}, {timezone.localtime(latest.timestamp):%b %d, %Y %H:%M}).")
+    if timestamp < batch.startdate:
+        return f"{what} can't be before the batch's start date ({timezone.localtime(batch.startdate):%b %d, %Y})."
+    return None
+
+
 def _stage_problem(batch: Batch, stage: BatchStage, timestamp: datetime, dst_vessel: Optional[Vessel]) -> Optional[str]:
     """Why this stage can't be logged on this batch right now, or None if it can."""
     current = batch.current_stage_event
@@ -191,13 +204,9 @@ def _stage_problem(batch: Batch, stage: BatchStage, timestamp: datetime, dst_ves
     if problem:
         return problem
 
-    if timestamp > timezone.now():
-        return "A stage can't be logged in the future."
-    if current is not None and timestamp < current.timestamp:
-        return (f"{stage.name} can't be earlier than the batch's latest stage "
-                f"({current.stage.name}, {timezone.localtime(current.timestamp):%b %d, %Y %H:%M}).")
-    if current is None and timestamp < batch.startdate:
-        return f"{stage.name} can't be before the batch's start date ({timezone.localtime(batch.startdate):%b %d, %Y})."
+    problem = _timestamp_problem(batch, timestamp, stage.name)
+    if problem:
+        return problem
 
     if stage.transfers_batch and dst_vessel is None:
         return f"{stage.name} transfers the batch - choose a destination vessel."
@@ -261,4 +270,68 @@ def transition_stage_event(
         raise
 
     logger.info(f"Batch '{batch.name}' -> {stage.name} ({stage.to_state}) in '{vessel.name}'")
+    return event
+
+
+def transfer_batch(
+    batch: Batch,
+    dst_vessel: Vessel,
+    *,
+    reason: str,
+    stage: Optional[BatchStage] = None,
+    timestamp: Optional[datetime] = None,
+) -> BatchStageEvent:
+    """
+    Ad-hoc transfer OUTSIDE the normal workflow (e.g. a vessel has to go Out of
+    Service mid-batch). The reason is required.
+      * stage=None: move the batch only - Batch.transfer() (its ActivityLog entry
+        carries the reason) plus a stage-less BatchStageEvent, so time-in-vessel
+        stays right while the batch's stage, allowed next stages and full aging
+        don't change.
+      * stage=<an allowed next stage that transfers the batch>: log that stage via
+        transition_stage_event(), with the reason as its notes.
+    Same timestamp rules as stages. Raises ValidationError and saves nothing otherwise.
+    """
+    timestamp = timestamp or timezone.now()
+    reason = (reason or "").strip()[:250]
+    logger.debug(
+        f"transfer_batch: batch={batch.pk} '{batch.name}' dst={getattr(dst_vessel, 'pk', None)} "
+        f"stage={getattr(stage, 'shortid', None)!r} at {timestamp} reason={reason!r}"
+    )
+
+    problem = None
+    if not reason:
+        problem = "A reason is required to transfer a batch outside the workflow."
+    elif not batch.active or batch.current_state == BatchStage.STATE_COMPLETED:
+        problem = f"Batch '{batch.name}' is complete and can't be transferred."
+    elif stage is not None and not stage.transfers_batch:
+        problem = f"{stage.name} doesn't transfer the batch - choose no stage change or a stage that does."
+    elif dst_vessel is None:
+        problem = "Choose a clean, ready destination vessel."
+    if problem:
+        logger.error(f"transfer_batch: rejected for batch {batch.pk} - {problem}")
+        raise ValidationError(problem)
+
+    if stage is not None:
+        return transition_stage_event(batch, stage, timestamp=timestamp, dst_vessel=dst_vessel, notes=reason)
+
+    problem = _timestamp_problem(batch, timestamp, "A transfer")
+    if problem:
+        logger.error(f"transfer_batch: rejected for batch {batch.pk} - {problem}")
+        raise ValidationError(problem)
+
+    src_vessel = batch.current_vessel
+    try:
+        with transaction.atomic():
+            batch.transfer(src_vessel, dst_vessel, timestamp=timestamp, reason=reason)
+            event = add_batch_log(batch, None, timestamp=timestamp, vessel=dst_vessel, notes=reason)
+    except ValidationError:
+        batch.refresh_from_db()
+        raise
+    except Exception:
+        batch.refresh_from_db()
+        logger.exception(f"transfer_batch: failed for batch {batch.pk}")
+        raise
+
+    logger.info(f"Batch '{batch.name}' transferred (no stage change) from '{src_vessel.name}' to '{dst_vessel.name}': {reason!r}")
     return event

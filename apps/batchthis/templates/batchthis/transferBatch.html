@@ -1,0 +1,65 @@
+{% extends 'batchthis/base.html' %}
+{% load static %}
+{% block content %}
+<script type="module" src="{% static 'batchthis/dist/model-select.js' %}"></script>
+
+<div class="cl-page-head">
+  <div class="cl-wordmark font-display">Transfer batch</div>
+  <div class="cl-batch-sub" style="margin-top:6px;">
+    <span><a href="{% url 'batch' batch.pk %}">&larr; Back to {{ batch.name }}</a></span>
+    <span>Now <b>{{ batch.current_state|default:"Not pitched" }}</b></span>
+    <span>In <b>{{ batch.current_vessel.name }}</b></span>
+  </div>
+</div>
+
+{% if form.non_field_errors %}
+<div class="cl-flag" style="margin-bottom:20px;">
+  <span class="cl-flag-mark">!</span>
+  <span>{% for error in form.non_field_errors %}{{ error }}{% if not forloop.last %} {% endif %}{% endfor %}</span>
+</div>
+{% endif %}
+
+<div class="cl-panel">
+  {% if batch.active %}
+  <p style="margin:0 0 16px; font-size:0.9rem; color:var(--ink-soft);">
+    Use this only when the batch has to move outside the normal workflow &mdash; for example, a vessel
+    needs to go out of service. For racking and filtering, <a href="{% url 'addDetailStage' batch.pk %}">log the stage</a> instead.
+  </p>
+  <form method="POST" class="cl-form">
+    {% csrf_token %}
+    <div class="cl-form-grid">
+      <div class="cl-field cl-field--grow">
+        <label for="{{ form.dst_vessel.id_for_label }}">Destination vessel <small>(clean &amp; ready only)</small></label>
+        {{ form.dst_vessel }}
+        <div data-react-model-select
+             data-endpoint="{% url 'vessel-list' %}?status=Clean/Ready"
+             data-target="#{{ form.dst_vessel.id_for_label }}"
+             data-placeholder="Search clean, ready vessels&hellip;"></div>
+        {% if form.dst_vessel.errors %}<div class="cl-field-error">{{ form.dst_vessel.errors }}</div>{% endif %}
+      </div>
+      <div class="cl-field">
+        <label for="{{ form.stage.id_for_label }}">Stage</label>
+        {{ form.stage }}
+        {% if form.stage.errors %}<div class="cl-field-error">{{ form.stage.errors }}</div>{% endif %}
+      </div>
+      <div class="cl-field">
+        <label for="{{ form.timestamp.id_for_label }}">Date/time</label>
+        {{ form.timestamp }}
+        {% if form.timestamp.errors %}<div class="cl-field-error">{{ form.timestamp.errors }}</div>{% endif %}
+      </div>
+      <div class="cl-field cl-field--grow">
+        <label for="{{ form.reason.id_for_label }}">Reason</label>
+        {{ form.reason }}
+        {% if form.reason.errors %}<div class="cl-field-error">{{ form.reason.errors }}</div>{% endif %}
+      </div>
+    </div>
+    <div class="cl-form-actions">
+      <a href="{% url 'batch' batch.pk %}" class="cl-btn cl-btn--secondary">Cancel</a>
+      <button type="submit" class="cl-btn cl-btn--primary">Transfer batch</button>
+    </div>
+  </form>
+  {% else %}
+  <div class="cl-empty">Batch '{{ batch.name }}' is complete and can't be transferred.</div>
+  {% endif %}
+</div>
+{% endblock %}

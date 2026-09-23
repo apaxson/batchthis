@@ -81,9 +81,9 @@
     <tbody>
       {% for stay in vessel_stays %}
       <tr>
-        <td class="js-mouse-tooltip" data-toggle="tooltip" title="{{ stay.event.notes|default:'' }}">{{ stay.event.stage.name }}</td>
+        <td class="js-mouse-tooltip" data-toggle="tooltip" title="{{ stay.event.notes|default:'' }}">{{ stay.label }}</td>
         <td>{% if stay.vessel %}<a href="{% url 'vessel' stay.vessel.pk %}">{{ stay.vessel.name }}</a>{% else %}&mdash;{% endif %}</td>
-        <td>{{ stay.state }}</td>
+        <td>{{ stay.state|default:"&mdash;" }}</td>
         <td class="cl-num" style="white-space:nowrap;">{{ stay.start|date:"M j, Y" }}</td>
         <td class="cl-num" style="white-space:nowrap;">{% if stay.is_open %}<span class="cl-stage cl-stage--active">Current</span>{% else %}{{ stay.end|date:"M j, Y" }}{% endif %}</td>
         <td class="cl-num">{% if stay.is_open %}{{ stay.start|timesince }}{% else %}{{ stay.start|timesince:stay.end }}{% endif %}</td>
@@ -192,7 +192,10 @@
 
   <div>
     <div class="cl-panel">
-      <div class="cl-section-head"><div class="cl-section-title">Current Vessel</div></div>
+      <div class="cl-section-head">
+        <div class="cl-section-title">Current Vessel</div>
+        {% if batch.active %}<div class="cl-section-note"><a href="{% url 'transferBatch' batch.pk %}" title="Only for moves outside the normal workflow - use Log stage for racking and filtering">Transfer batch</a></div>{% endif %}
+      </div>
       {% with v=batch.current_vessel %}
       {% if v %}
         <div class="cl-kv-row"><span class="cl-kv-label">Vessel</span><span class="cl-kv-value"><a href="{% url 'vessel' v.pk %}">{{ v.name }}</a></span></div>

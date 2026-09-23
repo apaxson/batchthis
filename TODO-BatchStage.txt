@@ -11,10 +11,11 @@ resolved; most remaining open items already have a stated "-> Recommend:"
 default (see "OPEN DECISIONS").
 
 STATUS (2026-09-23): IN PROGRESS on branch implement-staging-workflows.
-Steps 1-6 of SUGGESTED ORDER OF WORK are DONE (Batch.startdate fix;
-BatchStage transitions seeded; BatchStageEvent model + timeline helpers;
-transition_stage_event() workflow service; Log stage form/view/page;
-batch.html Stage timeline). Step 6b (ad-hoc "Transfer batch") not started. This file is the
+PHASE 1 COMPLETE (2026-09-23): steps 1-6b of SUGGESTED ORDER OF WORK are
+DONE (Batch.startdate fix; BatchStage transitions seeded; BatchStageEvent
+model + timeline helpers; transition_stage_event() workflow service; Log
+stage form/view/page; batch.html Stage timeline; ad-hoc Transfer batch).
+Next: phase 2 (recipe vessel chain, steps 7-11). This file is the
 reference to pick back up from.
 Naming (Aaron, 2026-09-23): "Coarse Filtering" - "Course Filtering" was a
 typo in the earlier drafts and the diagram; never use it.
@@ -754,8 +755,28 @@ SUGGESTED ORDER OF WORK (TDD - write the test for each step first)
    .cl-readouts--3 (stacks on phones) and .cl-batch-actions now wraps
    on phones (it overflowed there before). Tests:
    apps/batchthis/tests/test_batch_page_timeline.py.
-6b. Ad-hoc "Transfer batch" action on batch.html (reason required;
-   Batch.transfer() gains an optional reason) - MODEL CHANGES #6.
+6b. [DONE 2026-09-23] Ad-hoc "Transfer batch" action on batch.html
+   (reason required; Batch.transfer() gains an optional reason) - MODEL
+   CHANGES #6. AS BUILT - CHANGED from the plan (Aaron):
+   - It DOES record a BatchStageEvent, with stage left blank (stage is now
+     nullable, migration 0037; BatchStageEvent.label = "Transfer"), so
+     time-in-vessel stays correct. A blank-stage event does NOT change
+     current_stage_event / current_state / allowed next stages / full
+     aging; it keeps the state the batch was in.
+   - The form's Stage field defaults to "No stage change (stay in
+     <state>)"; the alternatives are only the allowed next stages that
+     transfer the batch (Racking, Coarse/Fine/Sterile Filtering). Picking
+     one runs transition_stage_event() with the reason as its notes.
+   - Backdatable with the same rules as stages; the "not before the
+     latest" bound now counts transfers too (services._timestamp_problem).
+   - services.transfer_batch(); view batchTransfer at batch/<pk>/transfer
+     (name transferBatch); page transferBatch.html; "Transfer batch" link
+     on batch.html's Current Vessel panel (active batches only), worded
+     as an exception path pointing to Log stage.
+   - Destination Clean/Ready only (picker, form, transfer()); reason is
+     added to the vessel status notes and the "Transferred from [..] to
+     [..] :: reason" ActivityLog entry.
+   - Tests: tests/test_transfer_batch.py, tests/test_transfer_batch_view.py.
 --- phase 2 (vessel-chain recipe workflow, see section above) ---
 7. RecipeVesselStep model + migration + RecipeVesselStepFactory + tests
    (add/edit/reorder, terminal blank-vessel_role step).

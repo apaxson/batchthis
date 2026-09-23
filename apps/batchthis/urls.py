@@ -26,6 +26,7 @@ urlpatterns = [
     path('batch/<int:pk>/addNote', views.batchNote, name='addDetailNote'),
     path('batch/<int:pk>/addNote/<str:noteType>', views.batchNote, name='addDetailNoteType'),
     path('batch/<int:pk>/addStage', views.batchStage, name='addDetailStage'),
+    path('batch/<int:pk>/transfer', views.batchTransfer, name='transferBatch'),
     path('batch/<int:pk>/addAddon', views.batchAddition, name="addDetailAddon"),
     path('batch/<int:pk>/batchGraphs', views.batchGraphs, name='batchGraphs'),
     path('batch/<int:pk>/activity', views.activity, name="batchActivity"),
