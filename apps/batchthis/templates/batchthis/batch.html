@@ -104,91 +104,7 @@
   </div>
 </div>
 
-<div class="cl-instrument">
-  <div class="cl-instrument-head">
-    <span class="cl-instrument-title">Specific gravity</span>
-    <span class="cl-instrument-current">{{ percentComplete }}% to estimated FG</span>
-  </div>
-  {% if gravityChart.values %}
-    <p class="cl-instrument-note">1/3 sugar break (time for a nutrient addition) at {{ thirdSugarBreak }} SG.</p>
-    <div class="cl-chart-wrap">
-      <svg class="cl-chart" id="chart-sg" role="img" aria-label="Specific gravity trend"></svg>
-      <div class="cl-chart-tooltip" hidden><span class="tt-date"></span><span class="tt-val"></span></div>
-    </div>
-    {{ gravityChart|json_script:"sg-data" }}
-    <details class="cl-table-toggle">
-      <summary>View readings as a table</summary>
-      <table class="cl-reading-table">
-        <thead><tr><th>Date</th><th>SG</th></tr></thead>
-        <tbody>
-          {% for test in gravityTests %}<tr><td>{{ test.datetime|date:"m/d/y" }}</td><td>{{ test.value }}</td></tr>{% endfor %}
-        </tbody>
-      </table>
-    </details>
-  {% else %}
-    <p class="cl-empty">No gravity readings yet. <a href="{% url 'addDetailTest' batch.pk %}">Add one</a>.</p>
-  {% endif %}
-</div>
-
-<!-- pH -->
-<div class="cl-instrument">
-  <div class="cl-instrument-head"><span class="cl-instrument-title">pH</span></div>
-  {% if phChart.values %}
-    <div class="cl-chart-wrap">
-      <svg class="cl-chart" id="chart-ph" role="img" aria-label="pH trend"></svg>
-      <div class="cl-chart-tooltip" hidden><span class="tt-date"></span><span class="tt-val"></span></div>
-    </div>
-    {{ phChart|json_script:"ph-data" }}
-    <details class="cl-table-toggle">
-      <summary>View readings as a table</summary>
-      <table class="cl-reading-table">
-        <thead><tr><th>Date</th><th>pH</th></tr></thead>
-        <tbody>{% for date, value in phChart.rows %}<tr><td>{{ date }}</td><td>{{ value }}</td></tr>{% endfor %}</tbody>
-      </table>
-    </details>
-  {% else %}
-    <p class="cl-empty">No pH readings yet. <a href="{% url 'addDetailTest' batch.pk %}">Add one</a>.</p>
-  {% endif %}
-</div>
-
-<!-- SO2 -->
-<div class="cl-instrument">
-  <div class="cl-instrument-head"><span class="cl-instrument-title">Free SO&#8322;</span></div>
-  {% if so2Chart.values %}
-    <div class="cl-chart-wrap">
-      <svg class="cl-chart" id="chart-so2" role="img" aria-label="Free sulfur dioxide trend"></svg>
-      <div class="cl-chart-tooltip" hidden><span class="tt-date"></span><span class="tt-val"></span></div>
-    </div>
-    {{ so2Chart|json_script:"so2-data" }}
-    <details class="cl-table-toggle">
-      <summary>View readings as a table</summary>
-      <table class="cl-reading-table">
-        <thead><tr><th>Date</th><th>Free SO&#8322; (ppm)</th></tr></thead>
-        <tbody>{% for date, value in so2Chart.rows %}<tr><td>{{ date }}</td><td>{{ value }}</td></tr>{% endfor %}</tbody>
-      </table>
-    </details>
-  {% else %}
-    <p class="cl-empty">No SO&#8322; readings yet. <a href="{% url 'addDetailTest' batch.pk %}">Add one</a>.</p>
-  {% endif %}
-</div>
-
-<div class="cl-cols" style="margin-top:24px;">
-  <div>
-    <div class="cl-panel">
-      <div class="cl-section-head"><div class="cl-section-title">Fermentation log</div><div class="cl-section-note"><a href="{% url 'addDetailNoteType' batch.pk 'Fermentation Note' %}">Add entry</a></div></div>
-      {% if fermnotes %}
-        {% for note in fermnotes %}
-        <div style="margin-bottom:10px;">
-          <div class="cl-num" style="font-size:0.8rem;color:var(--ink-soft);">{{ note.date|date:"Y-m-d H:i A" }}</div>
-          <div>{{ note.text }}</div>
-        </div>
-        {% endfor %}
-      {% else %}
-        <div class="cl-empty">No fermentation log entries.</div>
-      {% endif %}
-    </div>
-  </div>
-
+<div class="cl-cols cl-cols--aside-left">
   <div>
     <div class="cl-panel">
       <div class="cl-section-head">
@@ -211,6 +127,20 @@
     </div>
 
     <div class="cl-panel">
+      <div class="cl-section-head"><div class="cl-section-title">Fermentation log</div><div class="cl-section-note"><a href="{% url 'addDetailNoteType' batch.pk 'Fermentation Note' %}">Add entry</a></div></div>
+      {% if fermnotes %}
+        {% for note in fermnotes %}
+        <div style="margin-bottom:10px;">
+          <div class="cl-num" style="font-size:0.8rem;color:var(--ink-soft);">{{ note.date|date:"Y-m-d H:i A" }}</div>
+          <div>{{ note.text }}</div>
+        </div>
+        {% endfor %}
+      {% else %}
+        <div class="cl-empty">No fermentation log entries.</div>
+      {% endif %}
+    </div>
+
+    <div class="cl-panel">
       <div class="cl-section-head"><div class="cl-section-title">General notes</div><div class="cl-section-note"><a href="{% url 'addDetailNoteType' batch.pk 'General Note' %}">Add note</a></div></div>
       {% if gennotes %}
         {% for note in gennotes %}
@@ -221,6 +151,76 @@
         {% endfor %}
       {% else %}
         <div class="cl-empty">No general notes.</div>
+      {% endif %}
+    </div>
+  </div>
+
+  <div>
+    <div class="cl-instrument">
+      <div class="cl-instrument-head">
+        <span class="cl-instrument-title">Specific gravity</span>
+        <span class="cl-instrument-current">{{ percentComplete }}% to estimated FG</span>
+      </div>
+      {% if gravityChart.values %}
+        <p class="cl-instrument-note">1/3 sugar break (time for a nutrient addition) at {{ thirdSugarBreak }} SG.</p>
+        <div class="cl-chart-wrap">
+          <svg class="cl-chart" id="chart-sg" role="img" aria-label="Specific gravity trend"></svg>
+          <div class="cl-chart-tooltip" hidden><span class="tt-date"></span><span class="tt-val"></span></div>
+        </div>
+        {{ gravityChart|json_script:"sg-data" }}
+        <details class="cl-table-toggle">
+          <summary>View readings as a table</summary>
+          <table class="cl-reading-table">
+            <thead><tr><th>Date</th><th>SG</th></tr></thead>
+            <tbody>
+              {% for test in gravityTests %}<tr><td>{{ test.datetime|date:"m/d/y" }}</td><td>{{ test.value }}</td></tr>{% endfor %}
+            </tbody>
+          </table>
+        </details>
+      {% else %}
+        <p class="cl-empty">No gravity readings yet. <a href="{% url 'addDetailTest' batch.pk %}">Add one</a>.</p>
+      {% endif %}
+    </div>
+
+    <!-- pH -->
+    <div class="cl-instrument">
+      <div class="cl-instrument-head"><span class="cl-instrument-title">pH</span></div>
+      {% if phChart.values %}
+        <div class="cl-chart-wrap">
+          <svg class="cl-chart" id="chart-ph" role="img" aria-label="pH trend"></svg>
+          <div class="cl-chart-tooltip" hidden><span class="tt-date"></span><span class="tt-val"></span></div>
+        </div>
+        {{ phChart|json_script:"ph-data" }}
+        <details class="cl-table-toggle">
+          <summary>View readings as a table</summary>
+          <table class="cl-reading-table">
+            <thead><tr><th>Date</th><th>pH</th></tr></thead>
+            <tbody>{% for date, value in phChart.rows %}<tr><td>{{ date }}</td><td>{{ value }}</td></tr>{% endfor %}</tbody>
+          </table>
+        </details>
+      {% else %}
+        <p class="cl-empty">No pH readings yet. <a href="{% url 'addDetailTest' batch.pk %}">Add one</a>.</p>
+      {% endif %}
+    </div>
+
+    <!-- SO2 -->
+    <div class="cl-instrument">
+      <div class="cl-instrument-head"><span class="cl-instrument-title">Free SO&#8322;</span></div>
+      {% if so2Chart.values %}
+        <div class="cl-chart-wrap">
+          <svg class="cl-chart" id="chart-so2" role="img" aria-label="Free sulfur dioxide trend"></svg>
+          <div class="cl-chart-tooltip" hidden><span class="tt-date"></span><span class="tt-val"></span></div>
+        </div>
+        {{ so2Chart|json_script:"so2-data" }}
+        <details class="cl-table-toggle">
+          <summary>View readings as a table</summary>
+          <table class="cl-reading-table">
+            <thead><tr><th>Date</th><th>Free SO&#8322; (ppm)</th></tr></thead>
+            <tbody>{% for date, value in so2Chart.rows %}<tr><td>{{ date }}</td><td>{{ value }}</td></tr>{% endfor %}</tbody>
+          </table>
+        </details>
+      {% else %}
+        <p class="cl-empty">No SO&#8322; readings yet. <a href="{% url 'addDetailTest' batch.pk %}">Add one</a>.</p>
       {% endif %}
     </div>
   </div>
