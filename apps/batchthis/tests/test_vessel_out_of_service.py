@@ -5,7 +5,7 @@ from django.test import Client
 from django.urls import reverse
 
 from ..factories import BatchFactory, FermenterFactory, VesselFactory, VesselStatusEventFactory
-from ..models import Vessel
+from ..models import AgingTank, Vessel
 from ..services import return_vessel_to_service, set_vessel_status, take_vessel_out_of_service
 
 
@@ -252,3 +252,18 @@ def test_vessel_page_offers_only_the_allowed_service_action(client, status, take
 
     assert (reverse("takeVesselOutOfService", kwargs={"pk": vessel.pk}) in page) is take_out
     assert (reverse("returnVesselToService", kwargs={"pk": vessel.pk}) in page) is give_back
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize("wrapper, prefix", [("fermenter", "wine-tank"), ("agingtank", "aging-tank")])
+def test_vessel_page_shows_the_out_of_service_artwork(client, wrapper, prefix):
+    if wrapper == "fermenter":
+        vessel = FermenterFactory().vessel
+    else:
+        vessel = VesselFactory()
+        AgingTank.objects.create(vessel=vessel)
+    Vessel.objects.filter(pk=vessel.pk).update(status=Vessel.STATUS_OUT)
+
+    page = client.get(reverse("vessel", kwargs={"pk": vessel.pk})).content.decode()
+
+    assert f"batchthis/img/{prefix}-out-of-service.svg" in page

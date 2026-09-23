@@ -499,7 +499,12 @@ def activity(request, pk=None):
 
 # Status artwork in static/batchthis/img/, per vessel type. Barrels have no art yet.
 VESSEL_ICON_PREFIX = {'Fermenter': 'wine-tank', 'Aging Tank': 'aging-tank'}
-VESSEL_ICON_SUFFIX = {Vessel.STATUS_READY: 'ready', Vessel.STATUS_ACTIVE: 'active', Vessel.STATUS_DIRTY: 'dirty'}
+VESSEL_ICON_SUFFIX = {
+    Vessel.STATUS_READY: 'ready',
+    Vessel.STATUS_ACTIVE: 'active',
+    Vessel.STATUS_DIRTY: 'dirty',
+    Vessel.STATUS_OUT: 'out-of-service',
+}
 
 
 def _vessel_status_icon(vessel: Vessel) -> str | None:
