@@ -22,7 +22,8 @@ logger = logging.getLogger(__name__)
 class DateTimeWidget(forms.DateTimeInput):
     input_type = "datetime-local"
     def __init__(self,**kwargs):
-        kwargs["format"] = "%Y/%m/%dT%H:%M"
+        # datetime-local only accepts YYYY-MM-DDTHH:MM; anything else renders blank.
+        kwargs["format"] = "%Y-%m-%dT%H:%M"
         super().__init__(**kwargs)
 
 class BatchTestForm(ModelForm):
@@ -84,8 +85,7 @@ class BatchStageForm(forms.Form):
     )
     timestamp = forms.DateTimeField(
         label="Date/time",
-        # datetime-local needs dashes; DateTimeWidget above renders slashes.
-        widget=forms.DateTimeInput(attrs={'type': 'datetime-local'}, format='%Y-%m-%dT%H:%M'),
+        widget=DateTimeWidget(),
         input_formats=['%Y-%m-%dT%H:%M', '%Y-%m-%d %H:%M'],
     )
     # Filled by the react-select picker (ModelSelect.jsx). Only Clean/Ready

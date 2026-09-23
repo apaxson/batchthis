@@ -465,6 +465,8 @@ a.nav-link, a.sub-link, a.dropdown-item {
 .cl-batch-actions { font-size: 0.85rem; color: var(--ink-soft); white-space: nowrap; }
 .cl-batch-actions a { color: var(--honey-line); text-decoration: none; }
 .cl-batch-actions a:hover { text-decoration: underline; }
+/* Wrap the action links on phones instead of running past the screen edge. */
+@media (max-width: 640px) { .cl-batch-actions { white-space: normal; } }
 
 /* ---------- Readout chips ---------- */
 .cl-readouts {
@@ -489,6 +491,9 @@ a.nav-link, a.sub-link, a.dropdown-item {
 .cl-readout-value small { font-size: 0.85rem; font-weight: 500; color: var(--ink-soft); }
 .cl-readout-value.cl-readout--fault { color: var(--brick); }
 @media (max-width: 640px) { .cl-readouts { grid-template-columns: repeat(2, 1fr); } }
+/* Three readouts in a row (batch.html stage timeline); stacked on phones. */
+.cl-readouts--3 { grid-template-columns: repeat(3, 1fr); }
+@media (max-width: 640px) { .cl-readouts--3 { grid-template-columns: 1fr; } }
 
 /* ---------- Chart panels ---------- */
 .cl-instrument-grid {

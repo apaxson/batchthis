@@ -11,10 +11,10 @@ resolved; most remaining open items already have a stated "-> Recommend:"
 default (see "OPEN DECISIONS").
 
 STATUS (2026-09-23): IN PROGRESS on branch implement-staging-workflows.
-Steps 1-5 of SUGGESTED ORDER OF WORK are DONE (Batch.startdate fix;
+Steps 1-6 of SUGGESTED ORDER OF WORK are DONE (Batch.startdate fix;
 BatchStage transitions seeded; BatchStageEvent model + timeline helpers;
-transition_stage_event() workflow service; Log stage form/view/page).
-Step 6 (batch.html timeline panel + "Log stage" link) and 6b not started. This file is the
+transition_stage_event() workflow service; Log stage form/view/page;
+batch.html Stage timeline). Step 6b (ad-hoc "Transfer batch") not started. This file is the
 reference to pick back up from.
 Naming (Aaron, 2026-09-23): "Coarse Filtering" - "Course Filtering" was a
 typo in the earlier drafts and the diagram; never use it.
@@ -742,9 +742,18 @@ SUGGESTED ORDER OF WORK (TDD - write the test for each step first)
      built here since the view needs it; reachable by URL until step 6
      adds the "Log stage" link on batch.html.
    - Tests: apps/batchthis/tests/test_batch_stage_view.py.
-6. batch.html "Stage timeline" panel (full aging + time-in-vessel, see
-   step 3b) + "Log stage" link in .cl-batch-actions. (addBatchStage.html
-   was already built in step 5.)
+6. [DONE 2026-09-23] batch.html "Stage timeline" panel (full aging +
+   time-in-vessel, see step 3b) + "Log stage" link in .cl-batch-actions.
+   AS BUILT: section after the readouts - three readouts (Stage, Full
+   aging "(ongoing)" while open, Time in current vessel) + a
+   time-in-vessel .cl-ledger (Stage, Vessel link, State, From, To /
+   "Current", Time in vessel), with a closing Complete Batch row; stage
+   notes as js-mouse-tooltip hovers. The batch view prefetches
+   stage_events (one query for both durations; no per-stage queries).
+   "Log stage" links only while the batch is active. New CSS:
+   .cl-readouts--3 (stacks on phones) and .cl-batch-actions now wraps
+   on phones (it overflowed there before). Tests:
+   apps/batchthis/tests/test_batch_page_timeline.py.
 6b. Ad-hoc "Transfer batch" action on batch.html (reason required;
    Batch.transfer() gains an optional reason) - MODEL CHANGES #6.
 --- phase 2 (vessel-chain recipe workflow, see section above) ---

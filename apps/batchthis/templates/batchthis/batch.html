@@ -7,14 +7,14 @@
     <div class="cl-batch-sub">
       <span><span class="cl-rack-tag">#{{ batch.pk }}</span></span>
       <span>{% if batch.category %}{{ batch.category }}{% elif batch.recipe.category %}{{ batch.recipe.category }}{% else %}Style not set{% endif %}</span>
-      <span>Fermenter <b>{{ batch.fermenter.vessel.name }}</b></span>
+      {% with v=batch.current_vessel %}<span>Vessel <b><a href="{% url 'vessel' v.pk %}">{{ v.name }}</a></b></span>{% endwith %}
       <span>Started <b class="cl-num">{{ batch.startdate|date:"M j, Y" }}</b></span>
       {% if batch.recipe %}<span>Recipe <b><a href="{% url 'recipe' batch.recipe.pk %}">{{ batch.recipe.name }}</a></b></span>{% endif %}
       <span><span class="cl-stage {% if batch.active %}cl-stage--active{% else %}cl-stage--complete{% endif %}">{% if batch.active %}Active{% else %}Complete{% endif %}</span></span>
     </div>
   </div>
   <div class="cl-batch-actions">
-    <a href="{% url 'editBatch' batch.pk %}">Edit</a>
+    {% if batch.active %}<a href="{% url 'addDetailStage' batch.pk %}">Log stage</a> &middot; {% endif %}<a href="{% url 'editBatch' batch.pk %}">Edit</a>
     &middot; <a href="{% url 'addDetailTest' batch.pk %}">Add test</a>
     &middot; <a href="{% url 'addDetailNote' batch.pk %}">Add note</a>
     &middot; <a href="{% url 'addDetailAddon' batch.pk %}">Add addon</a>
@@ -54,6 +54,57 @@
 </div>
 
 <!-- Specific Gravity -->
+<div class="cl-section-head">
+  <div class="cl-section-title">Stage timeline</div>
+  {% if batch.active %}<div class="cl-section-note"><a href="{% url 'addDetailStage' batch.pk %}">Log stage</a></div>{% endif %}
+</div>
+<div class="cl-readouts cl-readouts--3">
+  <div class="cl-readout">
+    <div class="cl-readout-label">Stage</div>
+    <div class="cl-readout-value">{{ current_state|default:"Not pitched" }}</div>
+  </div>
+  <div class="cl-readout">
+    <div class="cl-readout-label">Full aging{% if full_aging.is_open %} <small>(ongoing)</small>{% endif %}</div>
+    <div class="cl-readout-value">{% if full_aging %}{% if full_aging.is_open %}{{ full_aging.start|timesince }}{% else %}{{ full_aging.start|timesince:full_aging.end }}{% endif %}{% else %}&mdash;{% endif %}</div>
+  </div>
+  <div class="cl-readout">
+    <div class="cl-readout-label">Time in current vessel{% if current_stay.vessel %} &middot; {{ current_stay.vessel.name }}{% endif %}</div>
+    <div class="cl-readout-value">{% if current_stay %}{{ current_stay.start|timesince }}{% else %}&mdash;{% endif %}</div>
+  </div>
+</div>
+
+<div class="cl-table-scroll" style="margin-bottom:28px;">
+  <table class="cl-ledger">
+    <thead>
+      <tr><th>Stage</th><th>Vessel</th><th>State</th><th>From</th><th>To</th><th>Time in vessel</th></tr>
+    </thead>
+    <tbody>
+      {% for stay in vessel_stays %}
+      <tr>
+        <td class="js-mouse-tooltip" data-toggle="tooltip" title="{{ stay.event.notes|default:'' }}">{{ stay.event.stage.name }}</td>
+        <td>{% if stay.vessel %}<a href="{% url 'vessel' stay.vessel.pk %}">{{ stay.vessel.name }}</a>{% else %}&mdash;{% endif %}</td>
+        <td>{{ stay.state }}</td>
+        <td class="cl-num" style="white-space:nowrap;">{{ stay.start|date:"M j, Y" }}</td>
+        <td class="cl-num" style="white-space:nowrap;">{% if stay.is_open %}<span class="cl-stage cl-stage--active">Current</span>{% else %}{{ stay.end|date:"M j, Y" }}{% endif %}</td>
+        <td class="cl-num">{% if stay.is_open %}{{ stay.start|timesince }}{% else %}{{ stay.start|timesince:stay.end }}{% endif %}</td>
+      </tr>
+      {% empty %}
+      <tr><td class="cl-empty" colspan="6">No stages logged yet.</td></tr>
+      {% endfor %}
+      {% if completed_event %}
+      <tr>
+        <td class="js-mouse-tooltip" data-toggle="tooltip" title="{{ completed_event.notes|default:'' }}">{{ completed_event.stage.name }}</td>
+        <td>{% if completed_event.vessel %}<a href="{% url 'vessel' completed_event.vessel.pk %}">{{ completed_event.vessel.name }}</a>{% else %}&mdash;{% endif %}</td>
+        <td>{{ completed_event.stage.to_state }}</td>
+        <td class="cl-num" style="white-space:nowrap;">{{ completed_event.timestamp|date:"M j, Y" }}</td>
+        <td></td>
+        <td></td>
+      </tr>
+      {% endif %}
+    </tbody>
+  </table>
+</div>
+
 <div class="cl-instrument">
   <div class="cl-instrument-head">
     <span class="cl-instrument-title">Specific gravity</span>

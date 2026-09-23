@@ -9,7 +9,8 @@ from django.core.exceptions import ValidationError
 from django.db import transaction
 import logging
 from django.utils import timezone
-from apps.batchthis.models import Batch, BatchStage, Fermenter, BatchTestType, BatchNoteType, Vessel, Unit, Recipe, Fermentable, AdjunctUsage, RecipeYeasts,RecipeFermentable,RecipeAdjunct
+from django.db.models import Prefetch
+from apps.batchthis.models import Batch, BatchStage, BatchStageEvent, Fermenter, BatchTestType, BatchNoteType, Vessel, Unit, Recipe, Fermentable, AdjunctUsage, RecipeYeasts,RecipeFermentable,RecipeAdjunct
 from django.shortcuts import get_object_or_404
 from apps.batchthis.forms import BatchTestForm, BatchNoteForm, BatchAdditionForm, RefractometerCorrectionForm, BatchAddForm, \
     BatchCategory
@@ -124,7 +125,13 @@ def batchListing(request):
 
 def batch(request, pk):
     if request.method == "GET":
-        batch = get_object_or_404(Batch, pk=pk)
+        # Prefetched stage events feed both timeline durations with one query.
+        batch = get_object_or_404(
+            Batch.objects.select_related('vessel', 'fermenter__vessel').prefetch_related(
+                Prefetch('stage_events', queryset=BatchStageEvent.objects.select_related('stage', 'vessel'))
+            ),
+            pk=pk,
+        )
         testTypes = BatchTestType.objects.all()
         fermenters = batch.fermenter
         recipe = batch.recipe
@@ -141,6 +148,13 @@ def batch(request, pk):
         gravityChart = _build_series(batch, 'specific-gravity')
         phChart = _build_series(batch, 'ph', rule=ph_rule)
         so2Chart = _build_series(batch, 'so2')
+
+        vessel_stays = batch.vessel_durations()
+        full_aging = batch.full_aging()
+        stage_events = list(batch.stage_events.all())
+        last_event = stage_events[-1] if stage_events else None
+        logger.debug("batch: pk=%s %d stage events, %d vessel stays, full_aging=%s",
+                     pk, len(stage_events), len(vessel_stays), full_aging)
 
         current_gravity_value = batch.current_gravity()
         estABV = round(Utils.potentialABV(startSG=batch.startingGravity.magnitude, endSG=current_gravity_value)[0], 1)
@@ -167,6 +181,12 @@ def batch(request, pk):
             "tastenotes": taste_notes,
             "recipe": recipe,
             "flags": get_active_flags([batch]),
+            # Stage timeline (TODO-BatchStage.txt step 6)
+            "current_state": last_event.stage.to_state if last_event else None,
+            "completed_event": last_event if last_event and last_event.stage.to_state == BatchStage.STATE_COMPLETED else None,
+            "vessel_stays": vessel_stays,
+            "current_stay": vessel_stays[-1] if vessel_stays and vessel_stays[-1].is_open else None,
+            "full_aging": full_aging,
         }
         return render(request, 'batchthis/batch.html', context=context)
 
