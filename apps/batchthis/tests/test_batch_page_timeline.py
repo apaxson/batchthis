@@ -177,6 +177,6 @@ def test_header_shows_the_current_vessel_after_a_transfer(client):
 
     page = _page(client, batch).content.decode()
 
-    header = page[page.index('class="cl-batch-sub"'):page.index('class="cl-batch-actions"')]
+    header = page[page.index('class="cl-batch-sub"'):page.index('class="cl-menu"')]
     assert f'Vessel <b><a href="{reverse("vessel", kwargs={"pk": tank.pk})}">Tank A</a></b>' in header
     assert "Carboy 1" not in header
