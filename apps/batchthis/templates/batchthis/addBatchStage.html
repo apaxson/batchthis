@@ -1,0 +1,86 @@
+{% extends 'batchthis/base.html' %}
+{% load static %}
+{% block content %}
+<script type="module" src="{% static 'batchthis/dist/model-select.js' %}"></script>
+
+<div class="cl-page-head">
+  <div class="cl-wordmark font-display">Log stage</div>
+  <div class="cl-batch-sub" style="margin-top:6px;">
+    <span><a href="{% url 'batch' batch.pk %}">&larr; Back to {{ batch.name }}</a></span>
+    <span>Now <b>{{ current_state|default:"Not pitched" }}</b></span>
+    <span>In <b>{{ batch.current_vessel.name }}</b></span>
+  </div>
+</div>
+
+{% if form.non_field_errors %}
+<div class="cl-flag" style="margin-bottom:20px;">
+  <span class="cl-flag-mark">!</span>
+  <span>{% for error in form.non_field_errors %}{{ error }}{% if not forloop.last %} {% endif %}{% endfor %}</span>
+</div>
+{% endif %}
+
+<div class="cl-panel">
+  {% if form.fields.stage.queryset %}
+  <form method="POST" class="cl-form" id="stageform" data-transfer-stage-ids="{{ transfer_stage_ids }}">
+    {% csrf_token %}
+
+    <div class="cl-form-grid">
+      <div class="cl-field">
+        <label for="{{ form.stage.id_for_label }}">Stage</label>
+        {{ form.stage }}
+        {% if form.stage.errors %}<div class="cl-field-error">{{ form.stage.errors }}</div>{% endif %}
+      </div>
+      <div class="cl-field">
+        <label for="{{ form.timestamp.id_for_label }}">Date/time</label>
+        {{ form.timestamp }}
+        {% if form.timestamp.errors %}<div class="cl-field-error">{{ form.timestamp.errors }}</div>{% endif %}
+      </div>
+
+      <div class="cl-field cl-field--grow" id="dst-vessel-field" hidden>
+        <label for="{{ form.dst_vessel.id_for_label }}">Destination vessel <small>(clean &amp; ready only)</small></label>
+        {{ form.dst_vessel }}
+        <div data-react-model-select
+             data-endpoint="{% url 'vessel-list' %}?status=Clean/Ready"
+             data-target="#{{ form.dst_vessel.id_for_label }}"
+             data-placeholder="Search clean, ready vessels&hellip;"></div>
+        {% if form.dst_vessel.errors %}<div class="cl-field-error">{{ form.dst_vessel.errors }}</div>{% endif %}
+      </div>
+
+      <div class="cl-field cl-field--grow">
+        <label for="{{ form.notes.id_for_label }}">Notes</label>
+        {{ form.notes }}
+        {% if form.notes.errors %}<div class="cl-field-error">{{ form.notes.errors }}</div>{% endif %}
+      </div>
+    </div>
+
+    <div class="cl-form-actions">
+      <a href="{% url 'batch' batch.pk %}" class="cl-btn cl-btn--secondary">Cancel</a>
+      <button type="submit" class="cl-btn cl-btn--primary">Log stage</button>
+    </div>
+  </form>
+  {% else %}
+  <div class="cl-empty">No further stages can be logged for this batch.</div>
+  {% endif %}
+</div>
+
+<script>
+  // Show the destination picker only for stages that transfer the batch
+  // (Racking and every Filtering); clear it otherwise.
+  document.addEventListener('DOMContentLoaded', function () {
+    var form = document.getElementById('stageform');
+    if (!form) return;
+    var transferIds = (form.dataset.transferStageIds || '').split(',');
+    var stageSelect = document.getElementById('{{ form.stage.id_for_label }}');
+    var dstField = document.getElementById('dst-vessel-field');
+    var dstInput = document.getElementById('{{ form.dst_vessel.id_for_label }}');
+
+    function toggleDestination() {
+      var transfers = transferIds.indexOf(stageSelect.value) !== -1;
+      dstField.hidden = !transfers;
+      if (!transfers) dstInput.value = '';
+    }
+    stageSelect.addEventListener('change', toggleDestination);
+    toggleDestination();
+  });
+</script>
+{% endblock %}

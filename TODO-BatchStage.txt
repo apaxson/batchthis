@@ -11,10 +11,10 @@ resolved; most remaining open items already have a stated "-> Recommend:"
 default (see "OPEN DECISIONS").
 
 STATUS (2026-09-23): IN PROGRESS on branch implement-staging-workflows.
-Steps 1-4 of SUGGESTED ORDER OF WORK are DONE (Batch.startdate fix;
+Steps 1-5 of SUGGESTED ORDER OF WORK are DONE (Batch.startdate fix;
 BatchStage transitions seeded; BatchStageEvent model + timeline helpers;
-transition_stage_event() workflow service). Steps 5+ (form/view/UI) not
-started. This file is the
+transition_stage_event() workflow service; Log stage form/view/page).
+Step 6 (batch.html timeline panel + "Log stage" link) and 6b not started. This file is the
 reference to pick back up from.
 Naming (Aaron, 2026-09-23): "Coarse Filtering" - "Course Filtering" was a
 typo in the earlier drafts and the diagram; never use it.
@@ -722,9 +722,29 @@ SUGGESTED ORDER OF WORK (TDD - write the test for each step first)
    2026-09-23: stage events must show in the Batch ActivityLog)
    + always set BatchStageEvent.vessel (see MODEL CHANGES #2)
    + Racking/Filtering -> Batch.transfer() tests (MODEL CHANGES #6).
-5. BatchStageForm (incl. destination-vessel picker for Racking and
-   Filtering) + batchStage view + urls.
-6. batch.html "Stage timeline" panel + addBatchStage.html template.
+5. [DONE 2026-09-23] BatchStageForm (incl. destination-vessel picker for
+   Racking and Filtering) + batchStage view + urls. AS BUILT:
+   - URL batch/<pk>/addStage (name addDetailStage) only - no batch-less
+     "addStage" route: which stages are allowed depends on the batch.
+   - BatchStageForm offers only services.allowed_next_stages(batch) (same
+     rules as transition_stage_event()).
+   - Destination vessel MUST be Clean/Ready (Aaron): the form field's
+     queryset is Clean/Ready vessels (rejects others on POST), the
+     react-select picker loads api/vessels/?status=Clean/Ready (new
+     optional filter + display_name on VesselSerializer), and
+     transfer() re-checks. Required for transferring stages (field
+     error); ignored for Pitch/Complete Batch.
+   - Picker shown only for transferring stages (data-transfer-stage-ids
+     + a small inline script on the page).
+   - Service ValidationErrors (e.g. timestamp bounds) show as the form's
+     non-field error; nothing is saved.
+   - Page: templates/batchthis/addBatchStage.html (Cellar Ledger form) -
+     built here since the view needs it; reachable by URL until step 6
+     adds the "Log stage" link on batch.html.
+   - Tests: apps/batchthis/tests/test_batch_stage_view.py.
+6. batch.html "Stage timeline" panel (full aging + time-in-vessel, see
+   step 3b) + "Log stage" link in .cl-batch-actions. (addBatchStage.html
+   was already built in step 5.)
 6b. Ad-hoc "Transfer batch" action on batch.html (reason required;
    Batch.transfer() gains an optional reason) - MODEL CHANGES #6.
 --- phase 2 (vessel-chain recipe workflow, see section above) ---

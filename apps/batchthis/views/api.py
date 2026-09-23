@@ -63,6 +63,10 @@ class VesselListAPIView(APIView):
             .annotate(status_since=Max('status_events__timestamp'))
             .order_by('name')
         )
+        # ?status=Clean/Ready - e.g. the stage form's destination picker.
+        status = request.query_params.get('status')
+        if status:
+            vessels = vessels.filter(status=status)
         # One query for every vessel's active batch, instead of one per row.
         # Batch.vessel is unset on batches older than it; those are still in their fermenter.
         current_batches = {

@@ -8,6 +8,8 @@ from django.core.exceptions import ValidationError
 
 import apps.batchthis.models
 from .models import BatchTest, BatchNote, BatchAddition, Batch, Unit, Fermenter, Vessel, BatchCategory, BatchStyle
+from .models import BatchStage
+from .services import allowed_next_stages
 from .models import Fermentable, Adjunct, Yeast, Recipe, AdjunctUsage, RecipeFermentable
 from django.forms.widgets import NumberInput, DateInput
 from django.utils import timezone
@@ -70,6 +72,52 @@ class BatchAddForm(forms.Form):
         if start == timezone.localdate():
             return timezone.now()
         return timezone.make_aware(datetime.datetime.combine(start, datetime.time.min))
+
+class BatchStageForm(forms.Form):
+    """
+    Log the next workflow stage for one batch. Only the stages the workflow
+    allows next are offered; transition_stage_event() re-checks everything.
+    """
+    stage = forms.ModelChoiceField(
+        queryset=BatchStage.objects.none(),
+        error_messages={'invalid_choice': "That stage can't be logged next for this batch."},
+    )
+    timestamp = forms.DateTimeField(
+        label="Date/time",
+        # datetime-local needs dashes; DateTimeWidget above renders slashes.
+        widget=forms.DateTimeInput(attrs={'type': 'datetime-local'}, format='%Y-%m-%dT%H:%M'),
+        input_formats=['%Y-%m-%dT%H:%M', '%Y-%m-%d %H:%M'],
+    )
+    # Filled by the react-select picker (ModelSelect.jsx). Only Clean/Ready
+    # vessels are valid - enforced here on POST, not just by the picker.
+    dst_vessel = forms.ModelChoiceField(
+        queryset=Vessel.objects.filter(status=Vessel.STATUS_READY),
+        required=False,
+        label="Destination vessel",
+        widget=forms.HiddenInput(),
+        error_messages={'invalid_choice': f"That vessel isn't {Vessel.STATUS_READY}. Pick a clean, ready vessel."},
+    )
+    notes = forms.CharField(max_length=250, required=False)
+
+    def __init__(self, *args, batch: Batch, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.batch = batch
+        self.fields['stage'].queryset = BatchStage.objects.filter(
+            pk__in=[stage.pk for stage in allowed_next_stages(batch)]
+        )
+
+    def clean(self):
+        cleaned = super().clean()
+        stage = cleaned.get('stage')
+        if stage is None:
+            return cleaned
+        if stage.transfers_batch and not cleaned.get('dst_vessel') and 'dst_vessel' not in self.errors:
+            self.add_error('dst_vessel', f"{stage.name} transfers the batch - choose a clean, ready destination vessel.")
+        elif not stage.transfers_batch:
+            # A value left over from switching stages in the form; this stage doesn't move the batch.
+            cleaned['dst_vessel'] = None
+        return cleaned
+
 
 # class BatchForm(forms.ModelForm):
 #     class Meta:

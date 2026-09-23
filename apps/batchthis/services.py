@@ -161,11 +161,9 @@ def add_activity_log(batch: Batch, text: str, *, timestamp: Optional[datetime] =
     return entry
 
 
-def _stage_problem(batch: Batch, stage: BatchStage, timestamp: datetime, dst_vessel: Optional[Vessel]) -> Optional[str]:
-    """Why this stage can't be logged on this batch right now, or None if it can."""
-    current = batch.current_stage_event
+def _workflow_problem(batch: Batch, stage: BatchStage, current: Optional[BatchStageEvent]) -> Optional[str]:
+    """Why the workflow doesn't allow this stage next (ignoring timestamp/vessel), or None."""
     state = current.stage.to_state if current else None
-
     if state == BatchStage.STATE_COMPLETED or not batch.active:
         return f"Batch '{batch.name}' is complete; no more stages can be logged."
     if current is None and stage.from_state != "":
@@ -175,6 +173,23 @@ def _stage_problem(batch: Batch, stage: BatchStage, timestamp: datetime, dst_ves
         if stage.from_state != state and not repeat_racking:
             expected = stage.get_from_state_display()
             return f"{stage.name} needs a batch in {expected}; '{batch.name}' is in {state}."
+    return None
+
+
+def allowed_next_stages(batch: Batch) -> list[BatchStage]:
+    """The stages the workflow allows next for this batch, in workflow order."""
+    current = batch.current_stage_event
+    stages = [stage for stage in BatchStage.objects.all() if _workflow_problem(batch, stage, current) is None]
+    logger.debug(f"allowed_next_stages: batch={batch.pk} -> {[s.shortid for s in stages]}")
+    return stages
+
+
+def _stage_problem(batch: Batch, stage: BatchStage, timestamp: datetime, dst_vessel: Optional[Vessel]) -> Optional[str]:
+    """Why this stage can't be logged on this batch right now, or None if it can."""
+    current = batch.current_stage_event
+    problem = _workflow_problem(batch, stage, current)
+    if problem:
+        return problem
 
     if timestamp > timezone.now():
         return "A stage can't be logged in the future."

@@ -8,15 +8,17 @@ from django.contrib import messages
 from django.core.exceptions import ValidationError
 from django.db import transaction
 import logging
-from apps.batchthis.models import Batch, Fermenter, BatchTestType, BatchNoteType, Vessel, Unit, Recipe, Fermentable, AdjunctUsage, RecipeYeasts,RecipeFermentable,RecipeAdjunct
+from django.utils import timezone
+from apps.batchthis.models import Batch, BatchStage, Fermenter, BatchTestType, BatchNoteType, Vessel, Unit, Recipe, Fermentable, AdjunctUsage, RecipeYeasts,RecipeFermentable,RecipeAdjunct
 from django.shortcuts import get_object_or_404
 from apps.batchthis.forms import BatchTestForm, BatchNoteForm, BatchAdditionForm, RefractometerCorrectionForm, BatchAddForm, \
     BatchCategory
-from apps.batchthis.forms import RecipeAddForm, FermentableForm, AdjunctForm, YeastForm
+from apps.batchthis.forms import RecipeAddForm, FermentableForm, AdjunctForm, YeastForm, BatchStageForm
 from django.forms.formsets import formset_factory
 from apps.batchthis.lib.utils import Utils
 from apps.batchthis.services import (
     set_vessel_status, take_vessel_out_of_service, return_vessel_to_service, status_before_out_of_service,
+    transition_stage_event,
 )
 from apps.batchthis.lib.faults import get_active_flags, get_rule_for, StagedFaultRule
 from django.contrib.auth.decorators import login_required
@@ -446,6 +448,43 @@ def batchNote(request, pk=None, noteType=None):
         form.save()
         return HttpResponseRedirect(reverse('batch', kwargs={'pk': pk}))
     return render(request, "batchthis/addNote.html", {'form': form})
+
+
+@login_required
+def batchStage(request, pk):
+    """Log the batch's next workflow stage (Pitch, Racking, a Filtering, Complete Batch)."""
+    batch = get_object_or_404(Batch.objects.select_related('vessel', 'fermenter__vessel'), pk=pk)
+    if request.method == 'POST':
+        form = BatchStageForm(request.POST, batch=batch)
+        if form.is_valid():
+            data = form.cleaned_data
+            try:
+                transition_stage_event(
+                    batch, data['stage'],
+                    timestamp=data['timestamp'], dst_vessel=data['dst_vessel'], notes=data['notes'],
+                )
+            except ValidationError as e:
+                # Workflow rule from the service (e.g. timestamp bounds); nothing was saved.
+                form.add_error(None, e.messages)
+            except Exception:
+                logger.exception("batchStage: failed to log %r for batch %s", data['stage'], pk)
+                form.add_error(None, "Couldn't log the stage. Nothing was saved - please try again.")
+            else:
+                return HttpResponseRedirect(reverse('batch', kwargs={'pk': pk}))
+        logger.debug("batchStage: batch %s form errors: %s", pk, form.errors.as_data())
+    else:
+        form = BatchStageForm(batch=batch, initial={'timestamp': timezone.localtime().replace(second=0, microsecond=0)})
+
+    context = {
+        'batch': batch,
+        'form': form,
+        'current_state': batch.current_state,
+        # Lets the page show the destination picker only for stages that move the batch.
+        'transfer_stage_ids': ",".join(
+            str(pk) for pk in BatchStage.objects.filter(transfers_batch=True).order_by('pk').values_list('pk', flat=True)
+        ),
+    }
+    return render(request, "batchthis/addBatchStage.html", context)
 
 
 def activity(request, pk=None):

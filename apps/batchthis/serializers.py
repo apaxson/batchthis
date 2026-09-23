@@ -120,11 +120,13 @@ class VesselSerializer(serializers.ModelSerializer):
     current_batch = serializers.SerializerMethodField()
     status_since = serializers.SerializerMethodField()
     detail_url = serializers.SerializerMethodField()
+    # Label for the react-select vessel picker (ModelSelect.jsx reads display_name).
+    display_name = serializers.SerializerMethodField()
 
     class Meta:
         model = Vessel
         fields = ['id', 'name', 'vessel_type', 'capacity', 'status', 'status_class', 'current_batch',
-                  'status_since', 'intended_use', 'detail_url']
+                  'status_since', 'intended_use', 'detail_url', 'display_name']
 
     def get_capacity(self, obj: Vessel) -> str:
         return f"{obj.max_size} {obj.max_size_units.identifier}"
@@ -138,3 +140,7 @@ class VesselSerializer(serializers.ModelSerializer):
 
     def get_detail_url(self, obj: Vessel) -> str:
         return reverse('vessel', kwargs={'pk': obj.pk})
+
+    def get_display_name(self, obj: Vessel) -> str:
+        details = ", ".join(part for part in (obj.vessel_type, self.get_capacity(obj)) if part)
+        return f"{obj.name} ({details})"
