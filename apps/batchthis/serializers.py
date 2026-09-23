@@ -1,7 +1,8 @@
 from django.urls import reverse
+from django.utils import timezone
 from rest_framework import serializers
 
-from .models import Adjunct, Batch, Fermentable, Recipe, Yeast
+from .models import Adjunct, Batch, Fermentable, Recipe, Vessel, Yeast
 
 
 class FermentableSerializer(serializers.ModelSerializer):
@@ -105,3 +106,35 @@ class BatchSerializer(serializers.ModelSerializer):
 
     def get_detail_url(self, obj: Batch) -> str:
         return reverse('batch', kwargs={'pk': obj.pk})
+
+
+class VesselSerializer(serializers.ModelSerializer):
+    """
+    Expects the queryset annotated with `status_since` (latest status event
+    timestamp) and a `current_batches` context dict {vessel_id: batch name}
+    - see VesselListAPIView - so the list page stays at a fixed query count.
+    """
+    vessel_type = serializers.CharField(read_only=True)
+    capacity = serializers.SerializerMethodField()
+    status_class = serializers.CharField(source='status_badge_class', read_only=True)
+    current_batch = serializers.SerializerMethodField()
+    status_since = serializers.SerializerMethodField()
+    detail_url = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Vessel
+        fields = ['id', 'name', 'vessel_type', 'capacity', 'status', 'status_class', 'current_batch',
+                  'status_since', 'intended_use', 'detail_url']
+
+    def get_capacity(self, obj: Vessel) -> str:
+        return f"{obj.max_size} {obj.max_size_units.identifier}"
+
+    def get_current_batch(self, obj: Vessel) -> str:
+        return self.context.get('current_batches', {}).get(obj.pk, '')
+
+    def get_status_since(self, obj: Vessel):
+        since = getattr(obj, 'status_since', None)
+        return timezone.localtime(since).strftime('%Y-%m-%d') if since else None
+
+    def get_detail_url(self, obj: Vessel) -> str:
+        return reverse('vessel', kwargs={'pk': obj.pk})

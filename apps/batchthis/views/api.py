@@ -1,11 +1,14 @@
 import logging
 
+from django.db.models import Max
 from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from ..models import Adjunct, Batch, Fermentable, Recipe, Yeast
-from ..serializers import AdjunctSerializer, BatchSerializer, FermentableSerializer, RecipeSerializer, YeastSerializer
+from ..models import Adjunct, Batch, Fermentable, Recipe, Vessel, Yeast
+from ..serializers import (
+    AdjunctSerializer, BatchSerializer, FermentableSerializer, RecipeSerializer, VesselSerializer, YeastSerializer,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -49,4 +52,25 @@ class BatchListAPIView(APIView):
         ).all()
         serializer = BatchSerializer(batches, many=True)
         logger.debug("Listed %d batches for %s", len(serializer.data), request.user)
+        return Response(serializer.data)
+
+
+class VesselListAPIView(APIView):
+    def get(self, request: Request) -> Response:
+        vessels = (
+            Vessel.objects.select_related('max_size_units')
+            .prefetch_related('fermenter_set', 'agingtank_set', 'barrel_set')
+            .annotate(status_since=Max('status_events__timestamp'))
+            .order_by('name')
+        )
+        # One query for every vessel's active batch, instead of one per row.
+        # Batch.vessel is unset on batches older than it; those are still in their fermenter.
+        current_batches = {
+            vessel_id or fermenter_vessel_id: name
+            for vessel_id, fermenter_vessel_id, name in Batch.objects.filter(active=True).values_list(
+                'vessel_id', 'fermenter__vessel_id', 'name'
+            )
+        }
+        serializer = VesselSerializer(vessels, many=True, context={'current_batches': current_batches})
+        logger.debug("Listed %d vessels for %s", len(serializer.data), request.user)
         return Response(serializer.data)

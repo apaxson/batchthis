@@ -142,17 +142,19 @@
   <div>
     <div class="cl-panel">
       <div class="cl-section-head"><div class="cl-section-title">Current Vessel</div></div>
-      {% if batch.fermenter.vessel %}
-        <div class="cl-kv-row"><span class="cl-kv-label">Vessel</span><span class="cl-kv-value">{{ batch.fermenter.vessel.name }}</span></div>
-        <div class="cl-kv-row"><span class="cl-kv-label">Status</span><span class="cl-kv-value">{{ batch.fermenter.vessel.status }}</span></div>
-        <div class="cl-kv-row"><span class="cl-kv-label">Capacity</span><span class="cl-kv-value">{{ batch.fermenter.vessel.max_size }} {{ batch.fermenter.vessel.max_size_units.identifier }}</span></div>
-        {% if batch.fermenter.vessel.used_size %}
-        <div class="cl-kv-row"><span class="cl-kv-label">Fill</span><span class="cl-kv-value">{{ batch.fermenter.vessel.used_size }} {{ batch.fermenter.vessel.used_size_units.identifier }}</span></div>
+      {% with v=batch.current_vessel %}
+      {% if v %}
+        <div class="cl-kv-row"><span class="cl-kv-label">Vessel</span><span class="cl-kv-value"><a href="{% url 'vessel' v.pk %}">{{ v.name }}</a></span></div>
+        <div class="cl-kv-row"><span class="cl-kv-label">Status</span><span class="cl-kv-value">{{ v.status }}</span></div>
+        <div class="cl-kv-row"><span class="cl-kv-label">Capacity</span><span class="cl-kv-value">{{ v.max_size }} {{ v.max_size_units.identifier }}</span></div>
+        {% if v.used_size %}
+        <div class="cl-kv-row"><span class="cl-kv-label">Fill</span><span class="cl-kv-value">{{ v.used_size }} {{ v.used_size_units.identifier }}</span></div>
         {% endif %}
-        <div class="cl-kv-row"><span class="cl-kv-label">Intended use</span><span class="cl-kv-value">{{ batch.fermenter.vessel.intended_use }}</span></div>
+        <div class="cl-kv-row"><span class="cl-kv-label">Intended use</span><span class="cl-kv-value">{{ v.intended_use }}</span></div>
       {% else %}
         <div class="cl-empty">No vessel assigned.</div>
       {% endif %}
+      {% endwith %}
     </div>
 
     <div class="cl-panel">

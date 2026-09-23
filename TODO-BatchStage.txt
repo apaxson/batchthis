@@ -53,12 +53,28 @@ WHAT ALREADY EXISTS (found while tracing this - don't re-invent these)
     see "CANONICAL WORKFLOW GRAPH" for the authoritative shape and how it
     differs from this informal description (racking repeatability,
     Sterile Filtering's real role, the final transition's name).
-* `Batch.complete()` (models.py:378) sets enddate/active=False but is
-  never called from any view. This is the hook for "batch reached its
-  final stage."
-* `Batch.transfer(src_vessel, dst_vessel)` (models.py:375) is a `pass`
-  stub, clearly meant for the vessel move that happens on
-  racking/aging transitions.
+* `Batch.complete()` saves enddate/active=False and, in the same
+  transaction, calls `set_vessel_status()` (services.py) to mark the
+  batch's CURRENT vessel (`batch.current_vessel`) "Needs Cleaning" (done
+  in the Vessel Lifecycle pass, 2026-09-22/23; raises ValidationError if
+  the batch is already complete).
+  It's still never called from any view - there is deliberately no
+  "Complete batch" UI yet. That UI belongs to THIS plan, as the "Complete
+  Batch" transition (MODEL CHANGES #5), not to the Vessel Lifecycle work.
+* `Batch.transfer(src_vessel, dst_vessel)` is IMPLEMENTED (Vessel
+  Lifecycle pass, 2026-09-23) but, like complete(), never called from any
+  view. It moves the batch into any vessel type: dst must be Clean/Ready,
+  src must be the batch's current vessel, batch must be active; src ->
+  Needs Cleaning, dst -> In Use, `Batch.vessel` -> dst, plus a
+  "Transferred from [src] to [dst]" ActivityLog entry, all in one
+  transaction. Raises ValidationError (with a user-readable message) on
+  any rule violation. The "Transfer" action/UI belongs to THIS plan -
+  see MODEL CHANGES #6.
+* `Batch.vessel` (nullable FK, migration 0032) = where the batch is now;
+  `Batch.fermenter` stays the fermenter it started in. Use
+  `batch.current_vessel` (falls back to fermenter.vessel for older
+  batches with vessel unset) and `Batch.objects.in_vessel(v)` - never
+  `batch.fermenter.vessel` - when you mean "where is the batch".
 * `BatchTest` (dated + type FK + batch FK) and `BatchNote` (dated +
   notetype FK + batch FK) are the existing precedent for "append-only,
   timestamped, typed log entry against a batch." A stage-transition log
@@ -234,16 +250,21 @@ MODEL CHANGES
    - add `sort_order` (PositiveSmallIntegerField) for a defined sequence.
    - add `from_state` (CharField choices, blank=True - blank means "from
      Start") and `to_state` (CharField choices) per transition.
+   - add `transfers_batch` (BooleanField, default False) - True when
+     logging this transition transfers the batch into another clean
+     vessel via Batch.transfer() (see MODEL CHANGES #6).
    - new data migration seeds, matching the diagram exactly:
-       Pitch             (from: -,        to: Fermentation)
-       Racking           (from: Fermentation, to: Aging)  # single row,
-                          reused for repeat vessel-moves during Aging too
-                          - don't add a second "Racking (repeat)" row
-       Fine Filtering    (from: Aging,    to: Aging)   # 1.5-1 micron
-       Course Filtering  (from: Aging,    to: Aging)   # 5-10 micron
-       Sterile Filtering (from: Aging,    to: Bottling) # 0.5 micron
-       Complete Batch    (from: Bottling, to: Completed) # manual, closes
-                          the batch out - see MODEL CHANGES #5
+       Pitch             (from: -,        to: Fermentation)           transfers_batch: no
+       Racking           (from: Fermentation, to: Aging)             transfers_batch: yes
+                          # single row, reused for repeat batch
+                          transfers during Aging too - don't add a
+                          second "Racking (repeat)" row
+       Fine Filtering    (from: Aging,    to: Aging)   # 1.5-1 micron  transfers_batch: yes
+       Course Filtering  (from: Aging,    to: Aging)   # 5-10 micron   transfers_batch: yes
+       Sterile Filtering (from: Aging,    to: Bottling) # 0.5 micron   transfers_batch: yes
+       Complete Batch    (from: Bottling, to: Completed)               transfers_batch: no
+                          # manual, closes the batch out - see
+                          MODEL CHANGES #5
      (Supersedes the dead `batch_stages` list, AND supersedes this file's
      own earlier seed list draft of "Pitch, Primary Fermentation,
      Secondary Fermentation, Racking, Tertiary/Aging, Filtering,
@@ -259,8 +280,9 @@ MODEL CHANGES
                 BatchTest.datetime / BatchNote.date - people log these
                 after the fact
    - vessel   = FK(Vessel, null=True, blank=True, on_delete=SET_NULL)
-                # optional - ties into the Batch.transfer() stub for
-                racking/aging vessel moves
+                # optional - the vessel the batch was transferred INTO
+                (Racking / any Filtering); set from the
+                Batch.transfer() dst - see MODEL CHANGES #6
    - notes    = CharField(max_length=250, blank=True)
    - Meta.ordering = ['timestamp']
 
@@ -281,6 +303,72 @@ MODEL CHANGES
    see "CANONICAL WORKFLOW GRAPH" above). "Complete Batch" is a manual
    transition someone logs to close the batch out - it doesn't fire
    automatically off of reaching Bottling.
+   `Batch.complete()` already handles the vessel side (-> Needs Cleaning
+   via set_vessel_status()), so the stage-logging function should only
+   call it, not touch vessel status itself. Build the "Complete batch"
+   action/UI as part of this step.
+
+6. Wire up `Batch.transfer(src, dst)` - the "Transfer" action (added
+   2026-09-23 by Aaron; implemented here, during the batch workflow,
+   not as a standalone vessel page button):
+   - Terminology (Aaron, 2026-09-23): vessels don't move - the BATCH
+     moves from one vessel into another clean vessel. Say "batch
+     transfer", not "vessel move".
+   - Transitions that transfer the batch (RESOLVED by Aaron 2026-09-23):
+       Racking            Fermentation -> Aging, and the Aging -> Aging loop
+       Course Filtering   Aging -> Aging
+       Fine Filtering     Aging -> Aging
+       Sterile Filtering  Aging -> Bottling
+     i.e. Racking and every Filtering transition moves the batch into
+     another Clean/Ready vessel. Pitch and Complete Batch do NOT
+     transfer (Complete Batch calls Batch.complete() - MODEL CHANGES #5).
+     Put this on the BatchStage row as a flag (e.g.
+     `BatchStage.transfers_batch = BooleanField`) in the seed data,
+     rather than hard-coding stage names in the service function.
+   - When one of those BatchStageEvents is logged, the stage-logging
+     service function calls
+     `batch.transfer(batch.current_vessel, dst)` in the SAME transaction
+     as the BatchStageEvent, and records dst on BatchStageEvent.vessel.
+     If transfer() raises ValidationError, nothing is logged and the
+     message is shown to the user (Django messages).
+   - The stage form therefore needs a required destination-vessel picker
+     whenever the chosen transition transfers the batch: react-select
+     (per CLAUDE.md), limited to Clean/Ready vessels of any type,
+     excluding the batch's current vessel.
+   - Like complete(), the stage-logging function should only call
+     transfer(), never set vessel status itself.
+   - Ad-hoc "Transfer batch" action on batch.html, OUTSIDE the stage
+     workflow (RESOLVED by Aaron 2026-09-23: yes). Normally batches move
+     only through the stage steps above, but unplanned situations can
+     need it - e.g. a vessel must be taken Out of Service while a batch
+     is in it (Out of Service is only allowed from Clean/Ready or Needs
+     Cleaning, so the batch has to be transferred out first - see
+     TODO-VesselLifecycle.txt).
+     Suggested shape (confirm details when building):
+       * Present it as an exception path, not a normal step: a secondary
+         button / small link on the batch page's "Current Vessel" panel,
+         not a primary action, with wording that points people to the
+         stage workflow first.
+       * Same destination picker as the stage form (react-select,
+         Clean/Ready vessels of any type, excluding the current one).
+       * Reason required, so the history explains the off-workflow move.
+         Needs an optional `reason` argument on Batch.transfer(), used
+         in both VesselStatusEvent notes and the "Transferred from
+         [src] to [dst]" ActivityLog text (today both are fixed text).
+       * Does NOT log a BatchStageEvent - the batch's stage doesn't
+         change, only its vessel.
+       * POST-only, login_required, Django messages for errors - same
+         pattern as the vessel page's markVesselCleaned /
+         takeVesselOutOfService views.
+       * Tests: transfers the batch and logs the reason; missing reason /
+         dst not Clean/Ready / completed batch are rejected with a
+         message and change nothing; no BatchStageEvent is created.
+   - Tests: each transferring transition (Racking, Course/Fine/Sterile
+     Filtering) calls transfer() and stores dst on the event; a missing
+     dst is a form error; a rejected transfer (dst not Clean/Ready, batch
+     complete) rolls back the stage event too; Pitch/Complete Batch leave
+     the batch where it is. transfer() itself is already covered by
+     apps/batchthis/tests/test_batch_transfer.py.
 
 
 OPEN DECISIONS (ask Aaron / decide before coding)
@@ -297,6 +385,10 @@ OPEN DECISIONS (ask Aaron / decide before coding)
 [ ] Add BatchStageEvent.vessel now vs. later.
     -> Recommend: add the nullable field now (cheap), don't wire
        automatic vessel-status swapping yet.
+    UPDATE 2026-09-23: Batch.transfer() now exists and Aaron wants the
+    Transfer action built in this workflow (MODEL CHANGES #6), so the
+    field is needed now and Racking + all Filtering transitions SHOULD
+    call transfer().
 [ ] Fix Batch.startdate auto_now_add bug as part of this work vs. as its
     own separate fix/ticket.
 [ ] Recipe-side expected workflow (vessel chain) - phase 2, not required
@@ -500,13 +592,17 @@ SUGGESTED ORDER OF WORK (TDD - write the test for each step first)
 --------------------------------------------------------------
 1. Fix Batch.startdate bug + regression test (small, isolated, unblocks
    everything else that treats startdate as the pitch anchor).
-2. Extend BatchStage (shortid, sort_order) + seed migration + BatchFactory
+2. Extend BatchStage (shortid, sort_order, transfers_batch) + seed migration + BatchFactory
    + BatchStageFactory.
 3. BatchStageEvent model + migration + BatchStageEventFactory +
    stage_durations()/current_stage_event tests.
-4. log_stage_event() service function + terminal-stage completion test.
-5. BatchStageForm + batchStage view + urls.
+4. log_stage_event() service function + terminal-stage completion test
+   + Racking/Filtering -> Batch.transfer() tests (MODEL CHANGES #6).
+5. BatchStageForm (incl. destination-vessel picker for Racking and
+   Filtering) + batchStage view + urls.
 6. batch.html "Stage timeline" panel + addBatchStage.html template.
+6b. Ad-hoc "Transfer batch" action on batch.html (reason required;
+   Batch.transfer() gains an optional reason) - MODEL CHANGES #6.
 --- phase 2 (vessel-chain recipe workflow, see section above) ---
 7. RecipeVesselStep model + migration + RecipeVesselStepFactory + tests
    (add/edit/reorder, terminal blank-vessel_role step).

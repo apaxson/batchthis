@@ -21,6 +21,7 @@ from django.dispatch import receiver
 from django.db.models.signals import post_save, m2m_changed
 from django.utils.text import slugify
 from django.core.files.storage import FileSystemStorage
+from django.utils import timezone
 from pint import Quantity
 from quantityfield.fields import QuantityField
 from .fields import DescriptiveQuantityField
@@ -100,6 +101,15 @@ class Vessel(models.Model):
     STATUS_ACTIVE = 'In Use'
     STATUS_READY = "Clean/Ready"
     STATUS_DIRTY = "Needs Cleaning"
+    # Pulled from use (repair, problem, retired). Set/cleared by hand only; see
+    # services.take_vessel_out_of_service() / return_vessel_to_service().
+    STATUS_OUT = "Out of Service"
+    STATUS_CHOICES = (
+        (STATUS_READY, STATUS_READY),
+        (STATUS_ACTIVE, STATUS_ACTIVE),
+        (STATUS_DIRTY, STATUS_DIRTY),
+        (STATUS_OUT, STATUS_OUT),
+    )
 
     def __str__(self):
         return self.name + " (" + str(self.max_size) + self.max_size_units.identifier + ")"
@@ -108,8 +118,76 @@ class Vessel(models.Model):
     max_size_units = models.ForeignKey(Unit, related_name="fermenter_max_size_units", on_delete=models.SET("_del"))
     used_size = models.IntegerField(blank=True, null=True)
     used_size_units = models.ForeignKey(Unit, blank=True, null=True,related_name="fermenter_used_size_units", on_delete=models.SET("_del"))
-    status = models.CharField(max_length=15, default=STATUS_READY)
+    status = models.CharField(max_length=15, choices=STATUS_CHOICES, default=STATUS_READY)
     intended_use = models.CharField(max_length=30)
+
+    @property
+    def current_status_event(self):
+        # Meta.ordering on VesselStatusEvent is oldest-first (a readable history
+        # log), so the latest event needs its own explicit descending order.
+        return self.status_events.order_by('-timestamp').first()
+
+    def time_in_current_status(self):
+        event = self.current_status_event
+        if event is None:
+            return None
+        return timezone.now() - event.timestamp
+
+    # Cellar Ledger badge modifier (cellar-ledger.css .cl-stage--*) per status.
+    STATUS_BADGE_CLASSES = {
+        STATUS_READY: 'cl-stage--ready',
+        STATUS_ACTIVE: 'cl-stage--active',
+        STATUS_DIRTY: 'cl-stage--dirty',
+        STATUS_OUT: 'cl-stage--out',
+    }
+
+    @property
+    def status_badge_class(self) -> str:
+        return self.STATUS_BADGE_CLASSES.get(self.status, '')
+
+    @property
+    def vessel_type(self) -> str:
+        # .all() rather than .exists() so prefetch_related() on list queries is used.
+        if self.fermenter_set.all():
+            return 'Fermenter'
+        if self.agingtank_set.all():
+            return 'Aging Tank'
+        if self.barrel_set.all():
+            return 'Barrel'
+        return ''
+
+    @property
+    def current_batch(self):
+        return Batch.objects.in_vessel(self).filter(active=True).first()
+
+
+class VesselStatusEvent(models.Model):
+    """
+    Append-only, timestamped log of a Vessel's status transitions - same shape
+    as BatchTest/BatchNote. See TODO-VesselLifecycle.txt. Only written by
+    services.set_vessel_status(), which keeps Vessel.status (the current-value
+    cache) and this log in sync.
+    """
+    class Meta:
+        ordering = ['timestamp']
+        verbose_name = 'vessel status event'
+
+    def __str__(self):
+        fmt = "%m/%d/%y-%H:%M"
+        return f"{self.vessel} -> {self.status} ({self.timestamp.strftime(fmt)})"
+
+    vessel = models.ForeignKey(Vessel, on_delete=models.CASCADE, related_name='status_events')
+    status = models.CharField(max_length=15, choices=Vessel.STATUS_CHOICES)
+    timestamp = models.DateTimeField(default=timezone.now)
+    batch = models.ForeignKey('Batch', null=True, blank=True, on_delete=models.SET_NULL)
+    notes = models.CharField(max_length=250, blank=True)
+    # What the vessel was in before this event; lets Out of Service restore it.
+    # Blank on events logged before this field existed.
+    previous_status = models.CharField(max_length=15, choices=Vessel.STATUS_CHOICES, blank=True)
+
+    @property
+    def status_badge_class(self) -> str:
+        return Vessel.STATUS_BADGE_CLASSES.get(self.status, '')
 
 
 class InventoryItem(models.Model):
@@ -347,7 +425,17 @@ class ActivityLog(models.Model):
     text = models.TextField()
 
 
+class BatchQuerySet(models.QuerySet):
+    def in_vessel(self, vessel: Vessel) -> "BatchQuerySet":
+        # Batches created before Batch.vessel existed have it unset; they're
+        # still in their starting fermenter (see Batch.current_vessel).
+        return self.filter(
+            models.Q(vessel=vessel) | models.Q(vessel__isnull=True, fermenter__vessel=vessel)
+        )
+
+
 class Batch(models.Model):
+    objects = BatchQuerySet.as_manager()
 
     def __str__(self):
         return self.name
@@ -362,6 +450,8 @@ class Batch(models.Model):
     size = DescriptiveQuantityField(base_units='liters', unit_choices=['liters','gallons'])
     active = models.BooleanField(default=True)
     fermenter = models.ForeignKey(Fermenter, on_delete=models.RESTRICT)
+    # Where the batch is now; changed by transfer(). `fermenter` stays the one it started in.
+    vessel = models.ForeignKey(Vessel, on_delete=models.RESTRICT, null=True, blank=True, related_name='batches')
     startingGravity = QuantityField(base_units="sg")
     estimatedEndGravity = QuantityField(base_units="sg")
     category = models.ForeignKey(BatchCategory, on_delete=models.RESTRICT, blank=True, null=True)
@@ -372,12 +462,71 @@ class Batch(models.Model):
     packaging = None
     # TODO Add pre_save signal to compare the two objects for fields changed.
 
-    def transfer(self,src_vessel, dst_vessel):
-        pass
+    @property
+    def current_vessel(self) -> Vessel:
+        return self.vessel if self.vessel_id else self.fermenter.vessel
 
-    def complete(self):
-        self.enddate = datetime.now()
-        self.active = False
+    def transfer(self, src_vessel: Vessel, dst_vessel: Vessel) -> None:
+        """
+        Move the batch from src_vessel into dst_vessel (any vessel type): src
+        -> Needs Cleaning, dst -> In Use, batch.vessel -> dst, plus one
+        ActivityLog entry on the batch. All of it commits together, or none.
+        """
+        from django.core.exceptions import ValidationError
+        from django.db import transaction
+        from .services import set_vessel_status
+
+        logger.debug(
+            f"Batch.transfer: batch={self.pk} '{self.name}' "
+            f"src={src_vessel.pk} '{src_vessel.name}' dst={dst_vessel.pk} '{dst_vessel.name}'"
+        )
+        current = self.current_vessel
+        problem = None
+        if not self.active:
+            problem = f"Batch '{self.name}' is complete and can't be transferred."
+        elif src_vessel.pk != current.pk:
+            problem = f"Batch '{self.name}' is in '{current.name}', not '{src_vessel.name}'."
+        elif dst_vessel.pk == src_vessel.pk:
+            problem = f"Batch '{self.name}' is already in '{dst_vessel.name}'."
+        elif dst_vessel.status != Vessel.STATUS_READY:
+            problem = f"'{dst_vessel.name}' is {dst_vessel.status}; transfers need a {Vessel.STATUS_READY} vessel."
+        if problem:
+            logger.error(f"Batch.transfer: rejected - {problem}")
+            raise ValidationError(problem)
+
+        with transaction.atomic():
+            self.vessel = dst_vessel
+            self.save(update_fields=['vessel'])
+            set_vessel_status(src_vessel, Vessel.STATUS_DIRTY, batch=self, notes=f"Batch transferred to {dst_vessel.name}")
+            set_vessel_status(dst_vessel, Vessel.STATUS_ACTIVE, batch=self, notes=f"Batch transferred from {src_vessel.name}")
+            log = ActivityLog.objects.create(
+                datetime=timezone.now(), text=f"Transferred from [{src_vessel.name}] to [{dst_vessel.name}]"
+            )
+            self.activity.add(log)
+        logger.info(f"Batch '{self.name}' transferred from '{src_vessel.name}' to '{dst_vessel.name}'")
+
+    def complete(self) -> None:
+        """
+        Mark the batch finished and flag its fermentation vessel for cleaning.
+        Both commit together, or neither does.
+        """
+        # Local import: services.py imports this module.
+        from django.core.exceptions import ValidationError
+        from django.db import transaction
+        from .services import set_vessel_status
+
+        logger.debug(f"Batch.complete: batch={self.pk} '{self.name}' active={self.active}")
+        if not self.active:
+            logger.error(f"Batch.complete: batch {self.pk} '{self.name}' is already complete")
+            raise ValidationError(f"Batch '{self.name}' is already complete.")
+
+        vessel = self.current_vessel
+        with transaction.atomic():
+            self.enddate = timezone.now()
+            self.active = False
+            self.save()
+            set_vessel_status(vessel, Vessel.STATUS_DIRTY, batch=self, notes="Batch completed")
+        logger.info(f"Batch '{self.name}' completed; vessel '{vessel.name}' needs cleaning")
 
     def current_gravity(self):
         gravity_tests = self.tests.filter(type__shortid='specific-gravity')
@@ -390,26 +539,6 @@ class Batch(models.Model):
         est_fg = self.estimatedEndGravity.magnitude
         current_gravity = self.current_gravity()
         return round((self.startingGravity.magnitude - current_gravity) / (self.startingGravity.magnitude - est_fg) * 100)
-
-
-# If a batch is saved on a fermenter that isn't currently active,
-# set it active
-@receiver(post_save, sender=Batch)
-def setActiveFermenter(sender,instance,**kwargs):
-    logger.debug(f"Received Batch save.  Instance: {instance} \n Sender: {sender}")
-    if instance.active:
-        if instance.fermenter.vessel.status != Vessel.STATUS_ACTIVE:
-            instance.fermenter.vessel.status = Vessel.STATUS_ACTIVE
-            instance.fermenter.vessel.save()
-            logger.info(f"Received Batch Save.  Moved Fermenter '{instance.fermenter.vessel.name}' to ACTIVE")
-            logger.debug(f"Batch Saved:  Instance: {instance} Fermenter: {instance.fermenter} Fermenter State: {instance.fermenter.vessel.status}")
-    if not instance.active:
-        #TODO this is a bad way to do this.  This implies any edits to an inactive batch will cause the assigned fermenter to DIRTY
-        # Use a workflow or state-engine in the future.
-        if instance.fermenter.vessel.status is Vessel.STATUS_ACTIVE:
-            instance.fermenter.vessel.status = Vessel.STATUS_DIRTY
-            instance.fermenter.save()
-            logger.info(f"Received Batch Save.  Moved Fermenter '{instance.fermenter.vessel.name}' to DIRTY")
 
 
 class BatchTest(models.Model):

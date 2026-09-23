@@ -51,7 +51,12 @@ class BatchAddForm(forms.Form):
     name = forms.CharField(widget=forms.TextInput(attrs={'placeholder':'Name of Batch'}),required=True)
     startdate = forms.DateField(label="Start Date",widget=DateInput(attrs={'type':'date'}),required=True)
     size = forms.CharField(widget=forms.TextInput(attrs={'placeholder':'i.e. 6 gallons'}),label = "Batch Size", required=True)
-    fermenter = forms.ModelChoiceField(queryset=Fermenter.objects.all())
+    # A new batch can only go into a Clean/Ready vessel; enforced on POST, not
+    # just by what the dropdown shows.
+    fermenter = forms.ModelChoiceField(
+        queryset=Fermenter.objects.filter(vessel__status=Vessel.STATUS_READY),
+        error_messages={'invalid_choice': f"That fermenter isn't {Vessel.STATUS_READY}. Pick a clean, ready vessel."},
+    )
     startingGravity = forms.CharField(widget=PrecisionTextWidget(precision=3, base_units='sg'), label="Starting Gravity", required=True)
     estimatedEndGravity = forms.CharField(widget=PrecisionTextWidget(precision=3, base_units='sg'), label="Estimated End Gravity", required=True)
     recipe = forms.ModelChoiceField(queryset=Recipe.objects.all())

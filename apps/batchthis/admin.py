@@ -1,14 +1,17 @@
 from django.contrib import admin
-from .models import Unit, Vessel, Fermenter, BatchNoteType, BatchTestType, Batch, BatchNote, BatchTest, BatchCategory, BatchStyle
+from .models import Unit, Fermenter, BatchNoteType, BatchTestType, BatchNote, BatchTest, BatchCategory, BatchStyle
 from .models import AdjunctType, Adjunct, Yeast, FermentableType, Fermentable, Recipe, AdjunctUsage, BatchStage
 # Register your models here.
 
 admin.site.register(Unit)
 admin.site.register(Fermenter)
-admin.site.register(Vessel)
+# Vessel and VesselStatusEvent are deliberately not registered: status must only
+# change through services.set_vessel_status() so the status history stays complete.
 admin.site.register(BatchNoteType)
 admin.site.register(BatchTestType)
-admin.site.register(Batch)
+# Batch is deliberately not registered: saving a batch here bypasses the
+# workflow (vessel status via set_vessel_status(), and later BatchStage events).
+# Create/complete batches through the app views instead.
 admin.site.register(BatchNote)
 admin.site.register(BatchTest)
 admin.site.register(BatchStyle)

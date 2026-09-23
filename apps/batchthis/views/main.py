@@ -5,6 +5,8 @@ from django.http import HttpResponseRedirect, HttpResponse, JsonResponse
 from django.views.generic import FormView
 from django.views.generic.detail import SingleObjectMixin
 from django.contrib import messages
+from django.core.exceptions import ValidationError
+from django.db import transaction
 import logging
 from apps.batchthis.models import Batch, Fermenter, BatchTestType, BatchNoteType, Vessel, Unit, Recipe, Fermentable, AdjunctUsage, RecipeYeasts,RecipeFermentable,RecipeAdjunct
 from django.shortcuts import get_object_or_404
@@ -13,8 +15,12 @@ from apps.batchthis.forms import BatchTestForm, BatchNoteForm, BatchAdditionForm
 from apps.batchthis.forms import RecipeAddForm, FermentableForm, AdjunctForm, YeastForm
 from django.forms.formsets import formset_factory
 from apps.batchthis.lib.utils import Utils
+from apps.batchthis.services import (
+    set_vessel_status, take_vessel_out_of_service, return_vessel_to_service, status_before_out_of_service,
+)
 from apps.batchthis.lib.faults import get_active_flags, get_rule_for, StagedFaultRule
 from django.contrib.auth.decorators import login_required
+from django.views.decorators.http import require_POST
 from django.forms.models import model_to_dict, modelformset_factory
 from pint import Quantity
 
@@ -71,27 +77,34 @@ def _build_series(batch, shortid, rule=None):
 def index(request):
     recent_batches = Batch.objects.all()[:5]
     total_batch_count = Batch.objects.all().count()
-    active_batches = Batch.objects.filter(active=True)
+    # select_related covers batch.current_vessel for both the view and the template.
+    active_batches = Batch.objects.filter(active=True).select_related('vessel', 'fermenter__vessel')
     active_batch_count = len(active_batches)
-    active_fermenters = Fermenter.objects.filter(vessel__status=Vessel.STATUS_ACTIVE)
-    active_fermenters_count = len(active_fermenters)
     total_volume = 0
-    fermenter_detail = {}
+    vessels_in_use = []
     for batch in active_batches:
         total_volume += batch.size
-        fermenter_detail[batch.fermenter.vessel.name] = {'batch': batch.name, 'size': batch.size}
+        vessel = batch.current_vessel
+        if vessel.status == Vessel.STATUS_OUT:
+            # A vessel holding a batch can't be taken out of service through the
+            # app, so this means the data was changed some other way.
+            logger.error("index: active batch %s '%s' is in out-of-service vessel %s '%s'",
+                         batch.pk, batch.name, vessel.pk, vessel.name)
+            continue
+        vessels_in_use.append({'vessel': vessel, 'batch': batch})
+    vessels_in_use_count = len({row['vessel'].pk for row in vessels_in_use})
+    logger.debug("index: %d active batches in %d vessels", active_batch_count, vessels_in_use_count)
 
     flags = get_active_flags(active_batches)
 
     context = {
         'active_batches': active_batches,
-        'active_fermenters': active_fermenters,
         'recent_batches': recent_batches,
         'total_batch_count': total_batch_count,
         'active_batch_count': active_batch_count,
-        'active_fermenters_count': active_fermenters_count,
+        'vessels_in_use_count': vessels_in_use_count,
         'total_volume': total_volume,
-        'fermenter_detail': fermenter_detail,
+        'vessels_in_use': vessels_in_use,
         'flags': flags,
     }
     return render(request, 'batchthis/index.html', context=context)
@@ -351,11 +364,22 @@ def addBatch(request, pk=None):
             batch.startingGravity = Quantity(float(form.cleaned_data['startingGravity']), 'sg')
             batch.estimatedEndGravity = Quantity(float(form.cleaned_data['estimatedEndGravity']), 'sg')
             batch.fermenter = form.cleaned_data['fermenter']
-            newbatch = batch.save()
-            batch.recipe = form.cleaned_data['recipe']
-            batch.save()
+            batch.vessel = batch.fermenter.vessel
+            try:
+                # Batch and vessel status commit together, or neither does.
+                with transaction.atomic():
+                    batch.save()
+                    batch.recipe = form.cleaned_data['recipe']
+                    batch.save()
+                    set_vessel_status(batch.fermenter.vessel, Vessel.STATUS_ACTIVE, batch=batch, notes="Batch created")
+            except Exception:
+                logger.exception("addBatch: failed to create batch %r on fermenter %s", batch.name, batch.fermenter)
+                form.add_error(None, "Couldn't create the batch. Nothing was saved - please try again.")
+                return render(request, template_name='batchthis/addBatch.html', context={'form': form})
+            logger.info("addBatch: created batch %s '%s' in vessel '%s'", batch.pk, batch.name, batch.fermenter.vessel.name)
             return HttpResponseRedirect(reverse('batch', kwargs={'pk': batch.pk}))
         else:
+            logger.debug("addBatch: invalid form: %s", form.errors)
             return render(request, template_name='batchthis/addBatch.html', context={'form': form})
     else:
         if pk:
@@ -368,7 +392,6 @@ def addBatch(request, pk=None):
         else:
             #form = BatchAddForm()
             form = BatchAddForm()
-            form.fields['fermenter'].queryset = Fermenter.objects.filter(vessel__status=Vessel.STATUS_READY)
         return render(request, "batchthis/addBatch.html", {'form': form})
 
 
@@ -433,6 +456,103 @@ def activity(request, pk=None):
         'activity': activity
     }
     return render(request, "batchthis/activity.html", context=context)
+
+
+# Status artwork in static/batchthis/img/, per vessel type. Barrels have no art yet.
+VESSEL_ICON_PREFIX = {'Fermenter': 'wine-tank', 'Aging Tank': 'aging-tank'}
+VESSEL_ICON_SUFFIX = {Vessel.STATUS_READY: 'ready', Vessel.STATUS_ACTIVE: 'active', Vessel.STATUS_DIRTY: 'dirty'}
+
+
+def _vessel_status_icon(vessel: Vessel) -> str | None:
+    prefix = VESSEL_ICON_PREFIX.get(vessel.vessel_type)
+    suffix = VESSEL_ICON_SUFFIX.get(vessel.status)
+    if not (prefix and suffix):
+        return None
+    return f'batchthis/img/{prefix}-{suffix}.svg'
+
+
+@login_required
+def vesselListing(request):
+    return render(request, 'batchthis/vessels.html')
+
+
+@login_required
+def vessel(request, pk):
+    vessel = get_object_or_404(Vessel.objects.select_related('max_size_units', 'used_size_units'), pk=pk)
+    # Newest first for display; Meta.ordering on VesselStatusEvent is oldest-first.
+    history = vessel.status_events.select_related('batch').order_by('-timestamp')
+    current_event = history.first()
+    context = {
+        'vessel': vessel,
+        'current_batch': vessel.current_batch,
+        'history': history,
+        'status_since': current_event.timestamp if current_event else None,
+        'status_icon': _vessel_status_icon(vessel),
+        'can_mark_cleaned': vessel.status == Vessel.STATUS_DIRTY,
+        'can_take_out_of_service': vessel.status in (Vessel.STATUS_READY, Vessel.STATUS_DIRTY),
+        'is_out_of_service': vessel.status == Vessel.STATUS_OUT,
+        'out_of_service_reason': current_event.notes if current_event and vessel.status == Vessel.STATUS_OUT else '',
+        'return_to_status': status_before_out_of_service(vessel) if vessel.status == Vessel.STATUS_OUT else '',
+    }
+    logger.debug("vessel: pk=%s '%s' status=%r, %d history events", pk, vessel.name, vessel.status, len(history))
+    return render(request, 'batchthis/vessel.html', context=context)
+
+
+@login_required
+@require_POST
+def markVesselCleaned(request, pk):
+    """
+    The one manual transition in the normal cycle: Needs Cleaning -> Clean/Ready.
+    Cleaning is physical, so nothing else moves a vessel back to ready.
+    """
+    vessel = get_object_or_404(Vessel, pk=pk)
+    logger.debug("markVesselCleaned: pk=%s '%s' status=%r", pk, vessel.name, vessel.status)
+    if vessel.status != Vessel.STATUS_DIRTY:
+        logger.error("markVesselCleaned: rejected for vessel %s '%s' in status %r", pk, vessel.name, vessel.status)
+        messages.error(request, f"Only a vessel that needs cleaning can be marked cleaned - "
+                                f"'{vessel.name}' is {vessel.status}.")
+        return HttpResponseRedirect(reverse('vessel', kwargs={'pk': pk}))
+    notes = request.POST.get('notes', '').strip()[:250] or "Cleaned"
+    try:
+        set_vessel_status(vessel, Vessel.STATUS_READY, notes=notes)
+    except Exception:
+        logger.exception("markVesselCleaned: failed for vessel %s '%s'", pk, vessel.name)
+        messages.error(request, f"Couldn't mark '{vessel.name}' cleaned. Nothing was changed - please try again.")
+        return HttpResponseRedirect(reverse('vessel', kwargs={'pk': pk}))
+    logger.info("markVesselCleaned: vessel %s '%s' is Clean/Ready", pk, vessel.name)
+    return HttpResponseRedirect(reverse('vessel', kwargs={'pk': pk}))
+
+
+@login_required
+@require_POST
+def takeVesselOutOfService(request, pk):
+    """Clean/Ready or Needs Cleaning -> Out of Service, with a required reason."""
+    vessel = get_object_or_404(Vessel, pk=pk)
+    logger.debug("takeVesselOutOfService: pk=%s '%s' status=%r", pk, vessel.name, vessel.status)
+    try:
+        take_vessel_out_of_service(vessel, request.POST.get('reason', ''))
+    except ValidationError as e:
+        messages.error(request, ' '.join(e.messages))
+    except Exception:
+        logger.exception("takeVesselOutOfService: failed for vessel %s '%s'", pk, vessel.name)
+        messages.error(request, f"Couldn't take '{vessel.name}' out of service. Nothing was changed - please try again.")
+    return HttpResponseRedirect(reverse('vessel', kwargs={'pk': pk}))
+
+
+@login_required
+@require_POST
+def returnVesselToService(request, pk):
+    """Out of Service -> the status the vessel had before it was taken out."""
+    vessel = get_object_or_404(Vessel, pk=pk)
+    logger.debug("returnVesselToService: pk=%s '%s' status=%r", pk, vessel.name, vessel.status)
+    try:
+        return_vessel_to_service(vessel, request.POST.get('notes', ''))
+    except ValidationError as e:
+        messages.error(request, ' '.join(e.messages))
+    except Exception:
+        logger.exception("returnVesselToService: failed for vessel %s '%s'", pk, vessel.name)
+        messages.error(request, f"Couldn't return '{vessel.name}' to service. Nothing was changed - please try again.")
+    return HttpResponseRedirect(reverse('vessel', kwargs={'pk': pk}))
 
 
 def refractometerCorrection(request):

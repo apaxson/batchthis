@@ -5,6 +5,7 @@ from .models import (
     Adjunct,
     AdjunctType,
     AdjunctUsage,
+    Batch,
     BatchCategory,
     BatchStyle,
     BatchTestType,
@@ -14,6 +15,7 @@ from .models import (
     Recipe,
     Unit,
     Vessel,
+    VesselStatusEvent,
     Yeast,
 )
 
@@ -95,6 +97,14 @@ class VesselFactory(factory.django.DjangoModelFactory):
     intended_use = "PRI"
 
 
+class VesselStatusEventFactory(factory.django.DjangoModelFactory):
+    class Meta:
+        model = VesselStatusEvent
+
+    vessel = factory.SubFactory(VesselFactory)
+    status = Vessel.STATUS_READY
+
+
 class FermenterFactory(factory.django.DjangoModelFactory):
     class Meta:
         model = Fermenter
@@ -139,3 +149,14 @@ class RecipeFactory(factory.django.DjangoModelFactory):
     estOG = Quantity(1.09, "sg")
     estFG = Quantity(1.0, "sg")
     estABV = 12.0
+
+
+class BatchFactory(factory.django.DjangoModelFactory):
+    class Meta:
+        model = Batch
+
+    name = factory.Sequence(lambda n: f"Batch{n}")
+    size = Quantity(6, "gallons")
+    fermenter = factory.SubFactory(FermenterFactory)
+    startingGravity = Quantity(1.09, "sg")
+    estimatedEndGravity = Quantity(1.005, "sg")

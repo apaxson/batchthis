@@ -1,0 +1,26 @@
+{% extends 'batchthis/base.html' %}
+{% load static %}
+{% block content %}
+<script type="module" src="{% static 'batchthis/dist/model-table.js' %}"></script>
+
+<div class="cl-page-head"><div class="cl-wordmark font-display">Vessels</div></div>
+
+<div class="cl-section-head">
+  <div class="cl-section-title">All vessels</div>
+</div>
+
+<div data-react-model-table
+     data-endpoint="{% url 'vessel-list' %}"
+     data-columns='[
+       {"key": "name", "label": "Vessel", "linkField": "detail_url"},
+       {"key": "vessel_type", "label": "Type"},
+       {"key": "capacity", "label": "Capacity"},
+       {"key": "status", "label": "Status", "badgeField": "status_class"},
+       {"key": "status_since", "label": "Since", "type": "date"},
+       {"key": "current_batch", "label": "Current batch"},
+       {"key": "intended_use", "label": "Intended use"}
+     ]'
+     data-search-placeholder="Search vessels..."
+     data-empty-message="No vessels yet."></div>
+
+{% endblock %}
