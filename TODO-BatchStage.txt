@@ -344,6 +344,18 @@ MODEL CHANGES
    stays OPEN and is measured up to now (Aaron); Complete Batch ends the
    timeline instead of starting a segment. Tests:
    apps/batchthis/tests/test_batch_stage_events.py.
+   TWO DURATIONS TO DISPLAY (Aaron, 2026-09-23) - see step 3b below:
+   * "Time in vessel": time in one specific vessel, reset by every
+     transfer (Racking and every Filtering). This is exactly what
+     stage_durations() already returns (one segment per event = one stay
+     in one vessel) - rename it vessel_durations() so the name says so.
+   * "Full aging": from the FIRST Racking until the FIRST filtering of any
+     kind (Coarse, Fine or Sterile) - Aaron's choice. Rackings in between
+     do NOT restart it. Open (measured up to now) until a filtering is
+     logged; None until the first Racking. Note: this deliberately ends
+     at the first Coarse/Fine filter even though the workflow state is
+     still Aging afterwards - time after that first filter still shows in
+     "time in vessel", but doesn't count toward full aging.
    Original sketch:
    - stage_durations() -> pairs consecutive stage_events into
      (stage, start, end, duration)
@@ -654,6 +666,25 @@ SUGGESTED ORDER OF WORK (TDD - write the test for each step first)
    + BatchStageFactory. (BatchFactory already existed.)
 3. [DONE 2026-09-23] BatchStageEvent model + migration +
    BatchStageEventFactory + stage_durations()/current_stage_event tests.
+3b. Two batch durations (Aaron, 2026-09-23; see MODEL CHANGES #4):
+   - Rename Batch.stage_durations() -> vessel_durations() ("time in
+     vessel"); StageSegment -> VesselStay (event, state, vessel, start,
+     end, duration, is_open). Behavior unchanged.
+   - New Batch.full_aging() -> Span(start, end, duration, is_open) or
+     None: start = first Racking; end = first Coarse/Fine/Sterile
+     Filtering after it, else None (open, measured up to now).
+   - Identify stages by shortid via constants on BatchStage
+     (RACKING = "racking", FILTERING_SHORTIDS = coarse/fine/sterile
+     -filtering) - no name matching.
+   - Share one events query between the two (no extra query per call).
+   - Tests: racking(s) inside aging don't restart full aging; a Coarse or
+     Fine filter ends it (later racking doesn't reopen it); open until
+     filtering; None before Racking; time-in-vessel still resets on every
+     racking/filtering.
+   - Display lands in step 6 ("Stage timeline" panel on batch.html):
+     full aging as one figure ("Aging 76 days", marked "ongoing" while
+     open) plus a time-in-vessel table (vessel, state, from, to,
+     duration; the current stay marked).
 4. log_stage_event() service function + terminal-stage completion test
    + ActivityLog entry on the batch for EVERY stage event (Aaron,
    2026-09-23: stage events must show in the Batch ActivityLog)
