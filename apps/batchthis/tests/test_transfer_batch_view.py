@@ -1,4 +1,5 @@
 import datetime
+import re
 
 import pytest
 from django.contrib.auth import get_user_model
@@ -202,10 +203,16 @@ def test_batch_page_offers_transfer_only_while_active(client):
 
 
 @pytest.mark.django_db
-def test_batch_timeline_shows_a_transfer_row_with_the_reason_as_tooltip(client):
+def test_batch_timeline_shows_a_transfer_segment_with_the_reason_as_tooltip(client):
+    # The time-in-vessel table became the time bar: the transfer is now a bar
+    # segment (<li>) whose step label is "Transfer" and whose tooltip is the reason.
     batch = _aging_batch()
     _post(client, batch, dst=_tank("Tank B"), reason="Pump failure")
 
     page = client.get(reverse("batch", kwargs={"pk": batch.pk})).content.decode()
 
-    assert 'js-mouse-tooltip" data-toggle="tooltip" title="Pump failure">Transfer</td>' in page
+    assert re.search(
+        r'<li[^>]*class="cl-timebar-seg[^"]*js-mouse-tooltip" data-toggle="tooltip" title="Pump failure">\s*'
+        r'<span class="cl-timebar-step">Transfer</span>',
+        page,
+    )
