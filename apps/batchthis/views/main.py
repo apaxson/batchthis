@@ -17,6 +17,7 @@ from apps.batchthis.lib.utils import Utils
 from apps.batchthis.services import set_vessel_status
 from apps.batchthis.lib.faults import get_active_flags, get_rule_for, StagedFaultRule
 from django.contrib.auth.decorators import login_required
+from django.views.decorators.http import require_POST
 from django.forms.models import model_to_dict, modelformset_factory
 from pint import Quantity
 
@@ -444,6 +445,67 @@ def activity(request, pk=None):
         'activity': activity
     }
     return render(request, "batchthis/activity.html", context=context)
+
+
+# Status artwork in static/batchthis/img/, per vessel type. Barrels have no art yet.
+VESSEL_ICON_PREFIX = {'Fermenter': 'wine-tank', 'Aging Tank': 'aging-tank'}
+VESSEL_ICON_SUFFIX = {Vessel.STATUS_READY: 'ready', Vessel.STATUS_ACTIVE: 'active', Vessel.STATUS_DIRTY: 'dirty'}
+
+
+def _vessel_status_icon(vessel: Vessel) -> str | None:
+    prefix = VESSEL_ICON_PREFIX.get(vessel.vessel_type)
+    suffix = VESSEL_ICON_SUFFIX.get(vessel.status)
+    if not (prefix and suffix):
+        return None
+    return f'batchthis/img/{prefix}-{suffix}.svg'
+
+
+@login_required
+def vesselListing(request):
+    return render(request, 'batchthis/vessels.html')
+
+
+@login_required
+def vessel(request, pk):
+    vessel = get_object_or_404(Vessel.objects.select_related('max_size_units', 'used_size_units'), pk=pk)
+    # Newest first for display; Meta.ordering on VesselStatusEvent is oldest-first.
+    history = vessel.status_events.select_related('batch').order_by('-timestamp')
+    current_event = history.first()
+    context = {
+        'vessel': vessel,
+        'current_batch': vessel.current_batch,
+        'history': history,
+        'status_since': current_event.timestamp if current_event else None,
+        'status_icon': _vessel_status_icon(vessel),
+        'can_mark_cleaned': vessel.status == Vessel.STATUS_DIRTY,
+    }
+    logger.debug("vessel: pk=%s '%s' status=%r, %d history events", pk, vessel.name, vessel.status, len(history))
+    return render(request, 'batchthis/vessel.html', context=context)
+
+
+@login_required
+@require_POST
+def markVesselCleaned(request, pk):
+    """
+    The one manual transition in the normal cycle: Needs Cleaning -> Clean/Ready.
+    Cleaning is physical, so nothing else moves a vessel back to ready.
+    """
+    vessel = get_object_or_404(Vessel, pk=pk)
+    logger.debug("markVesselCleaned: pk=%s '%s' status=%r", pk, vessel.name, vessel.status)
+    if vessel.status != Vessel.STATUS_DIRTY:
+        logger.error("markVesselCleaned: rejected for vessel %s '%s' in status %r", pk, vessel.name, vessel.status)
+        messages.error(request, f"Only a vessel that needs cleaning can be marked cleaned - "
+                                f"'{vessel.name}' is {vessel.status}.")
+        return HttpResponseRedirect(reverse('vessel', kwargs={'pk': pk}))
+    notes = request.POST.get('notes', '').strip()[:250] or "Cleaned"
+    try:
+        set_vessel_status(vessel, Vessel.STATUS_READY, notes=notes)
+    except Exception:
+        logger.exception("markVesselCleaned: failed for vessel %s '%s'", pk, vessel.name)
+        messages.error(request, f"Couldn't mark '{vessel.name}' cleaned. Nothing was changed - please try again.")
+        return HttpResponseRedirect(reverse('vessel', kwargs={'pk': pk}))
+    logger.info("markVesselCleaned: vessel %s '%s' is Clean/Ready", pk, vessel.name)
+    return HttpResponseRedirect(reverse('vessel', kwargs={'pk': pk}))
 
 
 def refractometerCorrection(request):

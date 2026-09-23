@@ -28,6 +28,9 @@ urlpatterns = [
     path('batch/<int:pk>/addAddon', views.batchAddition, name="addDetailAddon"),
     path('batch/<int:pk>/batchGraphs', views.batchGraphs, name='batchGraphs'),
     path('batch/<int:pk>/activity', views.activity, name="batchActivity"),
+    path('vessels', views.vesselListing, name='vesselListing'),
+    path('vessel/<int:pk>', views.vessel, name='vessel'),
+    path('vessel/<int:pk>/clean', views.markVesselCleaned, name='markVesselCleaned'),
     path('utils/refractometerCorrection', views.refractometerCorrection, name="refractometerCorrection"),
     path('rpc/categoryFilterByStyle', views.categoryFilterByStyle, name="categoryFilterByStyle"),
     path('rpc/getDataFromRecipe', views.getDataFromRecipe, name="getDataFromRecipe"),
@@ -38,5 +41,5 @@ urlpatterns = [
     path('api/yeasts/', views.YeastListAPIView.as_view(), name="yeast-list"),
     path('api/recipes/', views.RecipeListAPIView.as_view(), name="recipe-list"),
     path('api/batches/', views.BatchListAPIView.as_view(), name="batch-list"),
-    #TODO: Add Fermenter Page/Admin Template
+    path('api/vessels/', views.VesselListAPIView.as_view(), name="vessel-list"),
 ]

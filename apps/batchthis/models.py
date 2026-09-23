@@ -129,13 +129,40 @@ class Vessel(models.Model):
             return None
         return timezone.now() - event.timestamp
 
+    # Cellar Ledger badge modifier (cellar-ledger.css .cl-stage--*) per status.
+    STATUS_BADGE_CLASSES = {
+        STATUS_READY: 'cl-stage--ready',
+        STATUS_ACTIVE: 'cl-stage--active',
+        STATUS_DIRTY: 'cl-stage--dirty',
+    }
+
+    @property
+    def status_badge_class(self) -> str:
+        return self.STATUS_BADGE_CLASSES.get(self.status, '')
+
+    @property
+    def vessel_type(self) -> str:
+        # .all() rather than .exists() so prefetch_related() on list queries is used.
+        if self.fermenter_set.all():
+            return 'Fermenter'
+        if self.agingtank_set.all():
+            return 'Aging Tank'
+        if self.barrel_set.all():
+            return 'Barrel'
+        return ''
+
+    @property
+    def current_batch(self):
+        # Only Batch.fermenter links a batch to a vessel today (see TODO-VesselLifecycle.txt).
+        return Batch.objects.filter(fermenter__vessel=self, active=True).first()
+
 
 class VesselStatusEvent(models.Model):
     """
     Append-only, timestamped log of a Vessel's status transitions - same shape
-    as BatchTest/BatchNote. See TODO-VesselLifecycle.txt. Nothing writes to
-    this yet in this first pass; Vessel.status itself is still the only thing
-    read anywhere.
+    as BatchTest/BatchNote. See TODO-VesselLifecycle.txt. Only written by
+    services.set_vessel_status(), which keeps Vessel.status (the current-value
+    cache) and this log in sync.
     """
     class Meta:
         ordering = ['timestamp']
@@ -150,6 +177,10 @@ class VesselStatusEvent(models.Model):
     timestamp = models.DateTimeField(default=timezone.now)
     batch = models.ForeignKey('Batch', null=True, blank=True, on_delete=models.SET_NULL)
     notes = models.CharField(max_length=250, blank=True)
+
+    @property
+    def status_badge_class(self) -> str:
+        return Vessel.STATUS_BADGE_CLASSES.get(self.status, '')
 
 
 class InventoryItem(models.Model):

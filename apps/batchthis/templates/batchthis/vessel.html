@@ -1,0 +1,111 @@
+{% extends 'batchthis/base.html' %}
+{% load static %}
+{% block content %}
+
+<div class="cl-batch-head">
+  <div>
+    <h1 class="cl-batch-title font-display">{{ vessel.name }}</h1>
+    <div class="cl-batch-sub">
+      <span><span class="cl-rack-tag">#{{ vessel.pk }}</span></span>
+      {% if vessel.vessel_type %}<span>{{ vessel.vessel_type }}</span>{% endif %}
+      {% if vessel.intended_use %}<span>Use <b>{{ vessel.intended_use }}</b></span>{% endif %}
+      <span><span class="cl-stage {{ vessel.status_badge_class }}">{{ vessel.status }}</span></span>
+    </div>
+  </div>
+  <div class="cl-batch-actions">
+    <a href="{% url 'vesselListing' %}">&larr; All vessels</a>
+  </div>
+</div>
+
+{% for message in messages %}
+<div class="cl-flag" style="margin-bottom:20px;">
+  <span class="cl-flag-mark">!</span>
+  <span>{{ message }}</span>
+</div>
+{% endfor %}
+
+<div class="cl-readouts">
+  <div class="cl-readout">
+    <div class="cl-readout-label">Status</div>
+    <div class="cl-readout-value">{{ vessel.status }}</div>
+  </div>
+  <div class="cl-readout">
+    <div class="cl-readout-label">In status for</div>
+    <div class="cl-readout-value">{% if status_since %}{{ status_since|timesince }}{% else %}&mdash;{% endif %}</div>
+  </div>
+  <div class="cl-readout">
+    <div class="cl-readout-label">Capacity</div>
+    <div class="cl-readout-value">{{ vessel.max_size }} <small>{{ vessel.max_size_units.identifier }}</small></div>
+  </div>
+  <div class="cl-readout">
+    <div class="cl-readout-label">Fill</div>
+    <div class="cl-readout-value">{% if vessel.used_size %}{{ vessel.used_size }} <small>{{ vessel.used_size_units.identifier }}</small>{% else %}&mdash;{% endif %}</div>
+  </div>
+</div>
+
+<div class="cl-cols cl-cols--aside-left">
+  <div>
+    <div class="cl-panel">
+      <div class="cl-section-head"><div class="cl-section-title">Current batch</div></div>
+      {% if current_batch %}
+        <div class="cl-kv-row"><span class="cl-kv-label">Batch</span><span class="cl-kv-value"><a href="{% url 'batch' current_batch.pk %}">{{ current_batch.name }}</a></span></div>
+        <div class="cl-kv-row"><span class="cl-kv-label">Started</span><span class="cl-kv-value cl-num">{{ current_batch.startdate|date:"M j, Y" }}</span></div>
+        <div class="cl-kv-row"><span class="cl-kv-label">Size</span><span class="cl-kv-value">{{ current_batch.size }}</span></div>
+      {% else %}
+        <div class="cl-empty">No batch in this vessel.</div>
+      {% endif %}
+    </div>
+
+    {% if can_mark_cleaned %}
+    <div class="cl-panel">
+      <div class="cl-section-head"><div class="cl-section-title">Cleaning</div></div>
+      <form class="cl-form" method="post" action="{% url 'markVesselCleaned' vessel.pk %}">
+        {% csrf_token %}
+        <div class="cl-field">
+          <label for="id_clean_notes">Notes (optional)</label>
+          <input type="text" id="id_clean_notes" name="notes" maxlength="250" placeholder="e.g. PBW soak, Star San rinse">
+        </div>
+        <div class="cl-form-actions">
+          <button type="submit" class="cl-btn cl-btn--primary">Mark cleaned</button>
+        </div>
+      </form>
+    </div>
+    {% endif %}
+
+    {% if status_icon %}
+    <div class="cl-panel cl-vessel-figure">
+      <img src="{% static status_icon %}" alt="{{ vessel.vessel_type }} &mdash; {{ vessel.status }}">
+    </div>
+    {% endif %}
+  </div>
+
+  <div>
+    <div class="cl-section-head">
+      <div class="cl-section-title">Status history</div>
+      <div class="cl-section-note">{{ history|length }} event{{ history|length|pluralize }}</div>
+    </div>
+    <div class="cl-table-scroll">
+      <table class="cl-ledger">
+        <thead>
+          <tr><th>Date/time</th><th>Status</th><th>Batch</th><th>Notes</th></tr>
+        </thead>
+        <tbody>
+          {% if not history %}
+          <tr><td class="cl-empty" colspan="4">No status changes recorded yet.</td></tr>
+          {% else %}
+          {% for event in history %}
+          <tr>
+            <td class="cl-num" style="white-space:nowrap;">{{ event.timestamp|date:"M j, Y g:i A" }}</td>
+            <td><span class="cl-stage {{ event.status_badge_class }}">{{ event.status }}</span></td>
+            <td>{% if event.batch %}<a href="{% url 'batch' event.batch.pk %}">{{ event.batch.name }}</a>{% else %}&mdash;{% endif %}</td>
+            <td>{{ event.notes }}</td>
+          </tr>
+          {% endfor %}
+          {% endif %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+{% endblock %}

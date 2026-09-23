@@ -3,8 +3,47 @@ TODO-VesselLifecycle
 Plan for tracking a vessel's own lifecycle state (Clean/Ready -> Active ->
 Needs Cleaning) and the timestamped transitions between those states,
 independent of (but linked to) a vessel's detail page. Sketched
-2026-09-20. NOT STARTED - no code changes made yet. This file is the
-reference to pick back up from.
+2026-09-20. This file is the reference to pick back up from.
+
+
+STATUS (updated 2026-09-22)
+---------------------------
+IN PROGRESS - steps 1-7 of SUGGESTED ORDER OF WORK are done except the
+`Batch.transfer()` part of step 4 (still a `pass` stub, pending the OPEN
+DECISION below). Step 8 (Out of Service) not started.
+
+Built so far:
+* Vessel.status `choices=` + VesselStatusEvent model (migration 0030).
+* `set_vessel_status()` in apps/batchthis/services.py - the single place
+  status changes; status + event commit in one transaction.
+* Batch create -> In Use (addBatch view); BatchAddForm only accepts a
+  Clean/Ready fermenter (enforced on POST, not just the dropdown).
+* `Batch.complete()` saves + -> Needs Cleaning. No UI calls it yet, on
+  purpose: the "Complete Batch" action belongs to TODO-BatchStage.txt.
+* `setActiveFermenter` signal deleted. Batch removed from Django admin
+  (it bypassed the workflow).
+* Vessel list page (/batchthis/vessels, React ModelTable + api/vessels/)
+  and detail page (/batchthis/vessel/<pk>: status, time in status,
+  capacity/fill, status history, current batch, status artwork).
+  Sidebar "Fermenters (soon)" stub is now a live "Vessels" link.
+* "Mark cleaned" action on the vessel detail page (POST
+  vessel/<pk>/clean, optional notes) - only offered/allowed when the
+  vessel is Needs Cleaning.
+* batch.html "Current Vessel" panel links to the vessel detail page.
+
+Decisions made along the way:
+* ActivityLog is for Batch actions only (incl. the BatchStage
+  workflow). Vessel history lives only in VesselStatusEvent.
+* The service function is named `set_vessel_status()` (not
+  `log_vessel_status()`), since it changes state, not just logs it.
+
+Known gaps / not in this plan:
+* Batch Edit (batch/<pk>/edit) is broken - its POST creates a new
+  batch. Separate bug, still open.
+* Vessel is still registered in Django admin, so Vessel.status can be
+  hand-edited there without an event.
+* Existing vessels have no history before 2026-09-22 (events start from
+  the first change after this shipped).
 
 Companion to TODO-BatchStage.txt, which tracks a BATCH's production
 stages (pitch -> fermentation -> aging -> filtering -> bottling). This file tracks a
@@ -31,6 +70,9 @@ GOAL
 
 BUG FOUND ALONG THE WAY (this is what's silently broken today)
 ----------------------------------------------------------------
+FIXED 2026-09-22: `setActiveFermenter` was deleted and replaced by explicit
+`set_vessel_status()` calls (see STATUS above). Kept below for history.
+
 `setActiveFermenter` (models.py:397-412), a post_save signal on Batch,
 already attempts exactly this state-flipping and has two bugs:
   * Line 409: `if instance.fermenter.vessel.status is Vessel.STATUS_ACTIVE`
@@ -109,10 +151,9 @@ MODEL CHANGES
      itself is already the current-value cache; don't add a second one
      speculatively.
 
-4. `set_vessel_status(vessel, status, batch=None, notes='')` service
-   function (location TBD - likely near the Batch views in
-   views/main.py, mirroring where TODO-BatchStage.txt puts
-   `log_stage_event()`): sets `vessel.status`, saves it, and creates the
+4. [DONE] `set_vessel_status(vessel, status, batch=None, notes='')` service
+   function (built in apps/batchthis/services.py, not views/main.py -
+   it's called from model methods too): sets `vessel.status`, saves it, and creates the
    matching `VesselStatusEvent` row in one place. This is the single
    place status is ever allowed to change going forward.
 
@@ -142,19 +183,27 @@ OPEN DECISIONS (ask Aaron / decide before coding)
        TODO-BatchStage.txt's stage-logging service function call
        `Batch.transfer()` rather than reimplementing vessel moves
        itself.
-[ ] Enforce a strict transition state machine (e.g. reject
+[x] Enforce a strict transition state machine (e.g. reject
     Active -> Active, require Dirty before Ready) vs. let
     `set_vessel_status()` accept any status unconditionally.
     -> Recommend: no enforcement in v1 (log whatever's passed) -
        add validation later only if bad data actually shows up.
-[ ] Vessel detail page URL/view naming and whether it lives under a
+    AS BUILT: set_vessel_status() accepts any valid status (rejects
+    unknown ones). Rules live in the callers instead: BatchAddForm
+    requires Clean/Ready, "Mark cleaned" requires Needs Cleaning,
+    Batch.complete() refuses an already-complete batch.
+[x] Vessel detail page URL/view naming and whether it lives under a
     new `fermenter`/`vessel` nav section now or stays a "soon" stub a
     little longer.
     -> Recommend: build it now as part of this work - it's the only
        way to actually see status_events/history, and it's what the
        already-stubbed "Fermenters" nav item and the vessel-type status
        icons are for.
-[ ] Should `AgingTank`/`Barrel` (the other two Vessel wrapper types)
+    RESOLVED (2026-09-22): built now. URLs `vessels` (vesselListing),
+    `vessel/<pk>` (vessel), `vessel/<pk>/clean` (markVesselCleaned),
+    `api/vessels/` (vessel-list). Nav item renamed "Vessels", since
+    the list covers all vessel types.
+[~] Should `AgingTank`/`Barrel` (the other two Vessel wrapper types)
     get the same lifecycle wiring now, or just `Fermenter` for v1
     (matching that `Batch.fermenter` is the only vessel relation that
     exists on Batch today)?
@@ -163,6 +212,9 @@ OPEN DECISIONS (ask Aaron / decide before coding)
        wire the automatic ACTIVE/DIRTY call sites for `Fermenter` in
        v1, since that's the only vessel type actually in use by Batch
        today. AgingTank/Barrel get manual-only status changes for now.
+    AS BUILT (follows the recommendation - not explicitly confirmed by
+    Aaron yet): generic against Vessel; only Fermenter has automatic
+    call sites. List/detail pages show all three types.
 
 
 FILES IMPACTED
@@ -209,17 +261,19 @@ FILES IMPACTED
 
 SUGGESTED ORDER OF WORK (TDD - write the test for each step first)
 --------------------------------------------------------------
-1. Add Vessel.STATUS_CHOICES + choices= constraint (no behavior change,
+1. [DONE] Add Vessel.STATUS_CHOICES + choices= constraint (no behavior change,
    just a schema tightening) + migration.
-2. VesselStatusEvent model + migration + VesselStatusEventFactory +
+2. [DONE] VesselStatusEvent model + migration + VesselStatusEventFactory +
    current_status_event/time_in_current_status() tests.
-3. set_vessel_status() service function + tests.
-4. Wire explicit calls at batch create / complete / transfer sites;
+3. [DONE] set_vessel_status() service function + tests.
+4. [PARTIAL] Wire explicit calls at batch create / complete / transfer sites;
    delete setActiveFermenter signal; regression test for the old bug.
-5. Vessel detail view + urls + vessel.html template (status + history).
-6. Manual "mark cleaned" action (route + button on vessel.html) +
+   (Create + complete done, signal deleted. Batch.transfer() still a
+   stub - see OPEN DECISIONS.)
+5. [DONE] Vessel list + detail views + urls + vessels.html/vessel.html (status + history).
+6. [DONE] Manual "mark cleaned" action (route + button on vessel.html) +
    test.
-7. Link "Current Vessel" panel on batch.html to the new vessel detail
+7. [DONE] Link "Current Vessel" panel on batch.html to the new vessel detail
    page.
 8. (Later, after 5-7) "Out of Service" state + Vessel management page -
    see TODO section below.

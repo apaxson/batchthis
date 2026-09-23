@@ -372,6 +372,9 @@ a.nav-link, a.sub-link, a.dropdown-item {
 .cl-stage::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
 .cl-stage--active { color: var(--honey); }
 .cl-stage--complete { color: var(--slate); }
+/* Vessel statuses (Vessel.STATUS_BADGE_CLASSES); In Use reuses --active. */
+.cl-stage--ready { color: var(--moss); }
+.cl-stage--dirty { color: var(--brick); }
 
 .cl-num { font-family: 'IBM Plex Mono', monospace; font-variant-numeric: tabular-nums; }
 .cl-yeast-metric { font-size: 0.78rem; white-space: nowrap; }
@@ -383,7 +386,10 @@ a.nav-link, a.sub-link, a.dropdown-item {
   gap: 24px;
   align-items: start;
 }
-@media (max-width: 900px) { .cl-cols { grid-template-columns: 1fr; } }
+/* Side column on the left third, main column on the right two-thirds. */
+.cl-cols--aside-left { grid-template-columns: 1fr 2fr; }
+/* minmax(0, ...) so a wide table scrolls inside .cl-table-scroll instead of stretching the column. */
+@media (max-width: 900px) { .cl-cols { grid-template-columns: minmax(0, 1fr); } }
 
 .cl-panel {
   border: 1px solid var(--line);
@@ -417,6 +423,9 @@ a.nav-link, a.sub-link, a.dropdown-item {
 .cl-kv-row:last-child { border-bottom: none; }
 .cl-kv-label { color: var(--ink-soft); }
 .cl-kv-value { font-weight: 600; }
+
+.cl-vessel-figure { text-align: center; }
+.cl-vessel-figure img { max-height: 280px; width: auto; }
 
 /* ---------- Flagged notifications ---------- */
 .cl-flag {

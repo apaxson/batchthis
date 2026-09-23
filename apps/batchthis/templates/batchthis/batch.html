@@ -143,7 +143,7 @@
     <div class="cl-panel">
       <div class="cl-section-head"><div class="cl-section-title">Current Vessel</div></div>
       {% if batch.fermenter.vessel %}
-        <div class="cl-kv-row"><span class="cl-kv-label">Vessel</span><span class="cl-kv-value">{{ batch.fermenter.vessel.name }}</span></div>
+        <div class="cl-kv-row"><span class="cl-kv-label">Vessel</span><span class="cl-kv-value"><a href="{% url 'vessel' batch.fermenter.vessel.pk %}">{{ batch.fermenter.vessel.name }}</a></span></div>
         <div class="cl-kv-row"><span class="cl-kv-label">Status</span><span class="cl-kv-value">{{ batch.fermenter.vessel.status }}</span></div>
         <div class="cl-kv-row"><span class="cl-kv-label">Capacity</span><span class="cl-kv-value">{{ batch.fermenter.vessel.max_size }} {{ batch.fermenter.vessel.max_size_units.identifier }}</span></div>
         {% if batch.fermenter.vessel.used_size %}

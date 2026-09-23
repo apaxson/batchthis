@@ -43,10 +43,9 @@
         <span class="nav-label">Recipes</span>
       </a>
 
-      <a class="nav-link is-soon" href="#" title="Fermenters &mdash; coming soon" tabindex="-1" aria-disabled="true">
+      <a class="nav-link" href="{% url 'vesselListing' %}" title="Vessels" {% if request.resolver_match.url_name == 'vesselListing' or request.resolver_match.url_name == 'vessel' %}aria-current="page"{% endif %}>
         <svg viewBox="0 0 20 20" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h8v3.5c0 1-.6 1.7-1 2.4-.6 1-.6 2.1 0 3.2.4.7 1 1.4 1 2.4V17H6v-2.5c0-1 .6-1.7 1-2.4.6-1.1.6-2.2 0-3.2-.4-.7-1-1.4-1-2.4z"/><line x1="6" y1="3" x2="14" y2="3"/></svg>
-        <span class="nav-label">Fermenters</span>
-        <span class="nav-badge">soon</span>
+        <span class="nav-label">Vessels</span>
       </a>
 
       <a class="nav-link is-soon" href="#" title="Tasks &mdash; coming soon" tabindex="-1" aria-disabled="true">
