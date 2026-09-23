@@ -62,6 +62,7 @@ Server-rendered pages under `apps/batchthis/templates/batchthis/` are being migr
 - **A modal that needs to hand a computed value back to an arbitrary field on the calling page** should follow the existing pattern: one global modal defined in `base.html` (see `#refractometerModal`) + logic in `cellar-ledger.js`, triggered from any page with `data-toggle="modal" data-target="#theModal" data-target-field="#target_field_id"`. Don't build a one-off modal per page.
 - **Before adding new CSS**, check `cellar-ledger.css` for an existing `.cl-*` class that already covers it.
 - **After a redesign, verify live in a browser** (not just a template diff) — start the dev server, log in with a throwaway session (`SessionStore` + `SESSION_KEY`/`BACKEND_SESSION_KEY`/`HASH_SESSION_KEY`, since `ALLOWED_HOSTS` only permits `127.0.0.1`/`192.168.1.35`, not `localhost`), and exercise any JS behavior (AJAX cascades, tooltips, modals) with Playwright/screenshots, not just a page-load check.
+- **Specific Gravity Display** Specific Gravity is always displayed with a digit precision of 3.  Always pad with 0's to fulfil this.
 
 ## Code Style & Architecture Guidelines
 - **Views:** Use class-based views for complex logic, function-based for simple endpoints.
