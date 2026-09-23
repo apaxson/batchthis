@@ -302,3 +302,50 @@ document.addEventListener('DOMContentLoaded', function () {
     scroller.scrollLeft = Math.max(0, current.offsetLeft - scroller.offsetLeft - 16);
   });
 });
+
+// Actions menus ([data-cl-menu], e.g. the batch page's ellipsis menu) - WAI-ARIA menu
+// button: click/Enter/Space or ArrowDown opens and focuses the first item (ArrowUp the
+// last); arrows/Home/End move between items; Escape closes and returns focus to the
+// button; Tab or a click outside closes it.
+document.addEventListener('DOMContentLoaded', function () {
+  document.querySelectorAll('[data-cl-menu]').forEach(function (root) {
+    var toggle = root.querySelector('.cl-menu-toggle');
+    var list = root.querySelector('[role="menu"]');
+    if (!toggle || !list) {
+      console.error('cl-menu: missing .cl-menu-toggle or [role="menu"]', root);
+      return;
+    }
+    function items() { return Array.prototype.slice.call(list.querySelectorAll('[role="menuitem"]')); }
+    function open(index) {
+      list.hidden = false;
+      toggle.setAttribute('aria-expanded', 'true');
+      var all = items();
+      if (all.length) all[index < 0 ? all.length - 1 : index].focus();
+    }
+    function close(returnFocus) {
+      if (list.hidden) return;
+      list.hidden = true;
+      toggle.setAttribute('aria-expanded', 'false');
+      if (returnFocus) toggle.focus();
+    }
+
+    toggle.addEventListener('click', function () { list.hidden ? open(0) : close(false); });
+    toggle.addEventListener('keydown', function (e) {
+      if (e.key === 'ArrowDown') { e.preventDefault(); open(0); }
+      else if (e.key === 'ArrowUp') { e.preventDefault(); open(-1); }
+    });
+    list.addEventListener('keydown', function (e) {
+      var all = items();
+      var i = all.indexOf(document.activeElement);
+      if (e.key === 'Escape') { e.preventDefault(); close(true); }
+      else if (e.key === 'ArrowDown') { e.preventDefault(); all[(i + 1) % all.length].focus(); }
+      else if (e.key === 'ArrowUp') { e.preventDefault(); all[(i - 1 + all.length) % all.length].focus(); }
+      else if (e.key === 'Home') { e.preventDefault(); all[0].focus(); }
+      else if (e.key === 'End') { e.preventDefault(); all[all.length - 1].focus(); }
+      else if (e.key === 'Tab') { close(false); }
+    });
+    document.addEventListener('click', function (e) {
+      if (!root.contains(e.target)) close(false);
+    });
+  });
+});

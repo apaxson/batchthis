@@ -1,25 +1,39 @@
 {% extends 'batchthis/base.html' %}
 {% block content %}
 
-<div class="cl-batch-head">
+<div class="cl-batch-head cl-batch-head--menu">
   <div>
     <h1 class="cl-batch-title font-display">{{ batch.name }}</h1>
-    <div class="cl-batch-sub">
-      <span><span class="cl-rack-tag">#{{ batch.pk }}</span></span>
-      <span>{% if batch.category %}{{ batch.category }}{% elif batch.recipe.category %}{{ batch.recipe.category }}{% else %}Style not set{% endif %}</span>
-      {% with v=batch.current_vessel %}<span>Vessel <b><a href="{% url 'vessel' v.pk %}">{{ v.name }}</a></b></span>{% endwith %}
-      <span>Started <b class="cl-num">{{ batch.startdate|date:"M j, Y" }}</b></span>
-      {% if batch.recipe %}<span>Recipe <b><a href="{% url 'recipe' batch.recipe.pk %}">{{ batch.recipe.name }}</a></b></span>{% endif %}
-      <span><span class="cl-stage {% if batch.active %}cl-stage--active{% else %}cl-stage--complete{% endif %}">{% if batch.active %}Active{% else %}Complete{% endif %}</span></span>
+    <div class="cl-batch-subrow">
+      <div class="cl-batch-sub">
+        <span><span class="cl-rack-tag">#{{ batch.pk }}</span></span>
+        <span>{% if batch.category %}{{ batch.category }}{% elif batch.recipe.category %}{{ batch.recipe.category }}{% else %}Style not set{% endif %}</span>
+        {% with v=batch.current_vessel %}<span>Vessel <b><a href="{% url 'vessel' v.pk %}">{{ v.name }}</a></b></span>{% endwith %}
+        <span>Started <b class="cl-num">{{ batch.startdate|date:"M j, Y" }}</b></span>
+        {% if batch.recipe %}<span>Recipe <b><a href="{% url 'recipe' batch.recipe.pk %}">{{ batch.recipe.name }}</a></b></span>{% endif %}
+        <span><span class="cl-stage {% if batch.active %}cl-stage--active{% else %}cl-stage--complete{% endif %}">{% if batch.active %}Active{% else %}Complete{% endif %}</span></span>
+      </div>
+      <div class="cl-menu" data-cl-menu>
+        <button type="button" class="cl-menu-toggle" id="batch-actions-toggle" aria-haspopup="menu" aria-expanded="false" aria-controls="batch-actions-menu" aria-label="Batch actions">
+          <svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="4" cy="10" r="1.7"/><circle cx="10" cy="10" r="1.7"/><circle cx="16" cy="10" r="1.7"/></svg>
+        </button>
+        <ul class="cl-menu-list" id="batch-actions-menu" role="menu" aria-labelledby="batch-actions-toggle" hidden>
+          {% if batch.active %}
+          <li role="none"><a role="menuitem" href="{% url 'addDetailStage' batch.pk %}">Log stage</a></li>
+          <li role="none"><a role="menuitem" href="{% url 'transferBatch' batch.pk %}">Transfer batch</a></li>
+          <li role="separator"></li>
+          {% endif %}
+          <li role="none"><a role="menuitem" href="{% url 'addDetailTest' batch.pk %}">Add test</a></li>
+          <li role="none"><a role="menuitem" href="{% url 'addDetailNote' batch.pk %}">Add note</a></li>
+          <li role="none"><a role="menuitem" href="{% url 'addDetailAddon' batch.pk %}">Add addon</a></li>
+          <li role="separator"></li>
+          <li role="none"><a role="menuitem" href="{% url 'batchActivity' batch.pk %}">Activity log</a></li>
+          <li role="none"><a role="menuitem" href="{% url 'batchGraphs' batch.pk %}">All readings</a></li>
+          <li role="separator"></li>
+          <li role="none"><a role="menuitem" href="{% url 'editBatch' batch.pk %}">Edit batch</a></li>
+        </ul>
+      </div>
     </div>
-  </div>
-  <div class="cl-batch-actions">
-    {% if batch.active %}<a href="{% url 'addDetailStage' batch.pk %}">Log stage</a> &middot; {% endif %}<a href="{% url 'editBatch' batch.pk %}">Edit</a>
-    &middot; <a href="{% url 'addDetailTest' batch.pk %}">Add test</a>
-    &middot; <a href="{% url 'addDetailNote' batch.pk %}">Add note</a>
-    &middot; <a href="{% url 'addDetailAddon' batch.pk %}">Add addon</a>
-    &middot; <a href="{% url 'batchActivity' batch.pk %}">Activity log</a>
-    &middot; <a href="{% url 'batchGraphs' batch.pk %}">All readings</a>
   </div>
 </div>
 

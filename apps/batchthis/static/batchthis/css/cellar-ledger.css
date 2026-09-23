@@ -468,6 +468,42 @@ a.nav-link, a.sub-link, a.dropdown-item {
 /* Wrap the action links on phones instead of running past the screen edge. */
 @media (max-width: 640px) { .cl-batch-actions { white-space: normal; } }
 
+/* Masthead with an actions menu (.cl-menu) instead of a link row: the menu sits
+   right-aligned on the same row as .cl-batch-sub, inside .cl-batch-subrow. */
+.cl-batch-head--menu > :first-child { flex: 1 1 auto; min-width: 0; }
+.cl-batch-subrow { display: flex; align-items: center; justify-content: space-between; gap: 14px; margin-top: 6px; }
+.cl-batch-subrow > .cl-batch-sub { margin-top: 0; flex: 1 1 auto; min-width: 0; }
+
+/* ---------- Actions menu (ellipsis button + dropdown; behavior in cellar-ledger.js) ---------- */
+.cl-menu { position: relative; flex: 0 0 auto; }
+.cl-menu-toggle {
+  width: 34px; height: 34px; padding: 0;
+  display: inline-flex; align-items: center; justify-content: center;
+  background: var(--paper-raised);
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  color: var(--ink-soft);
+  cursor: pointer;
+}
+.cl-menu-toggle:hover,
+.cl-menu-toggle[aria-expanded="true"] { color: var(--ink); border-color: var(--ink-soft); }
+.cl-menu-toggle svg { width: 18px; height: 18px; fill: currentColor; }
+.cl-menu-list {
+  position: absolute; right: 0; top: calc(100% + 6px); z-index: 40;
+  min-width: 13rem; margin: 0; padding: 6px 0; list-style: none;
+  background: var(--paper-raised);
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+}
+.cl-menu-list [role="menuitem"] {
+  display: block; padding: 7px 14px;
+  font-size: 0.87rem; color: var(--ink); text-decoration: none; white-space: nowrap;
+}
+.cl-menu-list [role="menuitem"]:hover,
+.cl-menu-list [role="menuitem"]:focus { background: var(--paper); outline-offset: -2px; }
+.cl-menu-list [role="separator"] { height: 1px; margin: 6px 0; background: var(--line-soft); }
+
 /* ---------- Readout chips ---------- */
 .cl-readouts {
   display: grid;
