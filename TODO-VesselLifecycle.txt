@@ -8,9 +8,12 @@ independent of (but linked to) a vessel's detail page. Sketched
 
 STATUS (updated 2026-09-22)
 ---------------------------
-IN PROGRESS - steps 1-7 of SUGGESTED ORDER OF WORK are done except the
-`Batch.transfer()` part of step 4 (still a `pass` stub, pending the OPEN
-DECISION below). Step 8 (Out of Service) not started.
+IN PROGRESS - steps 1-8 of SUGGESTED ORDER OF WORK are done (2026-09-23:
+Batch.transfer() + Out of Service). Remaining: the UI that calls
+Batch.transfer() / Batch.complete() is tracked in TODO-BatchStage.txt
+(MODEL CHANGES #5 and #6 - built during the batch workflow, plus an
+ad-hoc "Transfer batch" action on batch.html for emptying a vessel that
+has to go Out of Service mid-batch), and out-of-service vessel artwork.
 
 Built so far:
 * Vessel.status `choices=` + VesselStatusEvent model (migration 0030).
@@ -30,6 +33,16 @@ Built so far:
   vessel/<pk>/clean, optional notes) - only offered/allowed when the
   vessel is Needs Cleaning.
 * batch.html "Current Vessel" panel links to the vessel detail page.
+* Batch.vessel (nullable FK, migration 0032) = where the batch is NOW;
+  Batch.fermenter stays the fermenter it started in. addBatch sets it.
+  Older batches have it unset, so Batch.current_vessel and
+  Batch.objects.in_vessel() fall back to fermenter.vessel.
+* Batch.transfer(src, dst): any vessel type; dst must be Clean/Ready, src
+  must be the batch's current vessel, batch must be active. src -> Needs
+  Cleaning, dst -> In Use, batch.vessel -> dst, one "Transferred from
+  [src] to [dst]" ActivityLog entry - all in one transaction. No UI yet.
+* Batch.complete() now dirties batch.current_vessel (not the fermenter).
+* Out of Service (STATUS_OUT) - see the section at the bottom.
 
 Decisions made along the way:
 * ActivityLog is for Batch actions only (incl. the BatchStage
@@ -174,7 +187,7 @@ MODEL CHANGES
 
 OPEN DECISIONS (ask Aaron / decide before coding)
 --------------------------------------------------
-[ ] Who implements `Batch.transfer(src_vessel, dst_vessel)` - this plan
+[x] Who implements `Batch.transfer(src_vessel, dst_vessel)` - this plan
     (vessel status side: dst -> ACTIVE, src -> DIRTY) or
     TODO-BatchStage.txt (batch stage side: logs a BatchStageEvent with
     the new vessel)? They both need it to do their job.
@@ -183,6 +196,9 @@ OPEN DECISIONS (ask Aaron / decide before coding)
        TODO-BatchStage.txt's stage-logging service function call
        `Batch.transfer()` rather than reimplementing vessel moves
        itself.
+    RESOLVED (2026-09-23, Aaron): implemented here. Aaron chose a new
+    Batch.vessel link (over fermenter-only moves) so batches can move
+    into aging tanks/barrels.
 [x] Enforce a strict transition state machine (e.g. reject
     Active -> Active, require Dirty before Ready) vs. let
     `set_vessel_status()` accept any status unconditionally.
@@ -268,18 +284,17 @@ SUGGESTED ORDER OF WORK (TDD - write the test for each step first)
 3. [DONE] set_vessel_status() service function + tests.
 4. [PARTIAL] Wire explicit calls at batch create / complete / transfer sites;
    delete setActiveFermenter signal; regression test for the old bug.
-   (Create + complete done, signal deleted. Batch.transfer() still a
-   stub - see OPEN DECISIONS.)
+   (All done 2026-09-23, incl. Batch.transfer().)
 5. [DONE] Vessel list + detail views + urls + vessels.html/vessel.html (status + history).
 6. [DONE] Manual "mark cleaned" action (route + button on vessel.html) +
    test.
 7. [DONE] Link "Current Vessel" panel on batch.html to the new vessel detail
    page.
-8. (Later, after 5-7) "Out of Service" state + Vessel management page -
-   see TODO section below.
+8. [DONE] "Out of Service" state + take out / return actions on the vessel
+   detail page - see section below.
 
 
-TODO: FOURTH STATE - OUT OF SERVICE (added 2026-09-22, NOT STARTED)
+FOURTH STATE - OUT OF SERVICE (added 2026-09-22, BUILT 2026-09-23)
 ------------------------------------------------------------------------
 Per Aaron: a vessel needs a fourth status for when it's pulled from use -
 under repair, has a problem that needs fixing, or is decommissioned/
@@ -294,23 +309,41 @@ To decide / watch out for before coding:
     chars, so it fits the existing `max_length=15` on `Vessel.status` and
     `VesselStatusEvent.status` - no field widening needed, only the
     `choices=` AlterField migration (via makemigrations, never by hand).
-[ ] Repair vs. decommissioned: one state with notes, or two? A repaired
+[x] Repair vs. decommissioned: one state with notes, or two? A repaired
     vessel comes back; a decommissioned/replaced one never does. Options:
     - one "Out of Service" status + the reason in VesselStatusEvent.notes
     - "Out of Service" (temporary) + a separate `retired` flag / terminal
       "Decommissioned" status that hides the vessel from lists
     The history log should never be deleted either way - retire, don't
     delete, so old batches' VesselStatusEvent rows stay intact.
-[ ] Entry rules: block (or require confirmation) putting a vessel that's
+    RESOLVED (Aaron): one "Out of Service" status + reason, for now.
+[x] Entry rules: block (or require confirmation) putting a vessel that's
     In Use with an active batch out of service - its batch would be
     orphaned. Likely only allowed from Clean/Ready or Needs Cleaning.
-[ ] Exit rules: returning to service probably goes to Needs Cleaning
+    RESOLVED (Aaron): only from Clean/Ready or Needs Cleaning. In Use is
+    rejected - Batch.transfer()/complete() it (-> Needs Cleaning) first.
+    Also rejected if an active batch is still in the vessel.
+[x] Exit rules: returning to service probably goes to Needs Cleaning
     (safe default after a repair) rather than straight to Clean/Ready.
     This is the first real transition rule - set_vessel_status() accepts
     any status in v1, so these checks live in the management action (or
     trigger the "state machine enforcement" open decision above).
-[ ] Reason/notes required when taking a vessel out of service (reuse
+    RESOLVED (Aaron): returns to the status it had before going out.
+    set_vessel_status() now records VesselStatusEvent.previous_status on
+    every event; falls back to Needs Cleaning if unknown (e.g. hand-set
+    in admin).
+[x] Reason/notes required when taking a vessel out of service (reuse
     VesselStatusEvent.notes, make it required for this transition).
+    RESOLVED (Aaron): required; logged as the VesselStatusEvent notes
+    (vessel status history), not ActivityLog - ActivityLog stays
+    batch-only.
+
+As built: services.take_vessel_out_of_service() /
+return_vessel_to_service(); POST vessel/<pk>/out-of-service
+(takeVesselOutOfService) and vessel/<pk>/return-to-service
+(returnVesselToService); .cl-stage--out badge. Still open: out-of-service
+artwork (no image is shown in that state), and whether the index.html
+dashboard should count out-of-service vessels.
 
 Already safe without extra work:
 * BatchAddForm only offers Clean/Ready fermenters, so an out-of-service

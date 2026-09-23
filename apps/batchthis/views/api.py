@@ -64,9 +64,12 @@ class VesselListAPIView(APIView):
             .order_by('name')
         )
         # One query for every vessel's active batch, instead of one per row.
+        # Batch.vessel is unset on batches older than it; those are still in their fermenter.
         current_batches = {
-            vessel_id: name
-            for vessel_id, name in Batch.objects.filter(active=True).values_list('fermenter__vessel_id', 'name')
+            vessel_id or fermenter_vessel_id: name
+            for vessel_id, fermenter_vessel_id, name in Batch.objects.filter(active=True).values_list(
+                'vessel_id', 'fermenter__vessel_id', 'name'
+            )
         }
         serializer = VesselSerializer(vessels, many=True, context={'current_batches': current_batches})
         logger.debug("Listed %d vessels for %s", len(serializer.data), request.user)

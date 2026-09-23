@@ -375,6 +375,7 @@ a.nav-link, a.sub-link, a.dropdown-item {
 /* Vessel statuses (Vessel.STATUS_BADGE_CLASSES); In Use reuses --active. */
 .cl-stage--ready { color: var(--moss); }
 .cl-stage--dirty { color: var(--brick); }
+.cl-stage--out { color: var(--ink-soft); }
 
 .cl-num { font-family: 'IBM Plex Mono', monospace; font-variant-numeric: tabular-nums; }
 .cl-yeast-metric { font-size: 0.78rem; white-space: nowrap; }

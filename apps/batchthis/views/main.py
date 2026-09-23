@@ -5,6 +5,7 @@ from django.http import HttpResponseRedirect, HttpResponse, JsonResponse
 from django.views.generic import FormView
 from django.views.generic.detail import SingleObjectMixin
 from django.contrib import messages
+from django.core.exceptions import ValidationError
 from django.db import transaction
 import logging
 from apps.batchthis.models import Batch, Fermenter, BatchTestType, BatchNoteType, Vessel, Unit, Recipe, Fermentable, AdjunctUsage, RecipeYeasts,RecipeFermentable,RecipeAdjunct
@@ -14,7 +15,9 @@ from apps.batchthis.forms import BatchTestForm, BatchNoteForm, BatchAdditionForm
 from apps.batchthis.forms import RecipeAddForm, FermentableForm, AdjunctForm, YeastForm
 from django.forms.formsets import formset_factory
 from apps.batchthis.lib.utils import Utils
-from apps.batchthis.services import set_vessel_status
+from apps.batchthis.services import (
+    set_vessel_status, take_vessel_out_of_service, return_vessel_to_service, status_before_out_of_service,
+)
 from apps.batchthis.lib.faults import get_active_flags, get_rule_for, StagedFaultRule
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.http import require_POST
@@ -354,6 +357,7 @@ def addBatch(request, pk=None):
             batch.startingGravity = Quantity(float(form.cleaned_data['startingGravity']), 'sg')
             batch.estimatedEndGravity = Quantity(float(form.cleaned_data['estimatedEndGravity']), 'sg')
             batch.fermenter = form.cleaned_data['fermenter']
+            batch.vessel = batch.fermenter.vessel
             try:
                 # Batch and vessel status commit together, or neither does.
                 with transaction.atomic():
@@ -478,6 +482,10 @@ def vessel(request, pk):
         'status_since': current_event.timestamp if current_event else None,
         'status_icon': _vessel_status_icon(vessel),
         'can_mark_cleaned': vessel.status == Vessel.STATUS_DIRTY,
+        'can_take_out_of_service': vessel.status in (Vessel.STATUS_READY, Vessel.STATUS_DIRTY),
+        'is_out_of_service': vessel.status == Vessel.STATUS_OUT,
+        'out_of_service_reason': current_event.notes if current_event and vessel.status == Vessel.STATUS_OUT else '',
+        'return_to_status': status_before_out_of_service(vessel) if vessel.status == Vessel.STATUS_OUT else '',
     }
     logger.debug("vessel: pk=%s '%s' status=%r, %d history events", pk, vessel.name, vessel.status, len(history))
     return render(request, 'batchthis/vessel.html', context=context)
@@ -505,6 +513,38 @@ def markVesselCleaned(request, pk):
         messages.error(request, f"Couldn't mark '{vessel.name}' cleaned. Nothing was changed - please try again.")
         return HttpResponseRedirect(reverse('vessel', kwargs={'pk': pk}))
     logger.info("markVesselCleaned: vessel %s '%s' is Clean/Ready", pk, vessel.name)
+    return HttpResponseRedirect(reverse('vessel', kwargs={'pk': pk}))
+
+
+@login_required
+@require_POST
+def takeVesselOutOfService(request, pk):
+    """Clean/Ready or Needs Cleaning -> Out of Service, with a required reason."""
+    vessel = get_object_or_404(Vessel, pk=pk)
+    logger.debug("takeVesselOutOfService: pk=%s '%s' status=%r", pk, vessel.name, vessel.status)
+    try:
+        take_vessel_out_of_service(vessel, request.POST.get('reason', ''))
+    except ValidationError as e:
+        messages.error(request, ' '.join(e.messages))
+    except Exception:
+        logger.exception("takeVesselOutOfService: failed for vessel %s '%s'", pk, vessel.name)
+        messages.error(request, f"Couldn't take '{vessel.name}' out of service. Nothing was changed - please try again.")
+    return HttpResponseRedirect(reverse('vessel', kwargs={'pk': pk}))
+
+
+@login_required
+@require_POST
+def returnVesselToService(request, pk):
+    """Out of Service -> the status the vessel had before it was taken out."""
+    vessel = get_object_or_404(Vessel, pk=pk)
+    logger.debug("returnVesselToService: pk=%s '%s' status=%r", pk, vessel.name, vessel.status)
+    try:
+        return_vessel_to_service(vessel, request.POST.get('notes', ''))
+    except ValidationError as e:
+        messages.error(request, ' '.join(e.messages))
+    except Exception:
+        logger.exception("returnVesselToService: failed for vessel %s '%s'", pk, vessel.name)
+        messages.error(request, f"Couldn't return '{vessel.name}' to service. Nothing was changed - please try again.")
     return HttpResponseRedirect(reverse('vessel', kwargs={'pk': pk}))
 
 

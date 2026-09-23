@@ -72,6 +72,38 @@
     </div>
     {% endif %}
 
+    {% if can_take_out_of_service %}
+    <div class="cl-panel">
+      <div class="cl-section-head"><div class="cl-section-title">Take out of service</div></div>
+      <form class="cl-form" method="post" action="{% url 'takeVesselOutOfService' vessel.pk %}">
+        {% csrf_token %}
+        <div class="cl-field">
+          <label for="id_oos_reason">Reason</label>
+          <input type="text" id="id_oos_reason" name="reason" maxlength="250" required placeholder="e.g. Cracked valve, awaiting part">
+        </div>
+        <div class="cl-form-actions">
+          <button type="submit" class="cl-btn cl-btn--secondary">Take out of service</button>
+        </div>
+      </form>
+    </div>
+    {% elif is_out_of_service %}
+    <div class="cl-panel">
+      <div class="cl-section-head"><div class="cl-section-title">Out of service</div></div>
+      <div class="cl-kv-row"><span class="cl-kv-label">Reason</span><span class="cl-kv-value">{{ out_of_service_reason|default:"&mdash;" }}</span></div>
+      <div class="cl-kv-row"><span class="cl-kv-label">Returns as</span><span class="cl-kv-value">{{ return_to_status }}</span></div>
+      <form class="cl-form" method="post" action="{% url 'returnVesselToService' vessel.pk %}">
+        {% csrf_token %}
+        <div class="cl-field">
+          <label for="id_return_notes">Notes (optional)</label>
+          <input type="text" id="id_return_notes" name="notes" maxlength="250" placeholder="e.g. Valve replaced">
+        </div>
+        <div class="cl-form-actions">
+          <button type="submit" class="cl-btn cl-btn--primary">Return to service</button>
+        </div>
+      </form>
+    </div>
+    {% endif %}
+
     {% if status_icon %}
     <div class="cl-panel cl-vessel-figure">
       <img src="{% static status_icon %}" alt="{{ vessel.vessel_type }} &mdash; {{ vessel.status }}">
