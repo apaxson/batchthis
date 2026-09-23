@@ -157,6 +157,8 @@ def batch(request, pk):
         logger.debug("batch: pk=%s %d stage events, %d vessel stays, full_aging=%s",
                      pk, len(stage_events), len(vessel_stays), full_aging)
 
+        timeline = batch.timeline_bar()
+
         current_gravity_value = batch.current_gravity()
         estABV = round(Utils.potentialABV(startSG=batch.startingGravity.magnitude, endSG=current_gravity_value)[0], 1)
 
@@ -188,6 +190,9 @@ def batch(request, pk):
             "vessel_stays": vessel_stays,
             "current_stay": vessel_stays[-1] if vessel_stays and vessel_stays[-1].is_open else None,
             "full_aging": full_aging,
+            "timeline": timeline,
+            # One grid column per timeline segment, sized by its time; bands span their segments.
+            "timeline_columns": " ".join(f"minmax(9rem, {seg.weight:.1f}fr)" for seg in timeline.segments),
         }
         return render(request, 'batchthis/batch.html', context=context)
 

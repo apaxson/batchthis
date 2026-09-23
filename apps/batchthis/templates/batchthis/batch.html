@@ -73,36 +73,35 @@
   </div>
 </div>
 
-<div class="cl-table-scroll" style="margin-bottom:28px;">
-  <table class="cl-ledger">
-    <thead>
-      <tr><th>Stage</th><th>Vessel</th><th>State</th><th>From</th><th>To</th><th>Time in vessel</th></tr>
-    </thead>
-    <tbody>
-      {% for stay in vessel_stays %}
-      <tr>
-        <td class="js-mouse-tooltip" data-toggle="tooltip" title="{{ stay.event.notes|default:'' }}">{{ stay.label }}</td>
-        <td>{% if stay.vessel %}<a href="{% url 'vessel' stay.vessel.pk %}">{{ stay.vessel.name }}</a>{% else %}&mdash;{% endif %}</td>
-        <td>{{ stay.state|default:"&mdash;" }}</td>
-        <td class="cl-num" style="white-space:nowrap;">{{ stay.start|date:"M j, Y" }}</td>
-        <td class="cl-num" style="white-space:nowrap;">{% if stay.is_open %}<span class="cl-stage cl-stage--active">Current</span>{% else %}{{ stay.end|date:"M j, Y" }}{% endif %}</td>
-        <td class="cl-num">{% if stay.is_open %}{{ stay.start|timesince }}{% else %}{{ stay.start|timesince:stay.end }}{% endif %}</td>
-      </tr>
-      {% empty %}
-      <tr><td class="cl-empty" colspan="6">No stages logged yet.</td></tr>
+{% if not vessel_stays %}<p class="cl-timebar-empty">No stages logged yet. Log Pitch to start the timeline.</p>{% endif %}
+<div class="cl-timebar-scroll">
+  <div class="cl-timebar" style="grid-template-columns: {{ timeline_columns }};" role="group" aria-label="Batch timeline; widths show time spent">
+    {% for band in timeline.bands %}
+    <div class="cl-timebar-band cl-timebar-band--{{ band.kind }}" style="grid-column: span {{ band.segments|length }};">
+      <span>{{ band.state|default:"Before pitch" }}</span>
+      <span class="cl-timebar-band-time cl-num">{% if band.kind == 'past' %}{{ band.start|timesince:band.end }}{% elif band.kind == 'current' %}{{ band.start|timesince }}{% elif band.duration %}~{{ band.duration.days }} days{% else %}Not planned{% endif %}</span>
+    </div>
+    {% endfor %}
+
+    <ol class="cl-timebar-track" role="list">
+      {% for seg in timeline.segments %}
+      <li role="listitem" class="cl-timebar-seg cl-timebar-seg--{{ seg.kind }}{% if seg.notes %} js-mouse-tooltip" data-toggle="tooltip" title="{{ seg.notes }}{% endif %}">
+        <span class="cl-timebar-step">{{ seg.label }}</span>
+        <span class="cl-timebar-vessel">{% if seg.vessel %}<a href="{% url 'vessel' seg.vessel.pk %}" title="{{ seg.vessel.name }}">{{ seg.vessel.name }}</a>{% elif seg.kind == 'future' %}Vessel TBD{% else %}&mdash;{% endif %}</span>
+        <span class="cl-timebar-time cl-num">{% if seg.kind == 'past' %}{{ seg.start|timesince:seg.end }}{% elif seg.kind == 'current' %}<span class="cl-stage cl-stage--active">Current</span> {{ seg.start|timesince }}{% elif seg.planned %}~{{ seg.duration.days }} days planned{% else %}Not planned{% endif %}</span>
+      </li>
       {% endfor %}
-      {% if completed_event %}
-      <tr>
-        <td class="js-mouse-tooltip" data-toggle="tooltip" title="{{ completed_event.notes|default:'' }}">{{ completed_event.stage.name }}</td>
-        <td>{% if completed_event.vessel %}<a href="{% url 'vessel' completed_event.vessel.pk %}">{{ completed_event.vessel.name }}</a>{% else %}&mdash;{% endif %}</td>
-        <td>{{ completed_event.stage.to_state }}</td>
-        <td class="cl-num" style="white-space:nowrap;">{{ completed_event.timestamp|date:"M j, Y" }}</td>
-        <td></td>
-        <td></td>
-      </tr>
-      {% endif %}
-    </tbody>
-  </table>
+    </ol>
+
+    {% for seg in timeline.segments %}
+    <span class="cl-timebar-tick cl-num{% if forloop.counter0 == timeline.now_index %} cl-timebar-tick--now{% endif %}" aria-hidden="true">{% if forloop.counter0 == timeline.now_index %}Now{% elif seg.start %}{{ seg.start|date:"M j, Y" }}{% endif %}</span>
+    {% endfor %}
+    {% if timeline.completed_at %}
+    <span class="cl-timebar-end cl-num">Completed {{ timeline.completed_at|date:"M j, Y" }}</span>
+    {% elif timeline.now_index == timeline.segments|length %}
+    <span class="cl-timebar-end cl-timebar-tick--now cl-num">Now</span>
+    {% endif %}
+  </div>
 </div>
 
 <div class="cl-instrument">

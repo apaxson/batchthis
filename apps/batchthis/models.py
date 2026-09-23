@@ -77,6 +77,15 @@ class BatchStage(models.Model):
     ]
     FROM_STATE_CHOICES = [("", "Start")] + STATE_CHOICES
 
+    # The states a batch passes through, in order (Completed is the end, not a stay),
+    # and the step that enters each - matches the 0035_default_load2 seed.
+    TIMELINE_STATES = (STATE_FERMENTATION, STATE_AGING, STATE_BOTTLING)
+    ENTRY_STAGE_NAMES = {
+        STATE_FERMENTATION: "Pitch",
+        STATE_AGING: "Racking",
+        STATE_BOTTLING: "Sterile Filtering",
+    }
+
     # Seeded shortids that code relies on (see Batch.full_aging()).
     RACKING = "racking"
     FILTERING_SHORTIDS = frozenset({"coarse-filtering", "fine-filtering", "sterile-filtering"})
@@ -648,6 +657,55 @@ class Batch(models.Model):
         logger.debug(f"full_aging: batch={self.pk} {span}")
         return span
 
+    def timeline_bar(self, planned_durations: dict[str, timedelta] | None = None) -> "TimelineBar":
+        """
+        The batch page's time bar: past and current vessel stays (widths = real
+        time), then the states still ahead as future segments. A future state's
+        width comes from planned_durations[state] when given (phase 2: the recipe
+        or pre-batch plan sets time per stage), else a fixed placeholder width.
+        """
+        planned_durations = planned_durations or {}
+        stays = self.vessel_durations()
+        events = self._timeline_events()
+        completed = next((e for e in reversed(events) if e.stage and e.stage.to_state == BatchStage.STATE_COMPLETED), None)
+
+        segments = [
+            TimelineSegment(
+                kind='current' if stay.is_open else 'past',
+                state=stay.state, label=stay.label, vessel=stay.vessel, notes=stay.event.notes,
+                start=stay.start, end=stay.end, duration=stay.duration,
+                weight=max(stay.duration.total_seconds(), 60.0),
+            )
+            for stay in stays
+        ]
+
+        if completed is None:
+            reached = {s.state for s in segments}
+            current = segments[-1].state if segments else None
+            ahead = [st for st in BatchStage.TIMELINE_STATES if st not in reached and st != current]
+            known = sum(s.weight for s in segments)
+            placeholder = max(known, 86400.0) * self.TIMELINE_PLACEHOLDER_SHARE
+            for state in ahead:
+                planned = planned_durations.get(state)
+                segments.append(TimelineSegment(
+                    kind='future', state=state, label=BatchStage.ENTRY_STAGE_NAMES[state], vessel=None, notes="",
+                    start=None, end=None, duration=planned, planned=planned is not None,
+                    weight=planned.total_seconds() if planned else placeholder,
+                ))
+
+        bands: list[TimelineBand] = []
+        for segment in segments:
+            if bands and bands[-1].state == segment.state:
+                bands[-1].segments.append(segment)
+            else:
+                bands.append(TimelineBand(state=segment.state, segments=[segment]))
+
+        logger.debug(f"timeline_bar: batch={self.pk} {len(segments)} segments in {len(bands)} bands")
+        return TimelineBar(segments=segments, bands=bands, completed_at=completed.timestamp if completed else None)
+
+    # A future stage with no planned duration is drawn this share of the known time.
+    TIMELINE_PLACEHOLDER_SHARE = 0.15
+
     def current_gravity(self):
         gravity_tests = self.tests.filter(type__shortid='specific-gravity')
         if len(gravity_tests) > 1:
@@ -714,6 +772,65 @@ class VesselStay(Span):
     @property
     def label(self) -> str:
         return self.event.label
+
+
+@dataclass(kw_only=True)
+class TimelineSegment:
+    """One block of Batch.timeline_bar(): a vessel stay (past/current) or a state still ahead (future)."""
+    kind: str  # 'past' | 'current' | 'future'
+    state: str | None
+    label: str  # the step that started it (Pitch, Racking, Transfer, ...)
+    vessel: Vessel | None
+    notes: str
+    start: datetime | None
+    end: datetime | None
+    duration: timedelta | None  # actual time; planned time for a planned future stage; else None
+    weight: float  # relative width
+    planned: bool = False
+
+
+@dataclass(kw_only=True)
+class TimelineBand:
+    """Consecutive timeline segments in the same state (Fermentation, Aging, Bottling)."""
+    state: str | None
+    segments: list[TimelineSegment]
+
+    @property
+    def weight(self) -> float:
+        return sum(s.weight for s in self.segments)
+
+    @property
+    def kind(self) -> str:
+        kinds = {s.kind for s in self.segments}
+        return 'current' if 'current' in kinds else 'future' if kinds == {'future'} else 'past'
+
+    @property
+    def start(self) -> datetime | None:
+        return self.segments[0].start
+
+    @property
+    def end(self) -> datetime | None:
+        return self.segments[-1].end
+
+    @property
+    def duration(self) -> timedelta | None:
+        durations = [s.duration for s in self.segments]
+        return None if any(d is None for d in durations) else sum(durations, timedelta())
+
+
+@dataclass(kw_only=True)
+class TimelineBar:
+    segments: list[TimelineSegment]
+    bands: list[TimelineBand]
+    completed_at: datetime | None
+
+    @property
+    def now_index(self) -> int | None:
+        """Index of the segment right after the current one - where "Now" falls - if any."""
+        for i, segment in enumerate(self.segments):
+            if segment.kind == 'current':
+                return i + 1
+        return None
 
 
 class BatchTest(models.Model):

@@ -495,6 +495,73 @@ a.nav-link, a.sub-link, a.dropdown-item {
 .cl-readouts--3 { grid-template-columns: repeat(3, 1fr); }
 @media (max-width: 640px) { .cl-readouts--3 { grid-template-columns: 1fr; } }
 
+/* ---------- Batch time bar (batch.html stage timeline) ----------
+   One grid shared by all three rows so state bands, vessel stays and dates stay
+   aligned: a column per stay, sized by its time (grid-template-columns is set
+   inline from the view); each state band spans its stays' columns.
+   Past = settled ink, current = honey, future = dashed/faint placeholders. */
+.cl-timebar-scroll { overflow-x: auto; margin-bottom: 28px; }
+.cl-timebar { display: grid; column-gap: 3px; row-gap: 8px; min-width: min-content; }
+
+.cl-timebar-band {
+  grid-row: 1;
+  padding: 0 2px 6px;
+  border-bottom: 2px solid var(--ink);
+  display: flex; flex-wrap: wrap; align-items: baseline; align-content: flex-end; column-gap: 8px;
+  font-size: 0.8rem; font-weight: 600;
+}
+/* Name and duration never break inside; the duration wraps under the name when the band is narrow. */
+.cl-timebar-band > span { white-space: nowrap; }
+.cl-timebar-band-time { font-size: 0.75rem; font-weight: 500; color: var(--ink-soft); }
+.cl-timebar-band--current { border-bottom-color: var(--honey-line); }
+.cl-timebar-band--future { border-bottom: 2px dashed var(--line); color: var(--ink-faint); }
+.cl-timebar-band--future .cl-timebar-band-time { color: var(--ink-faint); }
+
+/* The list's items sit directly in the grid (row 2). */
+.cl-timebar-track { display: contents; list-style: none; }
+.cl-timebar-seg {
+  grid-row: 2;
+  display: flex; flex-direction: column; gap: 2px;
+  min-width: 0;
+  padding: 8px 10px;
+  background: var(--paper-raised);
+  border: 1px solid var(--line);
+  border-radius: 3px;
+}
+.cl-timebar-seg > * { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cl-timebar-step { font-size: 0.72rem; color: var(--ink-soft); }
+.cl-timebar-vessel { font-size: 0.88rem; font-weight: 600; }
+.cl-timebar-vessel a { color: inherit; text-decoration: none; border-bottom: 1px solid var(--line); }
+.cl-timebar-vessel a:hover { border-bottom-color: var(--ink-soft); }
+.cl-timebar-seg > .cl-timebar-time { font-size: 0.8rem; white-space: normal; }
+.cl-timebar-seg--current {
+  border: 1.5px solid var(--honey-line);
+  box-shadow: inset 0 3px 0 var(--honey-line);
+}
+.cl-timebar-seg--current .cl-timebar-step { color: var(--honey); }
+.cl-timebar-seg--future {
+  background: transparent;
+  border: 1px dashed var(--ink-faint);
+  color: var(--ink-faint);
+}
+.cl-timebar-seg--future .cl-timebar-step,
+.cl-timebar-seg--future .cl-timebar-vessel { color: var(--ink-faint); font-weight: 500; }
+
+/* Date axis (row 3): each stay's start date under its left edge. */
+.cl-timebar-tick {
+  grid-row: 3;
+  padding-left: 3px;
+  border-left: 1px solid var(--line);
+  font-size: 0.72rem; color: var(--ink-soft); white-space: nowrap;
+}
+.cl-timebar-tick--now { color: var(--honey); font-weight: 600; border-left: 2px solid var(--honey-line); }
+.cl-timebar-end {
+  grid-row: 4; grid-column: 1 / -1; justify-self: end; margin-top: -4px;
+  font-size: 0.72rem; font-weight: 600; white-space: nowrap;
+}
+.cl-timebar-end.cl-timebar-tick--now { border-left: none; }
+.cl-timebar-empty { margin: 0 0 10px; font-size: 0.85rem; color: var(--ink-soft); }
+
 /* ---------- Chart panels ---------- */
 .cl-instrument-grid {
   display: grid;

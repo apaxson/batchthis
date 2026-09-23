@@ -15,10 +15,27 @@ PHASE 1 COMPLETE (2026-09-23): steps 1-6b of SUGGESTED ORDER OF WORK are
 DONE (Batch.startdate fix; BatchStage transitions seeded; BatchStageEvent
 model + timeline helpers; transition_stage_event() workflow service; Log
 stage form/view/page; batch.html Stage timeline; ad-hoc Transfer batch).
-Next: phase 2 (recipe vessel chain, steps 7-11). This file is the
+Phase 2 (recipe vessel chain, steps 7-11) is ON HOLD (Aaron, 2026-09-23)
+until some UI layout changes are made first.
+PHASE 2 SCOPE NOTE (Aaron, 2026-09-23): the recipe (or a pre-batch-start
+plan) defines the PLANNED DURATION PER STAGE only. It does NOT determine
+the vessel - which vessels will be free in the future isn't known, so the
+vessel is always chosen at transfer time (Log stage / Transfer batch).
+The RecipeVesselStep sketch below needs a planned-duration field (e.g.
+expected_duration), and its vessel_role can only ever be a descriptive
+label, never a vessel assignment. The batch page time bar (built
+2026-09-23, before phase 2) already accepts planned durations for its
+future segments - wire them in when phase 2 lands. This file is the
 reference to pick back up from.
+  -> REVISITED 2026-09-23: planned durations are now planned to come from
+     a "batch workflow template" copied onto the batch, not the recipe -
+     see "FUTURE WORK: TIMEBAR PROGRESS". Whether that fully replaces the
+     recipe-side durations is an open decision there.
 Naming (Aaron, 2026-09-23): "Coarse Filtering" - "Course Filtering" was a
 typo in the earlier drafts and the diagram; never use it.
+FUTURE WORK (Aaron, 2026-09-23): timebar progress redesign + pre-batch
+timing setup - AFTER the batch workflow is finished. See "FUTURE WORK:
+TIMEBAR PROGRESS" at the end of this file.
 
 
 GOAL
@@ -751,7 +768,19 @@ SUGGESTED ORDER OF WORK (TDD - write the test for each step first)
    "Current", Time in vessel), with a closing Complete Batch row; stage
    notes as js-mouse-tooltip hovers. The batch view prefetches
    stage_events (one query for both durations; no per-stage queries).
-   "Log stage" links only while the batch is active. New CSS:
+   "Log stage" links only while the batch is active.
+   UPDATE 2026-09-23 (Aaron): the time-in-vessel TABLE was replaced by a
+   proportional TIME BAR - Batch.timeline_bar() -> TimelineBar(segments,
+   bands, completed_at). Past/current vessel stays are sized by real time;
+   the states still ahead (Fermentation/Aging/Bottling) are dashed future
+   segments sized by timeline_bar(planned_durations={state: timedelta})
+   when given, else a fixed placeholder width ("Not planned"). Phase 2
+   passes the recipe's planned time per stage there. Rendered as ONE CSS
+   grid (.cl-timebar*, grid-template-columns from the view) so state
+   bands, stays and dates always align; "Now" marks where current meets
+   future; scrolls sideways on phones and cellar-ledger.js scrolls the
+   current stay into view. Tests: tests/test_timeline_bar.py.
+   New CSS:
    .cl-readouts--3 (stacks on phones) and .cl-batch-actions now wraps
    on phones (it overflowed there before). Tests:
    apps/batchthis/tests/test_batch_page_timeline.py.
@@ -785,3 +814,191 @@ SUGGESTED ORDER OF WORK (TDD - write the test for each step first)
 10. editVesselSteps.html + _vessel_step_form_row.html templates; link
     from recipe.html.
 11. BatchStageEvent.recipe_step FK + expected-vs-actual comparison UI.
+
+
+FUTURE WORK: TIMEBAR PROGRESS (added 2026-09-23, NOT STARTED)
+------------------------------------------------------------------------
+Per Aaron: do this AFTER the batch workflow is finished. Not part of
+phase 1 or the current UI work.
+
+Goal: make the batch page time bar a more graphical progress bar that
+shows current progress (% complete) and time remaining.
+
+REVISED (Aaron, 2026-09-23): planned timing comes from a reusable BATCH
+WORKFLOW TEMPLATE, not from fields on the Recipe. When starting a batch,
+pick a template with pre-determined intervals; its intervals are attached
+to the batch and can be adjusted before the batch is started.
+SUPERSEDED - do not build: the earlier same-day plan for Recipe timing
+fields (total time + aging time on Recipe) and a "Set recipe timing"
+modal on the Add batch page that saved back to the recipe.
+
+1. Batch workflow templates. A reusable, named set of planned intervals,
+   e.g. "Traditional mead" or "Quick cyser".
+   - One planned interval per stage: Fermentation, Aging, Bottling
+     (BatchStage.TIMELINE_STATES). Total time = the sum; aging time = the
+     Aging interval. This replaces the earlier "total + aging only"
+     idea and matches the PHASE 2 SCOPE NOTE's planned duration per
+     stage.
+   - Managed on its own Cellar Ledger page (list + create/edit), with the
+     intervals as .cl-formset-row rows or a fixed 3-field form.
+   - CLAUDE.md says measurement data uses Quantity()/QuantityField (or
+     the Descriptive/Precision subclasses). Time is a measurement here
+     (Unit.TIME exists) - decide QuantityField with day/week units vs.
+     a plain DurationField, and follow CLAUDE.md unless there's a reason
+     not to.
+   - Starter templates: enter through the UI or a fixture/management
+     command - NOT a hand-written data migration (CLAUDE.md: never
+     hand-write migration files).
+   - models.py change -> makemigrations.
+
+2. Attach intervals to the batch before it starts. On the Add batch
+   page: choose a template -> its intervals pre-fill editable fields ->
+   adjust for this batch if needed -> create the batch.
+   - The batch stores its OWN COPY of the intervals (a snapshot), not
+     just a link to the template. Editing a template later must not
+     change batches that already started from it; adjusting a batch's
+     intervals must not change the template.
+   - A template is REQUIRED (Aaron, 2026-09-23). Keep which template
+     the batch came from as an FK for reference - nullable only for
+     batches created before this feature, and SET_NULL if a template is
+     deleted (the batch keeps its own intervals either way).
+   - A template's intervals may be empty. Empty ones pre-fill as empty
+     editable fields; the batch's intervals must be filled in before the
+     batch is created.
+   - Validate server-side (addBatch), not just in the page's JS:
+     template required, each interval required, no negative intervals.
+   - Pre-filling from the template is plain JS on the Add batch page
+     (or the existing rpc/ AJAX pattern) - no modal needed now.
+   - These intervals feed Batch.timeline_bar(planned_durations=...),
+     which already accepts {state: timedelta}.
+
+2b. Change a batch's intervals after it starts (Aaron, 2026-09-23).
+   Allowed at any point in the process, but every change is logged with
+   who made it and why.
+   - An "Edit plan" action on the batch page (Cellar Ledger form): the
+     batch's intervals as editable fields + a REQUIRED reason.
+   - COMPLETED STAGES ARE LOCKED (Aaron, 2026-09-23): only the current
+     stage and stages still ahead can be changed. Completed stages show
+     read-only on the form, and the service function rejects a change to
+     one (server-side, not just a disabled field). "Completed" = a stage
+     the batch has moved past (per its stage events); once the batch
+     itself is Completed, nothing can be changed.
+   - Locking the planned interval does NOT freeze the math: when a
+     stage completes early (or late), the expected total and % use its
+     actual time automatically - see task 3.
+   - Login required; the user comes from request.user, never a form
+     field.
+   - Log each change. ActivityLog can't do this alone - it has only
+     datetime + text, no user (models.py has "# TODO: Add username to
+     activity logs"). Recommend:
+     * a dedicated append-only table, e.g. BatchIntervalChange (batch,
+       stage/state, old interval, new interval, changed_by = FK to
+       User, reason, timestamp) - same shape as VesselStatusEvent /
+       BatchStageEvent, so old vs. new values stay structured; AND
+     * one ActivityLog line per change, e.g. "Plan changed [Aging] ::
+       90 days -> 120 days by aaron :: reason", so it shows on the
+       batch's Activity log page (ActivityLog is for Batch actions -
+       this is one).
+     Alternative: add a user FK to ActivityLog itself (would also cover
+     the existing "Add username to activity logs" TODO) - decide before
+     coding.
+   - The change and its log rows commit together (one transaction), via
+     an explicit service function (e.g. set_batch_intervals()), not a
+     signal.
+   - Only actual changes are logged (saving with no change logs
+     nothing); reason required whenever something changed.
+   - The template is never modified by this (task 2's snapshot rule).
+   - Tests: change logged with user + reason + old/new values; missing
+     reason rejected and nothing changed; change to a completed stage
+     rejected (even if posted directly) and nothing changed; current and
+     upcoming stages can change; completed batch can't be changed; anonymous user rejected;
+     unchanged save logs nothing; template untouched; ActivityLog line
+     written.
+
+3. Progress bar display:
+   - Show STAGES ONLY - the states Fermentation -> Aging -> Bottling
+     (BatchStage.TIMELINE_STATES), ending at Completed. Do NOT show the
+     transitions (Pitch, Racking, Coarse/Fine/Sterile Filtering,
+     Transfer, Complete Batch) as segments or labels on the bar.
+   - A "current status" marker at the batch's position, labelled with
+     % complete (elapsed / expected total), plus time remaining
+     (expected total - elapsed).
+   - EXPECTED TOTAL (Aaron, 2026-09-23) - recalculated automatically as
+     stages complete:
+       expected total = ACTUAL time of each completed stage
+                      + max(PLANNED interval, time elapsed so far)
+                        of the current stage
+                      + PLANNED intervals of the stages still ahead
+     So a stage completed EARLY shrinks the total (and raises the %)
+     straight away; the plan catches up with what really happened.
+     Same formula makes a stage that finished LATE grow the total.
+   - CURRENT STAGE RUNNING OVER (Aaron, 2026-09-23): once the current
+     stage passes its planned interval, the expected total STRETCHES by
+     the extended time (elapsed - planned), growing day by day while the
+     stage continues. The stages not started yet KEEP their planned
+     intervals - they aren't squeezed to absorb the overrun. So the %
+     keeps moving but stays below 100% until the batch is Completed,
+     and "remaining" = the not-started stages' planned time. Show the
+     overrun on the current stage (e.g. "Aging: 12 days over plan").
+   - This is a calculation, not a plan change: the completed stage's
+     PLANNED interval stays stored and locked (task 2b) - it's kept for
+     plan-vs-actual comparison - and nothing is written to the
+     interval-change log (no user/reason; nobody changed the plan).
+   - Completed stages filled, current stage highlighted, upcoming stages
+     lighter or dashed; an icon per stage above its segment.
+   - Batches created before this feature have no intervals. For those
+     only, the bar can only show elapsed time -
+     never a % or "remaining" based on the placeholder widths
+     (TIMELINE_PLACEHOLDER_SHARE), which are made up.
+   - Visual reference: ~/Downloads/process-timebar-example.jpg - an
+     EXAMPLE of the structure only (pill track, stage icons, marker with
+     %). Its stage list mixes in transitions and its glossy blue/teal glow
+     styling doesn't fit - build it in Cellar Ledger colours
+     (cellar-ledger.css tokens) as a template include + CSS.
+
+4. Tests: template CRUD; picking a template pre-fills the batch's
+   intervals; batch keeps its snapshot when the template is edited later;
+   adjusting a batch's intervals leaves the template unchanged; % complete
+   and remaining time from the batch's intervals (recalculated after a
+   task 2b change); a stage completed early shrinks the expected total
+   and raises the % (late grows it), while its stored planned interval
+   is unchanged and no interval-change log row is written; a current
+   stage past its plan stretches the total by exactly the overrun, the
+   not-started stages' intervals are unchanged, the % stays below 100
+   and "remaining" = the not-started stages' planned time; addBatch rejected with
+   no template or with an interval left empty; a template with empty
+   intervals still works (fields come through empty, filled on the
+   batch); a pre-existing batch with no intervals shows elapsed only.
+
+To decide before coding:
+[x] Is a template (or intervals) REQUIRED to start a batch? RESOLVED by
+    Aaron (2026-09-23): YES, a template is required to start a batch. A
+    template may have empty intervals - they come through as empty
+    editable fields on the Add batch page, where they're filled in for
+    that batch. So every batch starts from a template, and its intervals
+    are set before it starts (reading of "must be defined before the
+    batch": the batch's intervals must be filled in to create it, even
+    when the template's are empty).
+[ ] Can a Recipe suggest a default template (pre-selected on Add batch)?
+    If so, that's the only timing link left on the recipe.
+[ ] Does this replace the phase 2 recipe-side planned durations
+    (PHASE 2 SCOPE NOTE / RecipeVesselStep.expected_duration) entirely?
+    Likely yes - update that note when decided.
+[x] Can a batch's intervals be edited after it has started (re-plan),
+    and is that change logged? RESOLVED by Aaron (2026-09-23): YES - a
+    batch's intervals can be changed at any point in the process, and
+    every change is logged with the USERNAME and a REASON. See task 2b.
+[x] Can the interval of a stage the batch has already finished be
+    changed too? RESOLVED by Aaron (2026-09-23): NO. Completed stages'
+    intervals are locked; only the current and upcoming stages can be
+    changed. See task 2b.
+[x] What the bar shows when a batch runs past its plan. RESOLVED
+    (Aaron, 2026-09-23): completed stages count at their actual time, so
+    finishing early or late re-sizes the expected total automatically;
+    a current stage running past its planned interval STRETCHES the
+    total by the extended time, while not-started stages keep their
+    planned intervals. No 100% cap - see task 3.
+[ ] Where vessel moves and transitions go once the bar stops showing
+    them - today's segments carry the vessel names and step notes. Keep
+    them in a table/tooltip below the bar, the Activity log, or the
+    vessel pages?
