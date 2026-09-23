@@ -15,8 +15,9 @@
 """
 import pdb
 
+from dataclasses import dataclass
 from django.db import models
-from datetime import datetime
+from datetime import datetime, timedelta
 from django.dispatch import receiver
 from django.db.models.signals import post_save, m2m_changed
 from django.utils.text import slugify
@@ -556,6 +557,40 @@ class Batch(models.Model):
             set_vessel_status(vessel, Vessel.STATUS_DIRTY, batch=self, notes="Batch completed")
         logger.info(f"Batch '{self.name}' completed; vessel '{vessel.name}' needs cleaning")
 
+    @property
+    def current_stage_event(self) -> "BatchStageEvent | None":
+        return self.stage_events.select_related('stage', 'vessel').order_by('-timestamp', '-pk').first()
+
+    @property
+    def current_state(self) -> str | None:
+        """The workflow state the batch is in (BatchStage.STATE_*), or None before Pitch."""
+        event = self.current_stage_event
+        return event.stage.to_state if event else None
+
+    def stage_durations(self) -> list["StageSegment"]:
+        """
+        The batch's timeline: one segment per stage event, running until the next
+        event. The newest segment stays open and is measured up to now. Complete
+        Batch ends the timeline rather than starting a segment of its own.
+        """
+        events = list(self.stage_events.select_related('stage', 'vessel'))
+        now = timezone.now()
+        segments = []
+        for i, event in enumerate(events):
+            if event.stage.to_state == BatchStage.STATE_COMPLETED:
+                continue
+            end = events[i + 1].timestamp if i + 1 < len(events) else None
+            segments.append(StageSegment(
+                event=event,
+                state=event.stage.to_state,
+                vessel=event.vessel,
+                start=event.timestamp,
+                end=end,
+                duration=(end or now) - event.timestamp,
+            ))
+        logger.debug(f"stage_durations: batch={self.pk} {len(events)} events -> {len(segments)} segments")
+        return segments
+
     def current_gravity(self):
         gravity_tests = self.tests.filter(type__shortid='specific-gravity')
         if len(gravity_tests) > 1:
@@ -567,6 +602,46 @@ class Batch(models.Model):
         est_fg = self.estimatedEndGravity.magnitude
         current_gravity = self.current_gravity()
         return round((self.startingGravity.magnitude - current_gravity) / (self.startingGravity.magnitude - est_fg) * 100)
+
+
+class BatchStageEvent(models.Model):
+    """
+    One workflow transition (BatchStage) logged against a batch - append-only,
+    like BatchTest/BatchNote. Written by the stage-logging service (step 4 in
+    TODO-BatchStage.txt), which also transfers/completes the batch and writes
+    the batch's ActivityLog; don't create these directly elsewhere.
+    """
+    class Meta:
+        # pk breaks ties between events logged with the same timestamp.
+        ordering = ['timestamp', 'pk']
+
+    def __str__(self):
+        fmt = "%m/%d/%y-%H:%M"
+        return f"{self.batch} - {self.stage} ({self.timestamp.strftime(fmt)})"
+
+    batch = models.ForeignKey(Batch, on_delete=models.CASCADE, related_name='stage_events')
+    stage = models.ForeignKey(BatchStage, on_delete=models.PROTECT, related_name='events')
+    # Editable and defaulted, not auto_now_add - stages are often logged after the fact.
+    timestamp = models.DateTimeField(default=timezone.now)
+    # The vessel the batch is in AFTER this event: the transfer destination for
+    # Racking/Filtering, the batch's current vessel otherwise.
+    vessel = models.ForeignKey(Vessel, null=True, blank=True, on_delete=models.SET_NULL, related_name='stage_events')
+    notes = models.CharField(max_length=250, blank=True)
+
+
+@dataclass
+class StageSegment:
+    """One span of Batch.stage_durations(): time spent in `state` after `event`."""
+    event: BatchStageEvent
+    state: str
+    vessel: Vessel | None
+    start: datetime
+    end: datetime | None  # None while the segment is still open
+    duration: timedelta
+
+    @property
+    def is_open(self) -> bool:
+        return self.end is None
 
 
 class BatchTest(models.Model):

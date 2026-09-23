@@ -8,6 +8,7 @@ from .models import (
     Batch,
     BatchCategory,
     BatchStage,
+    BatchStageEvent,
     BatchStyle,
     BatchTestType,
     Fermentable,
@@ -123,6 +124,15 @@ class BatchStageFactory(factory.django.DjangoModelFactory):
     sort_order = factory.Sequence(lambda n: 100 + n)
     from_state = BatchStage.STATE_AGING
     to_state = BatchStage.STATE_AGING
+
+
+class BatchStageEventFactory(factory.django.DjangoModelFactory):
+    class Meta:
+        model = BatchStageEvent
+
+    batch = factory.SubFactory("apps.batchthis.factories.BatchFactory")
+    # Seeded by migration 0035_default_load2.
+    stage = factory.LazyFunction(lambda: BatchStage.objects.get(shortid="pitch"))
 
 
 class BatchTestTypeFactory(factory.django.DjangoModelFactory):

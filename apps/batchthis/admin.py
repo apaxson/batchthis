@@ -1,6 +1,6 @@
 from django.contrib import admin
 from .models import Unit, Fermenter, BatchNoteType, BatchTestType, BatchNote, BatchTest, BatchCategory, BatchStyle
-from .models import AdjunctType, Adjunct, Yeast, FermentableType, Fermentable, Recipe, AdjunctUsage, BatchStage
+from .models import AdjunctType, Adjunct, Yeast, FermentableType, Fermentable, Recipe, AdjunctUsage, BatchStage, BatchStageEvent
 # Register your models here.
 
 admin.site.register(Unit)
@@ -16,6 +16,23 @@ admin.site.register(BatchNote)
 admin.site.register(BatchTest)
 admin.site.register(BatchStyle)
 admin.site.register(BatchCategory)
+
+
+@admin.register(BatchStageEvent)
+class BatchStageEventAdmin(admin.ModelAdmin):
+    # View-only (default for admin registrations): events are logged by the
+    # stage-logging service, which also transfers/completes the batch.
+    list_display = ('timestamp', 'batch', 'stage', 'vessel', 'notes')
+    list_filter = ('stage',)
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False
 
 
 @admin.register(BatchStage)

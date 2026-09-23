@@ -11,8 +11,9 @@ resolved; most remaining open items already have a stated "-> Recommend:"
 default (see "OPEN DECISIONS").
 
 STATUS (2026-09-23): IN PROGRESS on branch implement-staging-workflows.
-Steps 1-2 of SUGGESTED ORDER OF WORK are DONE (Batch.startdate fix;
-BatchStage transitions seeded). Steps 3+ not started. This file is the
+Steps 1-3 of SUGGESTED ORDER OF WORK are DONE (Batch.startdate fix;
+BatchStage transitions seeded; BatchStageEvent model + timeline helpers).
+Steps 4+ not started. This file is the
 reference to pick back up from.
 Naming (Aaron, 2026-09-23): "Coarse Filtering" - "Course Filtering" was a
 typo in the earlier drafts and the diagram; never use it.
@@ -306,7 +307,19 @@ MODEL CHANGES
      the diagram existed. Delete the dead `batch_stages` list once this
      is seeded.)
 
-2. New `BatchStageEvent` model:
+2. [DONE 2026-09-23] New `BatchStageEvent` model (migration 0036).
+   AS BUILT - differs from the sketch below:
+   * stage on_delete=PROTECT, not SET("_del") (that pattern would write the
+     string "_del" into an integer FK column - a latent bug elsewhere in
+     this app). related_name='events'.
+   * timestamp = DateTimeField(default=timezone.now) - editable/backdatable.
+   * vessel is ALWAYS recorded (Aaron): the vessel the batch is in AFTER the
+     event - the transfer destination for Racking/Filtering, the batch's
+     current vessel for Pitch/Complete Batch. related_name='stage_events'.
+   * Meta.ordering = ['timestamp', 'pk'] (pk breaks same-timestamp ties).
+   * VIEW-ONLY in Django admin (Aaron: all new admin registrations are
+     view-only unless stated otherwise).
+   Original sketch:
    - batch    = FK(Batch, on_delete=CASCADE, related_name='stage_events')
    - stage    = FK(BatchStage, on_delete=models.SET("_del"))  # matches
                 every other lookup FK in this app
@@ -323,7 +336,15 @@ MODEL CHANGES
 3. [DONE 2026-09-23] Fix `Batch.startdate`: auto_now_add=True ->
    default=timezone.now. (See bug note above.)
 
-4. `Batch` convenience methods:
+4. [DONE 2026-09-23] `Batch` convenience methods.
+   AS BUILT: `current_stage_event` and `current_state` (to_state of the
+   newest event; None = not pitched yet) properties, and stage_durations()
+   -> list of StageSegment(event, state, vessel, start, end, duration,
+   is_open), one query. Each segment runs until the next event; the newest
+   stays OPEN and is measured up to now (Aaron); Complete Batch ends the
+   timeline instead of starting a segment. Tests:
+   apps/batchthis/tests/test_batch_stage_events.py.
+   Original sketch:
    - stage_durations() -> pairs consecutive stage_events into
      (stage, start, end, duration)
    - current_stage_event property
@@ -594,7 +615,7 @@ FILES IMPACTED (v1 scope - no recipe-plan / phase 2 items)
       (schema change + seed-data RunPython, like 0002_default_load.py)
     - NEVER hand-write migration files - see CLAUDE.md
 * apps/batchthis/admin.py
-    - register BatchStageEvent (BatchStage is already registered)
+    - register BatchStageEvent - DONE, view-only
 * apps/batchthis/forms.py
     - new BatchStageForm (ModelForm on BatchStageEvent, reuse the
       existing DateTimeWidget already defined at the top of this file)
@@ -631,9 +652,12 @@ SUGGESTED ORDER OF WORK (TDD - write the test for each step first)
 2. [DONE 2026-09-23] Extend BatchStage (shortid, sort_order, from/to
    state, transfers_batch, description) + seed migration (0035_default_load2)
    + BatchStageFactory. (BatchFactory already existed.)
-3. BatchStageEvent model + migration + BatchStageEventFactory +
-   stage_durations()/current_stage_event tests.
+3. [DONE 2026-09-23] BatchStageEvent model + migration +
+   BatchStageEventFactory + stage_durations()/current_stage_event tests.
 4. log_stage_event() service function + terminal-stage completion test
+   + ActivityLog entry on the batch for EVERY stage event (Aaron,
+   2026-09-23: stage events must show in the Batch ActivityLog)
+   + always set BatchStageEvent.vessel (see MODEL CHANGES #2)
    + Racking/Filtering -> Batch.transfer() tests (MODEL CHANGES #6).
 5. BatchStageForm (incl. destination-vessel picker for Racking and
    Filtering) + batchStage view + urls.
