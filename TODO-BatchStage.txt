@@ -11,9 +11,10 @@ resolved; most remaining open items already have a stated "-> Recommend:"
 default (see "OPEN DECISIONS").
 
 STATUS (2026-09-23): IN PROGRESS on branch implement-staging-workflows.
-Steps 1-3 of SUGGESTED ORDER OF WORK are DONE (Batch.startdate fix;
-BatchStage transitions seeded; BatchStageEvent model + timeline helpers).
-Steps 4+ not started. This file is the
+Steps 1-4 of SUGGESTED ORDER OF WORK are DONE (Batch.startdate fix;
+BatchStage transitions seeded; BatchStageEvent model + timeline helpers;
+transition_stage_event() workflow service). Steps 5+ (form/view/UI) not
+started. This file is the
 reference to pick back up from.
 Naming (Aaron, 2026-09-23): "Coarse Filtering" - "Course Filtering" was a
 typo in the earlier drafts and the diagram; never use it.
@@ -496,12 +497,19 @@ OPEN DECISIONS (ask Aaron / decide before coding)
     shape. Custom per-recipe workflows are a future possibility, not in
     scope now. See the resolved discrepancy in "CANONICAL WORKFLOW
     GRAPH" above for the full answer.
-[ ] Enforce the graph (e.g. refuse to log Racking unless current_state
+[x] Enforce the graph (e.g. refuse to log Racking unless current_state
     is Fermentation) vs. just record whatever the user logs and let the
     graph be descriptive/reporting-only.
     -> Recommend: descriptive-only for v1, consistent with this app's
        general "don't validate what doesn't need validating" approach;
        revisit if bad data actually becomes a problem.
+    RESOLVED (Aaron, 2026-09-23): ENFORCE it - stages now trigger
+    transfer()/complete(), so bad order has real side effects. Rules in
+    services._stage_problem(): Pitch first and only once; every other
+    stage must start from the batch's current state (Racking also allowed
+    from Aging, for repeat rackings); nothing after Complete Batch;
+    timestamp not in the future, not before the latest stage, and Pitch
+    not before Batch.startdate.
 
 
 RECIPE WORKFLOW (VESSEL CHAIN) - PHASE 2
@@ -634,8 +642,8 @@ FILES IMPACTED (v1 scope - no recipe-plan / phase 2 items)
       matching the shape of BatchTestForm / BatchNoteForm
 * apps/batchthis/views/main.py
     - new batchStage(request, pk=None) view mirroring batchTest/batchNote
-    - new log_stage_event() service function (calls batch.complete() on
-      terminal stage) - per CLAUDE.md, prefer this over a signal
+    - (the service is DONE, in services.py as transition_stage_event(),
+      not log_stage_event() - see SUGGESTED ORDER OF WORK step 4)
 * apps/batchthis/urls.py
     - addStage / addDetailStage routes, mirroring addTest/addDetailTest
 * apps/batchthis/templates/batchthis/batch.html
@@ -689,7 +697,27 @@ SUGGESTED ORDER OF WORK (TDD - write the test for each step first)
      full aging as one figure ("Aging 76 days", marked "ongoing" while
      open) plus a time-in-vessel table (vessel, state, from, to,
      duration; the current stay marked).
-4. log_stage_event() service function + terminal-stage completion test
+4. [DONE 2026-09-23] Workflow service. AS BUILT in services.py:
+   - transition_stage_event(batch, stage, *, timestamp=None,
+     dst_vessel=None, notes="") - renamed by Aaron from log_stage_event():
+     it's a workflow service, not a logging one. Enforces the workflow
+     (see the resolved "Enforce the graph" decision), then in ONE
+     transaction: transferring stages -> Batch.transfer(); Complete Batch
+     -> Batch.complete(); add_batch_log(); add_activity_log(). Raises
+     ValidationError (user-readable) and saves nothing otherwise.
+   - add_batch_log() writes the BatchStageEvent; add_activity_log() writes
+     one ActivityLog entry on the batch ("Stage [Racking] :: [Carboy 1] ->
+     [Aging Tank A] :: notes") - ONE entry per stage (Aaron): the workflow
+     calls transfer(log_activity=False) so it doesn't add its own
+     "Transferred from..." entry (the ad-hoc transfer in 6b still does).
+   - Backdating (Aaron): the stage timestamp is passed through to
+     transfer(timestamp=), complete(timestamp=) and set_vessel_status(
+     timestamp=), so vessel history and Batch.enddate match the stage.
+   - The existing addActivity post_save signal still adds a "Batch
+     Modified" entry whenever transfer()/complete() save the batch - left
+     as is for now.
+   - Tests: apps/batchthis/tests/test_transition_stage_event.py.
+   Original plan:
    + ActivityLog entry on the batch for EVERY stage event (Aaron,
    2026-09-23: stage events must show in the Batch ActivityLog)
    + always set BatchStageEvent.vessel (see MODEL CHANGES #2)

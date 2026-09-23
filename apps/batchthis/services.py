@@ -1,11 +1,19 @@
 import logging
+from datetime import datetime
 from typing import Optional
 
 from django.core.exceptions import ValidationError
 from django.db import transaction
 from django.utils import timezone
 
-from .models import Batch, Vessel, VesselStatusEvent
+from .models import (
+    ActivityLog,
+    Batch,
+    BatchStage,
+    BatchStageEvent,
+    Vessel,
+    VesselStatusEvent,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -17,6 +25,7 @@ def set_vessel_status(
     status: str,
     batch: Optional[Batch] = None,
     notes: str = "",
+    timestamp: Optional[datetime] = None,
 ) -> VesselStatusEvent:
     """
     The single place a Vessel's status is allowed to change (see
@@ -51,7 +60,7 @@ def set_vessel_status(
                 previous_status=previous,
                 batch=batch,
                 notes=notes,
-                timestamp=timezone.now(),
+                timestamp=timestamp or timezone.now(),
             )
     except Exception:
         # The DB rolled back; keep the in-memory instance consistent with it.
@@ -123,4 +132,118 @@ def return_vessel_to_service(vessel: Vessel, notes: str = "") -> VesselStatusEve
     restored = status_before_out_of_service(vessel)
     event = set_vessel_status(vessel, restored, notes=(notes or "").strip()[:250] or "Returned to service")
     logger.info(f"Vessel '{vessel.name}' returned to service as {restored!r}")
+    return event
+
+
+# ---------- Batch stage workflow (TODO-BatchStage.txt) ----------
+
+def add_batch_log(
+    batch: Batch,
+    stage: BatchStage,
+    *,
+    timestamp: datetime,
+    vessel: Optional[Vessel],
+    notes: str = "",
+) -> BatchStageEvent:
+    """Write one row of the batch's stage log. No workflow checks - see transition_stage_event()."""
+    event = BatchStageEvent.objects.create(
+        batch=batch, stage=stage, timestamp=timestamp, vessel=vessel, notes=notes
+    )
+    logger.debug(f"add_batch_log: batch={batch.pk} stage={stage.shortid!r} vessel={getattr(vessel, 'pk', None)} at {timestamp}")
+    return event
+
+
+def add_activity_log(batch: Batch, text: str, *, timestamp: Optional[datetime] = None) -> ActivityLog:
+    """Add one entry to the batch's ActivityLog."""
+    entry = ActivityLog.objects.create(datetime=timestamp or timezone.now(), text=text)
+    batch.activity.add(entry)
+    logger.debug(f"add_activity_log: batch={batch.pk} {text!r}")
+    return entry
+
+
+def _stage_problem(batch: Batch, stage: BatchStage, timestamp: datetime, dst_vessel: Optional[Vessel]) -> Optional[str]:
+    """Why this stage can't be logged on this batch right now, or None if it can."""
+    current = batch.current_stage_event
+    state = current.stage.to_state if current else None
+
+    if state == BatchStage.STATE_COMPLETED or not batch.active:
+        return f"Batch '{batch.name}' is complete; no more stages can be logged."
+    if current is None and stage.from_state != "":
+        return f"Log Pitch first - '{batch.name}' hasn't been pitched yet."
+    if current is not None:
+        repeat_racking = stage.shortid == BatchStage.RACKING and state == BatchStage.STATE_AGING
+        if stage.from_state != state and not repeat_racking:
+            expected = stage.get_from_state_display()
+            return f"{stage.name} needs a batch in {expected}; '{batch.name}' is in {state}."
+
+    if timestamp > timezone.now():
+        return "A stage can't be logged in the future."
+    if current is not None and timestamp < current.timestamp:
+        return (f"{stage.name} can't be earlier than the batch's latest stage "
+                f"({current.stage.name}, {timezone.localtime(current.timestamp):%b %d, %Y %H:%M}).")
+    if current is None and timestamp < batch.startdate:
+        return f"{stage.name} can't be before the batch's start date ({timezone.localtime(batch.startdate):%b %d, %Y})."
+
+    if stage.transfers_batch and dst_vessel is None:
+        return f"{stage.name} transfers the batch - choose a destination vessel."
+    if not stage.transfers_batch and dst_vessel is not None:
+        return f"{stage.name} doesn't transfer the batch - don't choose a destination vessel."
+    return None
+
+
+def transition_stage_event(
+    batch: Batch,
+    stage: BatchStage,
+    *,
+    timestamp: Optional[datetime] = None,
+    dst_vessel: Optional[Vessel] = None,
+    notes: str = "",
+) -> BatchStageEvent:
+    """
+    Move a batch through one step of the workflow - the only place stage events
+    are created. Enforces the workflow (Pitch first and once; each stage starts
+    from the batch's current state, Racking also repeatable during Aging;
+    nothing after Complete Batch; timestamp not in the future or before the
+    latest stage), then in one transaction:
+      * transferring stages (Racking, any Filtering) -> Batch.transfer() into dst_vessel
+      * Complete Batch -> Batch.complete()
+      * add_batch_log() - the BatchStageEvent, with the vessel the batch is in afterwards
+      * add_activity_log() - one ActivityLog entry covering the stage (and any transfer)
+    Raises ValidationError (user-readable) and saves nothing if the step isn't allowed.
+    """
+    timestamp = timestamp or timezone.now()
+    notes = (notes or "").strip()[:250]
+    logger.debug(
+        f"transition_stage_event: batch={batch.pk} '{batch.name}' stage={stage.shortid!r} "
+        f"at {timestamp} dst={getattr(dst_vessel, 'pk', None)} notes={notes!r}"
+    )
+
+    problem = _stage_problem(batch, stage, timestamp, dst_vessel)
+    if problem:
+        logger.error(f"transition_stage_event: rejected for batch {batch.pk} - {problem}")
+        raise ValidationError(problem)
+
+    src_vessel = batch.current_vessel
+    try:
+        with transaction.atomic():
+            if stage.transfers_batch:
+                batch.transfer(src_vessel, dst_vessel, timestamp=timestamp, log_activity=False)
+            if stage.to_state == BatchStage.STATE_COMPLETED:
+                batch.complete(timestamp=timestamp)
+            vessel = batch.current_vessel
+            event = add_batch_log(batch, stage, timestamp=timestamp, vessel=vessel, notes=notes)
+
+            where = f"[{src_vessel.name}] -> [{vessel.name}]" if stage.transfers_batch else f"[{vessel.name}]"
+            text = f"Stage [{stage.name}] :: {where}" + (f" :: {notes}" if notes else "")
+            add_activity_log(batch, text, timestamp=timestamp)
+    except ValidationError:
+        # e.g. transfer() rejecting the destination vessel; nothing was saved.
+        batch.refresh_from_db()
+        raise
+    except Exception:
+        batch.refresh_from_db()
+        logger.exception(f"transition_stage_event: failed for batch {batch.pk} stage {stage.shortid!r}")
+        raise
+
+    logger.info(f"Batch '{batch.name}' -> {stage.name} ({stage.to_state}) in '{vessel.name}'")
     return event

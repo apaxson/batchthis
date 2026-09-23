@@ -499,15 +499,26 @@ class Batch(models.Model):
     def current_vessel(self) -> Vessel:
         return self.vessel if self.vessel_id else self.fermenter.vessel
 
-    def transfer(self, src_vessel: Vessel, dst_vessel: Vessel) -> None:
+    def transfer(
+        self,
+        src_vessel: Vessel,
+        dst_vessel: Vessel,
+        *,
+        timestamp: datetime | None = None,
+        log_activity: bool = True,
+    ) -> None:
         """
         Move the batch from src_vessel into dst_vessel (any vessel type): src
         -> Needs Cleaning, dst -> In Use, batch.vessel -> dst, plus one
         ActivityLog entry on the batch. All of it commits together, or none.
+        timestamp (default now) stamps the vessel status history. The stage
+        workflow passes log_activity=False: its own entry covers the move.
         """
         from django.core.exceptions import ValidationError
         from django.db import transaction
-        from .services import set_vessel_status
+        from .services import add_activity_log, set_vessel_status
+
+        timestamp = timestamp or timezone.now()
 
         logger.debug(
             f"Batch.transfer: batch={self.pk} '{self.name}' "
@@ -530,18 +541,19 @@ class Batch(models.Model):
         with transaction.atomic():
             self.vessel = dst_vessel
             self.save(update_fields=['vessel'])
-            set_vessel_status(src_vessel, Vessel.STATUS_DIRTY, batch=self, notes=f"Batch transferred to {dst_vessel.name}")
-            set_vessel_status(dst_vessel, Vessel.STATUS_ACTIVE, batch=self, notes=f"Batch transferred from {src_vessel.name}")
-            log = ActivityLog.objects.create(
-                datetime=timezone.now(), text=f"Transferred from [{src_vessel.name}] to [{dst_vessel.name}]"
-            )
-            self.activity.add(log)
+            set_vessel_status(src_vessel, Vessel.STATUS_DIRTY, batch=self,
+                              notes=f"Batch transferred to {dst_vessel.name}", timestamp=timestamp)
+            set_vessel_status(dst_vessel, Vessel.STATUS_ACTIVE, batch=self,
+                              notes=f"Batch transferred from {src_vessel.name}", timestamp=timestamp)
+            if log_activity:
+                add_activity_log(self, f"Transferred from [{src_vessel.name}] to [{dst_vessel.name}]", timestamp=timestamp)
         logger.info(f"Batch '{self.name}' transferred from '{src_vessel.name}' to '{dst_vessel.name}'")
 
-    def complete(self) -> None:
+    def complete(self, *, timestamp: datetime | None = None) -> None:
         """
-        Mark the batch finished and flag its fermentation vessel for cleaning.
-        Both commit together, or neither does.
+        Mark the batch finished and flag its current vessel for cleaning. Both
+        commit together, or neither does. timestamp (default now) becomes the
+        end date and stamps the vessel status history.
         """
         # Local import: services.py imports this module.
         from django.core.exceptions import ValidationError
@@ -554,11 +566,12 @@ class Batch(models.Model):
             raise ValidationError(f"Batch '{self.name}' is already complete.")
 
         vessel = self.current_vessel
+        timestamp = timestamp or timezone.now()
         with transaction.atomic():
-            self.enddate = timezone.now()
+            self.enddate = timestamp
             self.active = False
             self.save()
-            set_vessel_status(vessel, Vessel.STATUS_DIRTY, batch=self, notes="Batch completed")
+            set_vessel_status(vessel, Vessel.STATUS_DIRTY, batch=self, notes="Batch completed", timestamp=timestamp)
         logger.info(f"Batch '{self.name}' completed; vessel '{vessel.name}' needs cleaning")
 
     @property
