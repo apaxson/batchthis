@@ -9,17 +9,22 @@ from django.core.exceptions import ValidationError
 from django.db import transaction
 import logging
 from django.utils import timezone
-from django.db.models import Prefetch
+from django.db.models import Count, Prefetch
+from django.utils.safestring import mark_safe
+import json
+from apps.batchthis.models import PlanStep, WorkflowTemplate
 from apps.batchthis.models import Batch, BatchStage, BatchStageEvent, Fermenter, BatchTestType, BatchNoteType, Vessel, Unit, Recipe, Fermentable, AdjunctUsage, RecipeYeasts,RecipeFermentable,RecipeAdjunct
 from django.shortcuts import get_object_or_404
 from apps.batchthis.forms import BatchTestForm, BatchNoteForm, BatchAdditionForm, RefractometerCorrectionForm, BatchAddForm, BatchEditForm, \
     BatchCategory
 from apps.batchthis.forms import RecipeAddForm, FermentableForm, AdjunctForm, YeastForm, BatchStageForm, BatchTransferForm, VesselForm
+from apps.batchthis.forms import WorkflowTemplateForm, PlanStepFormSet
 from django.forms.formsets import formset_factory
 from apps.batchthis.lib.utils import Utils
 from apps.batchthis.services import (
     set_vessel_status, take_vessel_out_of_service, return_vessel_to_service, status_before_out_of_service,
     transition_stage_event, transfer_batch, create_vessel, update_vessel,
+    plan_totals, save_workflow_template, delete_workflow_template,
 )
 from apps.batchthis.lib.faults import get_active_flags, get_rule_for, StagedFaultRule
 from django.contrib.auth.decorators import login_required
@@ -743,6 +748,93 @@ def returnVesselToService(request, pk):
         logger.exception("returnVesselToService: failed for vessel %s '%s'", pk, vessel.name)
         messages.error(request, f"Couldn't return '{vessel.name}' to service. Nothing was changed - please try again.")
     return HttpResponseRedirect(reverse('vessel', kwargs={'pk': pk}))
+
+
+# ---------- Workflow templates (Settings > Workflows) ----------
+
+def _days_label(days: float) -> str:
+    days = round(days, 1)
+    return f"{days:g} day" if days == 1 else f"{days:g} days"
+
+
+@login_required
+def workflowListing(request):
+    templates = (WorkflowTemplate.objects
+                 .annotate(step_count=Count('steps', distinct=True), recipe_count=Count('recipes', distinct=True))
+                 .prefetch_related('steps__stage'))
+    rows = []
+    for template in templates:
+        total = plan_totals(template.steps.all()).total_days
+        rows.append({'template': template, 'planned': _days_label(total) if total else None})
+    logger.debug("workflowListing: %d workflow template(s)", len(rows))
+    return render(request, 'batchthis/workflows.html', {'rows': rows})
+
+
+def _workflow_form_page(request, template: WorkflowTemplate | None):
+    """Add (template=None) or edit a workflow template and its steps - one page for both."""
+    form = WorkflowTemplateForm(request.POST or None, template=template)
+    if request.method == 'POST':
+        formset = PlanStepFormSet(request.POST, prefix='steps')
+        if form.is_valid() and formset.is_valid():
+            try:
+                template = save_workflow_template(template, name=form.cleaned_data['name'],
+                                                  description=form.cleaned_data['description'],
+                                                  rows=formset.plan_rows())
+            except ValidationError as e:
+                form.add_error(None, e.messages)
+            except Exception:
+                logger.exception("workflow form: failed to save template %s", template.pk if template else None)
+                form.add_error(None, "Couldn't save the workflow. Nothing was changed - please try again.")
+            else:
+                messages.success(request, f"Saved workflow '{template.name}'.")
+                return HttpResponseRedirect(reverse('workflowListing'))
+        logger.debug("workflow form: errors form=%s steps=%s non-form=%s",
+                     form.errors.as_data(), formset.errors, formset.non_form_errors())
+    else:
+        if template is not None:
+            initial = [{'stage': s.stage, 'vessel_type': s.vessel_type, 'planned_duration': s.planned_duration,
+                        'notes': s.notes} for s in template.steps.select_related('stage')]
+        else:  # the shortest valid chain; vessel types only where the stage fixes them
+            stages = {s.shortid: s for s in BatchStage.objects.filter(
+                shortid__in=['pitch', 'racking', 'sterile-filtering', 'complete-batch'])}
+            initial = [{'stage': stages['pitch'], 'vessel_type': Vessel.TYPE_FERMENTER},
+                       {'stage': stages['racking']},
+                       {'stage': stages['sterile-filtering']},
+                       {'stage': stages['complete-batch'], 'vessel_type': PlanStep.VESSEL_CURRENT}]
+        formset = PlanStepFormSet(initial=initial, prefix='steps')
+    context = {
+        'form': form, 'formset': formset, 'template': template,
+        'stage_rules': mark_safe(json.dumps(PlanStepFormSet.stage_rules())),  # pks and fixed labels only
+    }
+    return render(request, 'batchthis/workflowForm.html', context)
+
+
+@login_required
+def workflowCreate(request):
+    return _workflow_form_page(request, None)
+
+
+@login_required
+def workflowEdit(request, pk):
+    return _workflow_form_page(request, get_object_or_404(WorkflowTemplate, pk=pk))
+
+
+@login_required
+def workflowDelete(request, pk):
+    """GET asks for confirmation; POST deletes. Recipes that copied it keep their steps."""
+    template = get_object_or_404(WorkflowTemplate, pk=pk)
+    if request.method == 'POST':
+        name = template.name
+        try:
+            delete_workflow_template(template)
+        except Exception:
+            logger.exception("workflowDelete: failed to delete template %s '%s'", pk, name)
+            messages.error(request, f"Couldn't delete workflow '{name}'. Nothing was changed - please try again.")
+            return HttpResponseRedirect(reverse('editWorkflow', kwargs={'pk': pk}))
+        messages.success(request, f"Deleted workflow '{name}'.")
+        return HttpResponseRedirect(reverse('workflowListing'))
+    recipes = template.recipes.order_by('name')
+    return render(request, 'batchthis/workflowDelete.html', {'template': template, 'recipes': recipes})
 
 
 def refractometerCorrection(request):

@@ -1,0 +1,76 @@
+{% extends 'batchthis/base.html' %}
+{% block content %}
+
+<div class="cl-page-head">
+  <div class="cl-wordmark font-display">{% if template %}Edit {{ template.name }}{% else %}Add workflow{% endif %}</div>
+  <div class="cl-batch-sub" style="margin-top:6px;">
+    <span><a href="{% url 'workflowListing' %}">&larr; Back to workflows</a></span>
+    {% if template %}
+    <span>Changes don't affect recipes that already copied it</span>
+    <span><a href="{% url 'deleteWorkflow' template.pk %}">Delete workflow</a></span>
+    {% endif %}
+  </div>
+</div>
+
+{% if form.non_field_errors or formset.non_form_errors %}
+<div class="cl-flag" style="margin-bottom:20px;">
+  <span class="cl-flag-mark">!</span>
+  <span>{% for error in form.non_field_errors %}{{ error }} {% endfor %}{% for error in formset.non_form_errors %}{{ error }} {% endfor %}</span>
+</div>
+{% endif %}
+
+<form method="POST" class="cl-form" id="workflowform">
+  {% csrf_token %}
+  <div class="cl-panel" style="margin-bottom:26px;">
+    <div class="cl-form-grid">
+      <div class="cl-field">
+        <label for="{{ form.name.id_for_label }}">Name</label>
+        {{ form.name }}
+        {% if form.name.errors %}<div class="cl-field-error">{{ form.name.errors }}</div>{% endif %}
+      </div>
+      <div class="cl-field" style="grid-column: span 2;">
+        <label for="{{ form.description.id_for_label }}">Description</label>
+        {{ form.description }}
+        {% if form.description.errors %}<div class="cl-field-error">{{ form.description.errors }}</div>{% endif %}
+      </div>
+    </div>
+  </div>
+
+  <div class="cl-section-head">
+    <div class="cl-section-title">Steps</div>
+    <div class="cl-section-note">Vessel type means any clean vessel of that type. Leave the duration blank for a step with no planned time.</div>
+  </div>
+
+  {{ formset.management_form }}
+  <div id="plan_step_set" class="cl-plan-steps" data-stage-rules='{{ stage_rules }}'>
+    {% for step_form in formset %}
+      {% include 'batchthis/includes/_plan_step_row.html' %}
+    {% endfor %}
+  </div>
+
+  <template id="plan-step-empty-form">
+    {% with formset.empty_form as step_form %}
+      {% include 'batchthis/includes/_plan_step_row.html' %}
+    {% endwith %}
+  </template>
+
+  <div class="cl-form-actions">
+    <button type="button" class="cl-btn cl-btn--secondary" id="addPlanStepButton">Add step</button>
+    <a class="cl-btn cl-btn--secondary" href="{% url 'workflowListing' %}">Cancel</a>
+    <button type="submit" class="cl-btn cl-btn--primary">Save workflow</button>
+  </div>
+</form>
+
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    CellarLedger.initFormsetAdd({
+      addButtonId: 'addPlanStepButton',
+      rowSetId: 'plan_step_set',
+      templateId: 'plan-step-empty-form',
+      totalFormsId: 'id_steps-TOTAL_FORMS',
+    });
+    CellarLedger.initFormsetReorder({ rowSetId: 'plan_step_set', formId: 'workflowform', prefix: 'steps' });
+    CellarLedger.initPlanSteps({ rowSetId: 'plan_step_set' });
+  });
+</script>
+{% endblock %}

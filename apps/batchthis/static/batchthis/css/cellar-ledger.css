@@ -287,6 +287,7 @@ a.nav-link, a.sub-link, a.dropdown-item {
   display: flex;
   align-items: baseline;
   justify-content: space-between;
+  gap: 12px;
   margin-bottom: 10px;
 }
 .cl-section-title { font-size: 1.05rem; font-weight: 600; }
@@ -440,6 +441,8 @@ a.nav-link, a.sub-link, a.dropdown-item {
   font-size: 0.86rem;
 }
 .cl-flag + .cl-flag { margin-top: 10px; }
+/* A confirmation (Django success message), not a problem. */
+.cl-flag--ok { border-color: var(--moss); background: color-mix(in srgb, var(--moss) 9%, var(--paper-raised)); }
 .cl-flag-mark { color: var(--brick); font-weight: 700; font-family: 'IBM Plex Mono', monospace; flex-shrink: 0; }
 .cl-flag b { color: var(--brick); }
 
@@ -694,6 +697,38 @@ a.nav-link, a.sub-link, a.dropdown-item {
   .cl-field--grow { grid-column: 1 / -1; }
 }
 
+/* Plan steps (workflowForm.html, includes/_plan_step_row.html): numbered, reorderable rows.
+   The number is a CSS counter so it follows moved/removed rows without JS. */
+.cl-plan-steps { counter-reset: plan-step; }
+.cl-formset-row--plan { grid-template-columns: 28px 1.2fr 1.1fr 1fr 2fr auto; }
+.cl-formset-row--plan .cl-plan-step-errors { grid-column: 1 / -1; margin: 0; }
+.cl-plan-step-num { counter-increment: plan-step; padding-top: 31px; font-family: 'IBM Plex Mono', monospace;
+                    font-size: 0.85rem; font-weight: 600; color: var(--ink-soft); }
+.cl-plan-step-num::before { content: counter(plan-step); }
+.cl-formset-row--plan:has([name$="-DELETE"]:checked) { opacity: 0.5; }
+.cl-formset-row--plan:has([name$="-DELETE"]:checked) .cl-plan-step-num { counter-increment: none; }
+.cl-formset-row--plan:has([name$="-DELETE"]:checked) .cl-plan-step-num::before { content: "\2013"; }
+.cl-plan-step-tools { display: flex; align-items: center; gap: 4px; padding-top: 26px; }
+.cl-plan-step-tools .cl-field--remove { margin-left: 8px; }
+.cl-step-move {
+  width: 30px; height: 30px; padding: 5px;
+  color: var(--ink-soft); background: transparent;
+  border: 1px solid var(--line); border-radius: 3px; cursor: pointer;
+}
+.cl-step-move svg { width: 100%; height: 100%; display: block; }
+.cl-step-move:hover { color: var(--ink); border-color: var(--ink-soft); }
+.cl-step-move:focus-visible { outline: 2px solid var(--focus); outline-offset: 1px; }
+.cl-plan-steps > .cl-formset-row:first-child [data-move="up"],
+.cl-plan-steps > .cl-formset-row:last-child [data-move="down"] { visibility: hidden; }
+.cl-field select option:disabled { color: var(--ink-faint); }
+@media (max-width: 900px) {
+  .cl-formset-row--plan { grid-template-columns: 28px 1fr 1fr; }
+  .cl-formset-row--plan .cl-plan-step-duration,
+  .cl-formset-row--plan .cl-field--grow,
+  .cl-formset-row--plan .cl-plan-step-tools { grid-column: 2 / -1; }
+  .cl-formset-row--plan .cl-plan-step-tools { padding-top: 0; }
+}
+
 /* ---------- Simple (non-formset) forms, e.g. addBatch ---------- */
 .cl-form-grid {
   display: grid;
@@ -773,6 +808,9 @@ a.nav-link, a.sub-link, a.dropdown-item {
 .cl-btn--primary:hover { background: var(--honey); }
 .cl-btn--secondary { background: transparent; color: var(--ink); border-color: var(--line); }
 .cl-btn--secondary:hover { background: var(--paper); border-color: var(--ink-soft); }
+.cl-btn--danger { background: var(--brick); color: var(--paper-raised); }
+.cl-btn--danger:hover { background: color-mix(in srgb, var(--brick) 85%, black); }
+a.cl-btn { display: inline-block; text-decoration: none; }
 
 @media (prefers-reduced-motion: reduce) {
   .cl-sidebar, .cl-rail-btn svg, .cl-collapse-toggle svg { transition: none !important; }

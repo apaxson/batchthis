@@ -22,6 +22,7 @@ from .models import (
     Vessel,
     VesselStatusEvent,
     WorkflowTemplate,
+    WorkflowTemplateStep,
 )
 
 logger = logging.getLogger(__name__)
@@ -460,25 +461,39 @@ def _plan_items(steps) -> list[tuple]:
     return items
 
 
+def allowed_vessel_types(stage: BatchStage) -> list[str]:
+    """
+    The vessel types a plan step for this stage may name (Aaron, 2026-09-24):
+    Pitch always starts in a Fermenter, Complete Batch stays put (None / Current),
+    and every other stage - they all move the batch - needs a real vessel type.
+    """
+    if stage.from_state == "":  # Pitch
+        return [Vessel.TYPE_FERMENTER]
+    if stage.to_state == BatchStage.STATE_COMPLETED:
+        return [PlanStep.VESSEL_CURRENT]
+    real_types = [value for value, _ in Vessel.TYPE_CHOICES]
+    return real_types if stage.transfers_batch else real_types + [PlanStep.VESSEL_CURRENT]
+
+
 def _vessel_type_problem(stage: BatchStage, vessel_type) -> str | None:
-    """The per-stage vessel type rule for plan steps (Aaron, 2026-09-24)."""
+    """Why this vessel type doesn't fit the stage (see allowed_vessel_types()), or None."""
     if vessel_type is _UNCHECKED:
         return None
     if vessel_type not in {value for value, _ in PlanStep.VESSEL_TYPE_CHOICES}:
         return "choose a vessel type."
+    if vessel_type in allowed_vessel_types(stage):
+        return None
     if stage.from_state == "":  # Pitch
-        return None if vessel_type == Vessel.TYPE_FERMENTER else f"{stage.name} always starts in a Fermenter."
+        return f"{stage.name} always starts in a Fermenter."
     if stage.to_state == BatchStage.STATE_COMPLETED:
-        return (None if vessel_type == PlanStep.VESSEL_CURRENT
-                else f"{stage.name} ends the batch - its vessel type is None / Current.")
-    if stage.transfers_batch and vessel_type == PlanStep.VESSEL_CURRENT:
-        return f"{stage.name} moves the batch - choose Fermenter, Aging Tank or Barrel."
-    return None
+        return f"{stage.name} ends the batch - its vessel type is None / Current."
+    return f"{stage.name} moves the batch - choose Fermenter, Aging Tank or Barrel."
 
 
-def plan_problems(steps) -> list[str]:
+def plan_step_problems(steps) -> list[tuple[int, str]]:
     """
-    Why a per-step plan isn't valid, as user-readable messages (empty = valid).
+    Why a per-step plan isn't valid, as (step number, message) pairs - so a step
+    editor can show each message on its own row. Empty = valid.
     Every step - with or without a duration - must follow the workflow order
     (BatchStage.can_follow(), the same rule the live workflow uses). Durations are
     optional, except Complete Batch ends the batch and can't have one. Each step
@@ -489,24 +504,29 @@ def plan_problems(steps) -> list[str]:
     state, previous = None, None
     for number, (stage, days, vessel_type) in enumerate(_plan_items(steps), start=1):
         if state == BatchStage.STATE_COMPLETED:
-            problems.append(f"Step {number}: nothing can come after Complete Batch.")
+            problems.append((number, "nothing can come after Complete Batch."))
             break
         if not stage.can_follow(state):
             if state is None:
-                problems.append(f"Step {number}: the plan must start with Pitch.")
+                problems.append((number, "the plan must start with Pitch."))
             else:
-                problems.append(
-                    f"Step {number}: {stage.name} can't come after {previous.name} - the batch would be in "
+                problems.append((number, (
+                    f"{stage.name} can't come after {previous.name} - the batch would be in "
                     f"{state}, and {stage.name} needs {stage.get_from_state_display()}."
-                )
+                )))
         if days is not None and stage.to_state == BatchStage.STATE_COMPLETED:
-            problems.append(f"Step {number}: {stage.name} ends the batch - leave its duration blank.")
+            problems.append((number, f"{stage.name} ends the batch - leave its duration blank."))
         vessel_problem = _vessel_type_problem(stage, vessel_type)
         if vessel_problem:
-            problems.append(f"Step {number}: {vessel_problem}")
+            problems.append((number, vessel_problem))
         state, previous = stage.to_state, stage
-    logger.debug(f"plan_problems: {len(problems)} problem(s): {problems}")
+    logger.debug(f"plan_step_problems: {len(problems)} problem(s): {problems}")
     return problems
+
+
+def plan_problems(steps) -> list[str]:
+    """plan_step_problems() as one list of "Step N: ..." messages (empty = valid)."""
+    return [f"Step {number}: {message}" for number, message in plan_step_problems(steps)]
 
 
 @dataclass(frozen=True)
@@ -546,3 +566,56 @@ def copy_template_to_recipe(template: WorkflowTemplate, recipe: Recipe) -> list[
         recipe.save(update_fields=['workflow_template'])
     logger.info(f"Recipe '{recipe}' plan copied from template '{template}' ({len(copies)} steps)")
     return copies
+
+
+def workflow_name_problem(name: str, exclude_pk: int | None = None) -> str | None:
+    """Workflow template names are unique, ignoring case (like vessel names)."""
+    clash = WorkflowTemplate.objects.filter(name__iexact=name.strip())
+    if exclude_pk is not None:
+        clash = clash.exclude(pk=exclude_pk)
+    existing = clash.first()
+    return f"A workflow named '{existing.name}' already exists." if existing else None
+
+
+def save_workflow_template(template: WorkflowTemplate | None, *, name: str, description: str,
+                           rows: list[dict]) -> WorkflowTemplate:
+    """
+    Create (template=None) or update a workflow template and REPLACE its steps
+    with `rows` - dicts of stage, planned_duration, vessel_type, notes - in the
+    order given. The plan must be valid (plan_problems) and have at least one
+    step; otherwise ValidationError and nothing is saved. Recipes that copied
+    the template keep their own steps.
+    """
+    logger.debug(f"save_workflow_template: template={template.pk if template else None} name={name!r} "
+                 f"{len(rows)} step(s)")
+    problems = []
+    name_problem = workflow_name_problem(name, exclude_pk=template.pk if template else None)
+    if name_problem:
+        problems.append(name_problem)
+    if not rows:
+        problems.append("Add at least one step.")
+    problems += plan_problems([(r['stage'], r['planned_duration'], r['vessel_type']) for r in rows])
+    if problems:
+        logger.debug(f"save_workflow_template: rejected: {problems}")
+        raise ValidationError(problems)
+
+    with transaction.atomic():
+        template = template or WorkflowTemplate()
+        template.name, template.description = name.strip(), description.strip()
+        template.save()
+        template.steps.all().delete()
+        WorkflowTemplateStep.objects.bulk_create([
+            WorkflowTemplateStep(template=template, sort_order=order, stage=row['stage'],
+                                 planned_duration=row['planned_duration'], vessel_type=row['vessel_type'],
+                                 notes=row.get('notes', ''))
+            for order, row in enumerate(rows, start=1)
+        ])
+    logger.info(f"Workflow template '{template}' saved with {len(rows)} step(s)")
+    return template
+
+
+def delete_workflow_template(template: WorkflowTemplate) -> None:
+    """Delete a template; recipes that copied it keep their steps (Recipe.workflow_template is SET_NULL)."""
+    name, recipes = template.name, template.recipes.count()
+    template.delete()
+    logger.info(f"Workflow template '{name}' deleted ({recipes} recipe(s) keep their copied steps)")

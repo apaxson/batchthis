@@ -10,13 +10,16 @@ from django.core.exceptions import ValidationError
 import apps.batchthis.models
 from .models import BatchTest, BatchNote, BatchAddition, Batch, Unit, Fermenter, Vessel, BatchCategory, BatchStyle
 from .models import BatchStage, BatchTestType, READING_SPECS
-from .services import allowed_next_stages, vessel_name_problem, VESSEL_TYPES
+from .models import PlanStep
+from .services import allowed_next_stages, allowed_vessel_types, plan_step_problems, vessel_name_problem, \
+    workflow_name_problem, VESSEL_TYPES
 from .models import Fermentable, Adjunct, Yeast, Recipe, AdjunctUsage, RecipeFermentable
 from django.forms.widgets import NumberInput, DateInput
 from django.utils import timezone
 from pint import Quantity
 from quantityfield.fields import QuantityFormField, QuantityWidget
-from .fields import AmountField, DescriptiveQuantityFormField, PrecisionQuantityWidget, PrecisionTextWidget, ReadingField, VolumeField
+from .fields import AmountField, DescriptiveQuantityFormField, PrecisionQuantityWidget, PrecisionTextWidget, ReadingField, \
+    TimeSpanField, VolumeField
 import logging
 
 logger = logging.getLogger(__name__)
@@ -392,3 +395,89 @@ class RefractometerCorrectionForm(forms.Form):
                                    initial=0.0)
     currentUnit = forms.ChoiceField(choices=unitChoices, help_text="Choose current unit type of measurement",
                                     label="Current Measurement Unit")
+
+
+class WorkflowTemplateForm(forms.Form):
+    """A workflow template's name and description; its steps are the PlanStepFormSet beside it."""
+    name = forms.CharField(max_length=50, widget=forms.TextInput(attrs={'placeholder': 'e.g. Traditional mead'}))
+    description = forms.CharField(max_length=250, required=False,
+                                  widget=forms.TextInput(attrs={'placeholder': 'Optional - when to use this workflow'}))
+
+    def __init__(self, *args, template=None, **kwargs):
+        self.template = template
+        if template is not None:
+            kwargs.setdefault('initial', {'name': template.name, 'description': template.description})
+        super().__init__(*args, **kwargs)
+
+    def clean_name(self) -> str:
+        name = self.cleaned_data['name'].strip()
+        problem = workflow_name_problem(name, exclude_pk=self.template.pk if self.template else None)
+        if problem:
+            raise ValidationError(problem)
+        return name
+
+
+class PlanStepForm(forms.Form):
+    """
+    One step of a plan (workflow template now, recipe plan next): the stage that
+    moves the batch, the vessel type it moves into, and how long it stays.
+    Rows are in page order - the step editor renumbers them before submitting.
+    """
+    stage = forms.ModelChoiceField(queryset=BatchStage.objects.all(), empty_label="Choose a stage")
+    vessel_type = forms.ChoiceField(label="Vessel type",
+                                    choices=[('', 'Choose a type')] + PlanStep.VESSEL_TYPE_CHOICES)
+    planned_duration = TimeSpanField(required=False, label="Duration", placeholder="e.g. 14 days")
+    notes = forms.CharField(max_length=250, required=False,
+                            widget=forms.TextInput(attrs={'placeholder': 'Optional'}))
+
+
+class BasePlanStepFormSet(forms.BaseFormSet):
+    """
+    The step rows of a plan. Blank rows are ignored and removed rows dropped;
+    the rest must form a valid plan (services.plan_step_problems), with each
+    problem shown on the row it's about.
+    """
+
+    def _construct_form(self, i, **kwargs):
+        # Any row left blank is skipped, not just the extra ones: rows can be
+        # reordered on the page, so an added row may no longer be last.
+        kwargs['empty_permitted'] = True
+        kwargs['use_required_attribute'] = False
+        return super()._construct_form(i, **kwargs)
+
+    def _kept_forms(self) -> list:
+        return [form for form in self.forms
+                if form.has_changed() and not (self.can_delete and self._should_delete_form(form))]
+
+    def plan_rows(self) -> list[dict]:
+        """The kept rows' cleaned data, in page order (call after is_valid())."""
+        return [{key: form.cleaned_data[key] for key in ('stage', 'planned_duration', 'vessel_type', 'notes')}
+                for form in self._kept_forms()]
+
+    def clean(self):
+        kept = self._kept_forms()
+        if any(form.errors for form in kept):
+            return  # fix the row's own fields first - the plan check needs them all
+        if not kept:
+            raise ValidationError("Add at least one step.")
+        steps = [(f.cleaned_data['stage'], f.cleaned_data['planned_duration'], f.cleaned_data['vessel_type'])
+                 for f in kept]
+        for number, message in plan_step_problems(steps):
+            kept[number - 1].add_error(None, message[:1].upper() + message[1:])
+
+    @staticmethod
+    def stage_rules() -> dict:
+        """
+        Per stage pk: the vessel types a step may name and whether it takes a
+        duration - handed to the step editor (cellar-ledger.js) so it can pre-set
+        and lock Pitch / Complete Batch. The server still checks everything.
+        """
+        return {
+            str(stage.pk): {'vessel_types': allowed_vessel_types(stage),
+                            'duration': stage.to_state != BatchStage.STATE_COMPLETED}
+            for stage in BatchStage.objects.all()
+        }
+
+
+PlanStepFormSet = forms.formset_factory(PlanStepForm, formset=BasePlanStepFormSet, extra=0,
+                                        can_delete=True, can_delete_extra=True)

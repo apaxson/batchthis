@@ -75,6 +75,15 @@
         <span class="nav-badge">soon</span>
       </a>
     </div>
+
+    <div class="cl-nav-group">
+      <div class="cl-nav-heading">Settings</div>
+
+      <a class="nav-link" href="{% url 'workflowListing' %}" title="Workflows" {% if request.resolver_match.url_name in 'workflowListing,addWorkflow,editWorkflow,deleteWorkflow' %}aria-current="page"{% endif %}>
+        <svg viewBox="0 0 20 20" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="5" cy="5" r="2"/><circle cx="15" cy="10" r="2"/><circle cx="5" cy="15" r="2"/><path d="M7 5h3.5a2 2 0 0 1 2 2v1M12.5 12v1a2 2 0 0 1-2 2H7"/></svg>
+        <span class="nav-label">Workflows</span>
+      </a>
+    </div>
   </nav>
 
   <div class="cl-sidebar-foot">

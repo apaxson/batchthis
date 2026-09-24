@@ -630,6 +630,21 @@ Steps:
         errors shown on their row via a structured (step, message) variant),
         includes/_plan_step_row.html, CellarLedger.initFormsetReorder(),
         and a save_plan(owner, rows) service.
+      [8a DONE 2026-09-24] Settings > Workflows: workflows.html (list: steps,
+      planned time, recipes using it), workflowForm.html (add/edit - Add
+      starts with Pitch -> Racking -> Sterile Filtering -> Complete Batch),
+      workflowDelete.html (confirm; lists recipes that keep their copy).
+      URLs workflowListing / addWorkflow / editWorkflow / deleteWorkflow.
+      Shared for 8b: forms.PlanStepForm + PlanStepFormSet (prefix "steps";
+      blank rows skipped, removed rows dropped, rows read in page order,
+      plan problems shown on their row via services.plan_step_problems()),
+      includes/_plan_step_row.html (numbered by a CSS counter),
+      CellarLedger.initFormsetReorder() (up/down; renumbers field names on
+      submit) and CellarLedger.initPlanSteps() (locks Pitch/Complete Batch
+      vessel type + Complete Batch duration from
+      PlanStepFormSet.stage_rules(); services.allowed_vessel_types()).
+      Service is save_workflow_template(template, name, description, rows)
+      - 8b adds the recipe equivalent. Tests: tests/test_workflow_templates.py.
   9.  Show the plan on recipe.html (step chain + total planned time).
   10. Batch plan: copy the recipe's steps onto the batch at creation,
       editable until the batch is pitched.

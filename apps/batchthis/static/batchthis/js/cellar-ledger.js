@@ -57,6 +57,87 @@ CellarLedger.initFormsetAdd = function (opts) {
   });
 };
 
+// Up/down buttons ([data-move="up|down"]) on each row of a formset, for rows whose
+// order matters (plan steps - see includes/_plan_step_row.html). Rows are only
+// moved on the page; on submit every row's field names/ids are renumbered to its
+// position, so the server reads the rows in page order (form index = order).
+CellarLedger.initFormsetReorder = function (opts) {
+  var rowSet = document.getElementById(opts.rowSetId);
+  var form = document.getElementById(opts.formId);
+  if (!rowSet || !form) return;
+  var pattern = new RegExp('^(id_)?' + opts.prefix + '-\\d+-');
+
+  rowSet.addEventListener('click', function (e) {
+    var button = e.target.closest('[data-move]');
+    if (!button || !rowSet.contains(button)) return;
+    var row = button.closest('[data-formset-row]');
+    if (button.getAttribute('data-move') === 'up' && row.previousElementSibling) {
+      rowSet.insertBefore(row, row.previousElementSibling);
+    } else if (button.getAttribute('data-move') === 'down' && row.nextElementSibling) {
+      rowSet.insertBefore(row.nextElementSibling, row);
+    }
+    // Keep focus on the moved row; if this button is now hidden (row reached an end), use its twin.
+    var target = window.getComputedStyle(button).visibility === 'hidden'
+      ? row.querySelector('[data-move]:not([data-move="' + button.getAttribute('data-move') + '"])') : button;
+    if (target) target.focus();
+  });
+
+  form.addEventListener('submit', function () {
+    Array.prototype.forEach.call(rowSet.querySelectorAll('[data-formset-row]'), function (row, index) {
+      Array.prototype.forEach.call(row.querySelectorAll('[name], [id], label[for]'), function (el) {
+        ['name', 'id', 'for'].forEach(function (attr) {
+          var value = el.getAttribute(attr);
+          if (value && pattern.test(value)) {
+            el.setAttribute(attr, value.replace(pattern, function (m, id) { return (id || '') + opts.prefix + '-' + index + '-'; }));
+          }
+        });
+      });
+    });
+  });
+};
+
+// Plan step rows: when a stage is chosen, only the vessel types it allows stay
+// selectable (Pitch -> Fermenter, Complete Batch -> None / Current: pre-set and
+// locked), and a stage with no duration (Complete Batch) clears and disables it.
+// Rules come from the row set's data-stage-rules (forms.BasePlanStepFormSet.stage_rules);
+// the server checks the same rules on save.
+CellarLedger.initPlanSteps = function (opts) {
+  var rowSet = document.getElementById(opts.rowSetId);
+  if (!rowSet) return;
+  var rules = {};
+  try { rules = JSON.parse(rowSet.getAttribute('data-stage-rules') || '{}'); } catch (err) {
+    console.error('initPlanSteps: bad data-stage-rules', err);
+  }
+
+  function apply(row) {
+    var stage = row.querySelector('select[name$="-stage"]');
+    var vesselType = row.querySelector('select[name$="-vessel_type"]');
+    var duration = row.querySelector('input[name$="-planned_duration"]');
+    if (!stage || !vesselType) return;
+    var rule = rules[stage.value];
+    var allowed = rule ? rule.vessel_types : null;
+    Array.prototype.forEach.call(vesselType.options, function (option) {
+      option.disabled = !!allowed && (option.value === '' ? allowed.length === 1 : allowed.indexOf(option.value) === -1);
+    });
+    if (allowed && allowed.length === 1) {
+      vesselType.value = allowed[0];
+    } else if (allowed && vesselType.value && allowed.indexOf(vesselType.value) === -1) {
+      vesselType.value = '';
+    }
+    if (duration) {
+      var noDuration = !!rule && rule.duration === false;
+      if (noDuration) duration.value = '';
+      duration.disabled = noDuration;
+      duration.placeholder = noDuration ? 'No duration' : 'e.g. 14 days';
+    }
+  }
+
+  Array.prototype.forEach.call(rowSet.querySelectorAll('[data-formset-row]'), apply);
+  rowSet.addEventListener('change', function (e) {
+    if (e.target.matches('select[name$="-stage"]')) apply(e.target.closest('[data-formset-row]'));
+  });
+};
+
 // Hand-drawn SVG line chart for instrument readings (specific gravity, pH, SO2, ...).
 // Used by batch.html. cfg: { dates:[...], values:[...], decimals, unit, color,
 // threshold, thresholdLabel } - threshold/thresholdLabel are optional; any point

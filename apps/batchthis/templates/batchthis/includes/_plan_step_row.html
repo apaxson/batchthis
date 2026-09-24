@@ -1,0 +1,43 @@
+{% comment %}
+One step of a plan (PlanStepForm). Included for each live row and, inside a
+<template> around formset.empty_form, as the clone source for "Add step" - see
+workflowForm.html. The step number is a CSS counter, so it follows the rows as
+they're moved or removed. Pitch / Complete Batch vessel types are pre-set and
+locked by CellarLedger.initPlanSteps() (cellar-ledger.js).
+{% endcomment %}
+<div class="cl-formset-row cl-formset-row--plan" data-formset-row>
+  {% if step_form.non_field_errors %}
+  <div class="cl-field-error cl-plan-step-errors">{% for error in step_form.non_field_errors %}{{ error }}{% if not forloop.last %}<br>{% endif %}{% endfor %}</div>
+  {% endif %}
+  <div class="cl-plan-step-num" aria-hidden="true"></div>
+  <div class="cl-field">
+    <label for="{{ step_form.stage.id_for_label }}">Stage</label>
+    {{ step_form.stage }}
+    {% if step_form.stage.errors %}<div class="cl-field-error">{{ step_form.stage.errors }}</div>{% endif %}
+  </div>
+  <div class="cl-field">
+    <label for="{{ step_form.vessel_type.id_for_label }}">Vessel type</label>
+    {{ step_form.vessel_type }}
+    {% if step_form.vessel_type.errors %}<div class="cl-field-error">{{ step_form.vessel_type.errors }}</div>{% endif %}
+  </div>
+  <div class="cl-field cl-plan-step-duration">
+    <label for="{{ step_form.planned_duration.id_for_label }}">Duration</label>
+    {{ step_form.planned_duration }}
+    {% if step_form.planned_duration.errors %}<div class="cl-field-error">{{ step_form.planned_duration.errors }}</div>{% endif %}
+  </div>
+  <div class="cl-field cl-field--grow">
+    <label for="{{ step_form.notes.id_for_label }}">Notes</label>
+    {{ step_form.notes }}
+  </div>
+  <div class="cl-plan-step-tools">
+    <button type="button" class="cl-step-move" data-move="up" aria-label="Move step up" title="Move up">
+      <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5 10 7.5l5 5"/></svg>
+    </button>
+    <button type="button" class="cl-step-move" data-move="down" aria-label="Move step down" title="Move down">
+      <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7.5 10 12.5l5-5"/></svg>
+    </button>
+    <div class="cl-field cl-field--check cl-field--remove">
+      <label>{{ step_form.DELETE }} Remove</label>
+    </div>
+  </div>
+</div>

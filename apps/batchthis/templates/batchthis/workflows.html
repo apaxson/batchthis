@@ -1,0 +1,46 @@
+{% extends 'batchthis/base.html' %}
+{% block content %}
+
+<div class="cl-page-head">
+  <div class="cl-wordmark font-display">Workflows</div>
+  <div class="cl-batch-sub" style="margin-top:6px;">
+    <span>Reusable stage plans. A recipe copies one and can adjust its own copy.</span>
+  </div>
+</div>
+
+{% for message in messages %}
+<div class="cl-flag{% if message.level == DEFAULT_MESSAGE_LEVELS.SUCCESS %} cl-flag--ok{% endif %}" style="margin-bottom:20px;">
+  {% if message.level != DEFAULT_MESSAGE_LEVELS.SUCCESS %}<span class="cl-flag-mark">!</span>{% endif %}
+  <span>{{ message }}</span>
+</div>
+{% endfor %}
+
+<div class="cl-section-head">
+  <div class="cl-section-title">All workflows</div>
+  <div class="cl-section-note"><a href="{% url 'addWorkflow' %}">Add workflow</a></div>
+</div>
+
+{% if rows %}
+<div class="cl-table-scroll">
+  <table class="cl-ledger">
+    <thead>
+      <tr><th>Workflow</th><th>Steps</th><th>Planned time</th><th>Recipes using it</th><th>Description</th></tr>
+    </thead>
+    <tbody>
+      {% for row in rows %}
+      <tr>
+        <td><a class="cl-row-link" href="{% url 'editWorkflow' row.template.pk %}">{{ row.template.name }}</a></td>
+        <td class="cl-num">{{ row.template.step_count }}</td>
+        <td class="cl-num">{{ row.planned|default:"&mdash;" }}</td>
+        <td class="cl-num">{{ row.template.recipe_count }}</td>
+        <td>{{ row.template.description }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+<p class="cl-empty">No workflows yet. <a href="{% url 'addWorkflow' %}">Add a workflow</a> to plan the stages a recipe goes through.</p>
+{% endif %}
+
+{% endblock %}
