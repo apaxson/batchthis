@@ -4,9 +4,6 @@ from . import views
 
 urlpatterns = [
     path('', views.index, name='index'),
-    path('addTest', views.batchTest, name='addTest'),
-    path('addAddon', views.batchAddition, name='addAddon'),
-    path('addNote', views.batchNote, name='addNote'),
     path('batches', views.batchListing, name='batchListing'),
     path('addBatch', views.addBatch, name='addBatch'),
     path('addRecipe', views.addRecipe, name='addRecipe'),

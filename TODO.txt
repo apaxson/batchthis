@@ -5,6 +5,25 @@ BUGS:
     * defaults to 'base_units'
     * conversion gets hairy.  Not consistent between saves/edits
 
+FUTURE ENHANCEMENTS:
+* Batch page: open "Add test", "Add note" and "Add addon" as MODAL forms on
+  the batch page instead of separate pages (Aaron, 2026-09-24).
+    * Today they're full pages: batch/<pk>/addTest, addNote(/<noteType>),
+      addAddon - login-required, validated, batch taken from the URL (see
+      views/main.py _save_batch_record, tests/test_batch_record_forms.py).
+    * Follow the CLAUDE.md modal pattern: ONE shared modal in base.html +
+      logic in cellar-ledger.js, not a modal per page. Load the form into
+      it (fetch the existing view), submit with fetch, and re-render the
+      form with its field errors / red borders inside the modal on a
+      validation error; on success close and refresh the affected panels
+      (or reload the batch page).
+    * Keep the existing pages working as the no-JavaScript fallback - the
+      ... menu / "Add entry" / "Add note" links keep their hrefs.
+    * Add test's "Use refractometer" opens #refractometerModal - check
+      that a modal-on-modal works (or show the refractometer inline).
+    * Keyboard/focus: focus the first field on open, Escape closes, focus
+      returns to the link that opened it.
+
 7/17/23
 * Create Form page for Fermentables - DONE
   * Link page to edit recipe - DONE

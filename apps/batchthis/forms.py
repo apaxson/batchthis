@@ -28,9 +28,10 @@ class DateTimeWidget(forms.DateTimeInput):
         super().__init__(**kwargs)
 
 class BatchTestForm(ModelForm):
+    # No `batch` field: the view attaches the reading to the batch in the URL.
     class Meta:
         model = BatchTest
-        fields = "__all__"
+        fields = ['datetime', 'type', 'value', 'units', 'description']
 
     def __init__(self,*args,**kwargs):
         super().__init__(*args,**kwargs)
@@ -38,9 +39,10 @@ class BatchTestForm(ModelForm):
         self.fields["datetime"].input_formats = ["%Y-%m-%dT%H:%M", "%Y-%m-%d %H:%M"]
 
 class BatchNoteForm(ModelForm):
+    # No `batch` field: the view attaches the note to the batch in the URL.
     class Meta:
         model = BatchNote
-        fields = "__all__"
+        fields = ['date', 'notetype', 'text']
 
     def __init__(self,*args,**kwargs):
         super().__init__(*args,**kwargs)
@@ -48,9 +50,10 @@ class BatchNoteForm(ModelForm):
         self.fields["date"].input_formats = ["%Y-%m-%dT%H:%M", "%Y-%m-%d %H:%M"]
 
 class BatchAdditionForm(ModelForm):
+    # No `batch` field: the view attaches the addition to the batch in the URL.
     class Meta:
         model = BatchAddition
-        fields = "__all__"
+        fields = ['name', 'amount', 'units', 'description']
 
 class BatchAddForm(forms.Form):
     name = forms.CharField(widget=forms.TextInput(attrs={'placeholder':'Name of Batch'}),required=True)

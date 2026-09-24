@@ -455,57 +455,58 @@ def editBatch(request, pk):
     return render(request, 'batchthis/editBatch.html', {'form': form, 'batch': batch})
 
 
-def batchTest(request, pk=None):
-    if request.method == 'GET':
-        if pk:
-            form = BatchTestForm()
-            form.fields['batch'].queryset = Batch.objects.filter(pk=pk)
-            form.initial = {'batch': pk}
-            # We have a batchID.  Let's auto assign the batch to the note
+def _now_minute():
+    return timezone.localtime().replace(second=0, microsecond=0)
+
+
+def _save_batch_record(request, batch: Batch, form, template: str, what: str):
+    """
+    Shared POST/GET handling for Add test / Add note / Add addon: validate, attach
+    to the batch from the URL (never from the form), save, redirect to the batch.
+    Invalid input re-shows the form with its errors; nothing is saved.
+    """
+    if request.method == 'POST':
+        if form.is_valid():
+            record = form.save(commit=False)
+            record.batch = batch
+            try:
+                record.save()
+            except Exception:
+                logger.exception("%s: failed to save for batch %s", what, batch.pk)
+                form.add_error(None, f"Couldn't save the {what}. Nothing was saved - please try again.")
+            else:
+                logger.info("%s: saved %s on batch %s '%s'", what, record.pk, batch.pk, batch.name)
+                return HttpResponseRedirect(reverse('batch', kwargs={'pk': batch.pk}))
+        logger.debug("%s: invalid form for batch %s: %s", what, batch.pk, form.errors.as_data())
+    return render(request, template, {'form': form, 'batch': batch})
+
+
+@login_required
+def batchTest(request, pk):
+    batch = get_object_or_404(Batch, pk=pk)
+    form = BatchTestForm(request.POST or None, initial={'datetime': _now_minute()})
+    return _save_batch_record(request, batch, form, "batchthis/addTest.html", "test")
+
+
+@login_required
+def batchAddition(request, pk):
+    batch = get_object_or_404(Batch, pk=pk)
+    form = BatchAdditionForm(request.POST or None)
+    return _save_batch_record(request, batch, form, "batchthis/addAddon.html", "addition")
+
+
+@login_required
+def batchNote(request, pk, noteType=None):
+    batch = get_object_or_404(Batch, pk=pk)
+    initial = {'date': _now_minute()}
+    if noteType:
+        note_type = BatchNoteType.objects.filter(name=noteType).first()
+        if note_type:
+            initial['notetype'] = note_type.pk
         else:
-            form = BatchTestForm()
-            # We don't have a batchID.  Only show active batches
-            form.fields['batch'].queryset = Batch.objects.filter(active=True)
-    else:
-        form = BatchTestForm(request.POST)
-        form.save()
-        return HttpResponseRedirect(reverse('batch', kwargs={'pk': pk}))
-    return render(request, "batchthis/addTest.html", {'form': form})
-
-
-def batchAddition(request, pk=None):
-    if request.method == 'GET':
-        form = BatchAdditionForm()
-        if pk:
-            form.fields['batch'].queryset = Batch.objects.filter(pk=pk)
-            form.initial = {'batch': pk}
-        else:
-            form.fields['batch'].queryset = Batch.objects.filter(active=True)
-    else:
-        form = BatchAdditionForm(request.POST)
-        form.save()
-        return HttpResponseRedirect(reverse('batch', kwargs={'pk': pk}))
-    return render(request, "batchthis/addAddon.html", {'form': form})
-
-
-def batchNote(request, pk=None, noteType=None):
-    if request.method == 'GET':
-        form = BatchNoteForm()
-        form.initial = {}
-        if pk:
-            form.fields['batch'].queryset = Batch.objects.filter(pk=pk)
-            form.initial['batch'] = pk
-        else:
-            form.fields['batch'].queryset = Batch.objects.all()
-        if noteType:
-            noteTypes = BatchNoteType.objects.filter(name=noteType)
-            form.fields['notetype'].queryset = noteTypes
-            form.initial['notetype'] = noteTypes[0].pk
-    else:
-        form = BatchNoteForm(request.POST)
-        form.save()
-        return HttpResponseRedirect(reverse('batch', kwargs={'pk': pk}))
-    return render(request, "batchthis/addNote.html", {'form': form})
+            logger.warning("batchNote: unknown note type %r in URL for batch %s; showing all types", noteType, pk)
+    form = BatchNoteForm(request.POST or None, initial=initial)
+    return _save_batch_record(request, batch, form, "batchthis/addNote.html", "note")
 
 
 @login_required

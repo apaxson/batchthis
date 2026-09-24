@@ -4,18 +4,14 @@
 <div class="cl-page-head">
   <div class="cl-wordmark font-display">New test</div>
   <div class="cl-batch-sub" style="margin-top:6px;">
-    {% if form.initial.batch %}
-    <span><a href="{% url 'batch' form.initial.batch %}">&larr; Back to batch</a></span>
-    {% else %}
-    <span><a href="{% url 'batchListing' %}">&larr; Back to batches</a></span>
-    {% endif %}
+    <span><a href="{% url 'batch' batch.pk %}">&larr; Back to {{ batch.name }}</a></span>
   </div>
 </div>
 
 {% if form.non_field_errors %}
 <div class="cl-flag" style="margin-bottom:20px;">
   <span class="cl-flag-mark">!</span>
-  <span>{{ form.non_field_errors }}</span>
+  <span>{% for error in form.non_field_errors %}{{ error }}{% if not forloop.last %} {% endif %}{% endfor %}</span>
 </div>
 {% endif %}
 
@@ -53,19 +49,10 @@
         {{ form.units }}
         {% if form.units.errors %}<div class="cl-field-error">{{ form.units.errors }}</div>{% endif %}
       </div>
-      <div class="cl-field">
-        <label for="{{ form.batch.id_for_label }}">Batch</label>
-        {{ form.batch }}
-        {% if form.batch.errors %}<div class="cl-field-error">{{ form.batch.errors }}</div>{% endif %}
-      </div>
     </div>
 
     <div class="cl-form-actions">
-      {% if form.initial.batch %}
-      <a href="{% url 'batch' form.initial.batch %}" class="cl-btn cl-btn--secondary">Cancel</a>
-      {% else %}
-      <a href="{% url 'batchListing' %}" class="cl-btn cl-btn--secondary">Cancel</a>
-      {% endif %}
+      <a href="{% url 'batch' batch.pk %}" class="cl-btn cl-btn--secondary">Cancel</a>
       <button type="submit" class="cl-btn cl-btn--primary">Save</button>
     </div>
   </form>
