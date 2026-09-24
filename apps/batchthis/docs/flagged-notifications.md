@@ -64,9 +64,11 @@ per active batch, so adding a handful of rules stays cheap enough to run inline
 in the dashboard view — no Celery needed for this part. Per `CLAUDE.md`, Celery
 is for heavy/long-running work; a threshold check on one row per batch isn't that.
 
-**Known limitation:** rules compare `test.value` directly, assuming the value was
-recorded in the unit the rule expects (e.g. ppm for SO₂). `BatchTest.units` isn't
-normalized against the rule yet — worth fixing before rules are user-editable.
+**Units:** rules compare `test.chart_value` - each reading converted to its test
+type's standard unit (sg, °F, ppm with 1 mg/L = 1 ppm, g/L, pH), per
+`READING_SPECS` in models.py - so thresholds are always in those units no matter
+what unit a reading was entered in. (Before 2026-09-24 rules compared the raw
+`test.value` and assumed it was entered in the rule's unit.)
 
 ## Customizing severity and styling
 

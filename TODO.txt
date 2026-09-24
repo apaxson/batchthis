@@ -4,6 +4,20 @@ BUGS:
 * When entering a QuantityUnit, it does not remember the unit you entered.
     * defaults to 'base_units'
     * conversion gets hairy.  Not consistent between saves/edits
+* DescriptiveQuantityField stores TEXT in a REAL column (Aaron, 2026-09-24 -
+  needs resolving). It stores markup like "22.71:gallon" / "20:degree_Celsius",
+  but it subclasses django-pint's QuantityField, whose get_internal_type() is
+  FloatField, so the column is `real` (max_length=30 is ignored). SQLite
+  accepts text there; PostgreSQL/MySQL would reject it. Affects Batch.size,
+  Vessel.capacity/fill, BatchAddition.amount, BatchTest.value, Recipe
+  batchSize/estFG, Yeast min/max temp, RecipeFermentable amount.
+    * Fix before any move off SQLite: make the field a real text column
+      (get_internal_type() -> "CharField" with max_length), then
+      makemigrations - SQLite keeps the same text values, so existing
+      rows survive. Also check the markup fits max_length (long float
+      reprs like "20.000000000000004:degree_Fahrenheit" are 36 chars).
+    * Related: set_base_units() changes self.base_units on the shared
+      field instance per value (per-row state on a class-level object).
 
 FUTURE ENHANCEMENTS:
 * Batch page: open "Add test", "Add note" and "Add addon" as MODAL forms on

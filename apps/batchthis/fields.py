@@ -30,6 +30,9 @@ class DescriptiveQuantityField(QuantityField):
         self.selected_unit = None
         if not base_units:
             base_units = 'kilogram' #assume 'mass' dimensionality, but we'll override on save
+        # set_base_units() changes self.base_units per value; a bare stored number is
+        # always read in the units the field was declared with.
+        self.declared_base_units = base_units
         super().__init__(base_units, *args, unit_choices=unit_choices, **kwargs)
 
     def deconstruct(self):
@@ -40,11 +43,12 @@ class DescriptiveQuantityField(QuantityField):
         return name, path, args, kwargs
 
     def set_base_units(self, value):
-        if isinstance(value, Quantity):
+        # The project's registry (settings.DJANGO_PINT_UNIT_REGISTER), which defines sg/bx.
+        if isinstance(value, str):
+            quantity = self.ureg.Quantity(1, value)
+        else:
             quantity = value
-        if isinstance(value,str):
-            quantity = Quantity(1, value)
-        base_unit_quantity = Quantity(1, self.base_units)
+        base_unit_quantity = self.ureg.Quantity(1, self.base_units)
         if not base_unit_quantity.is_compatible_with(quantity):
             # We have a mismatch.  Identify dimensionality, and reset base_unit
             # all base_units to be stored as metric
@@ -54,12 +58,24 @@ class DescriptiveQuantityField(QuantityField):
                 self.base_units = 'kilograms'
             elif quantity.check('[temperature]'):
                 self.base_units = 'degC'
+            elif quantity.check('[Sucrose]'):
+                # Specific gravity. Never converted to Brix - see the refractometer tool.
+                self.base_units = 'sg'
+            elif quantity.check('[mass] / [volume]'):
+                self.base_units = 'milligram / liter'
+            elif quantity.dimensionless:
+                # ppm, or a plain number such as pH.
+                self.base_units = 'dimensionless'
             else:
-                raise ValueError(f"Not compatible base_unit: {self.base_units}.  Attempted 'mass', 'volume', and 'temp': {quantity}")
+                raise ValueError(f"Not compatible base_unit: {self.base_units}.  Attempted 'mass', 'volume', 'temp', 'sg', 'concentration' and 'dimensionless': {quantity}")
 
     def createDescriptiveMarkup(self, value):
         if isinstance(value, str):
-            quantity = self.fix_unit_registry(Quantity(value.lower()))
+            # As typed first (unit symbols are case-sensitive: degF, mL), then lowercased.
+            try:
+                quantity = self.ureg.Quantity(value)
+            except Exception:
+                quantity = self.ureg.Quantity(value.lower())
         else:
             quantity = self.fix_unit_registry(Quantity(value))
         selected_unit = quantity.units
@@ -75,7 +91,9 @@ class DescriptiveQuantityField(QuantityField):
         converted_value, selected_unit = value.split(':')
         self.selected_unit = selected_unit
         self.set_base_units(selected_unit)
-        base_quantity = self.ureg.Quantity(float(converted_value) * getattr(self.ureg, self.base_units))
+        # Quantity(magnitude, units) rather than getattr(ureg, units): base units can be
+        # compound ("milligram / liter").
+        base_quantity = self.ureg.Quantity(float(converted_value), self.base_units)
         logger.debug("converted to: " + str(base_quantity.to(selected_unit)))
         return base_quantity.to(selected_unit)
 
@@ -87,11 +105,8 @@ class DescriptiveQuantityField(QuantityField):
         """
         if value is None:
             return None
-        if isinstance(value, Quantity):
+        if isinstance(value, (Quantity, str)):
             return self.createDescriptiveMarkup(value)
-        elif isinstance(value, str):
-            quantity = Quantity(value.lower())
-            return self.createDescriptiveMarkup(quantity)
         else:
             return value
 
@@ -106,14 +121,14 @@ class DescriptiveQuantityField(QuantityField):
         if value is None:
             return None
 
-        if isinstance(value, float):
-            # Nothing to parse.  Assume base_units
-            return self.ureg.Quantity(value * getattr(self.ureg, self.base_units))
+        if isinstance(value, (float, int)):
+            # Nothing to parse.  Assume the declared base_units
+            return self.ureg.Quantity(float(value), self.declared_base_units)
         elif len(value.split(":")) == 1:
             # Old style, no ":unit" part: a bare number is in base units; text
             # like "6 gallon" is converted to markup and read back.
             try:
-                return self.ureg.Quantity(float(value) * getattr(self.ureg, self.base_units))
+                return self.ureg.Quantity(float(value), self.declared_base_units)
             except ValueError:
                 return self.convertFromDescriptiveMarkup(self.createDescriptiveMarkup(value))
 
@@ -306,3 +321,49 @@ class AmountField(MeasurementField):
 
     def __init__(self, *, placeholder: str = "e.g. 4 grams", **kwargs):
         super().__init__(placeholder=placeholder, **kwargs)
+
+
+class ReadingField(MeasurementField):
+    """
+    A test reading typed as text: "1.050 sg", "68 F", "30 ppm", "6.5 g/L", "3.40", "12 bx".
+    Unlike VolumeField/AmountField it doesn't decide which units are allowed -
+    that depends on the test type chosen alongside it, so BatchTestForm checks
+    it against the type's ReadingSpec (models.READING_SPECS). A bare number is
+    returned as dimensionless; "F"/"C" shorthand means °F/°C (never farads).
+    """
+    default_error_messages = {
+        'invalid_amount': "Enter a number, e.g. 3.40.",
+    }
+    _TEMPERATURE_SHORTHAND = re.compile(r'^\s*([-+]?(?:\d+\.?\d*|\.\d+))\s*°?\s*([FfCc])\s*$')
+    _BRIX = re.compile(r'^\s*([-+]?(?:\d+\.?\d*|\.\d+))\s*°?\s*(bx|brix)\s*$', re.IGNORECASE)
+
+    def __init__(self, *, placeholder: str = "e.g. 1.050", **kwargs):
+        super().__init__(placeholder=placeholder, **kwargs)
+
+    def to_python(self, value):
+        text = forms.CharField.to_python(self, value)
+        if text in self.empty_values:
+            return None
+        shorthand = self._TEMPERATURE_SHORTHAND.match(text)
+        brix = self._BRIX.match(text)
+        if shorthand:
+            number, scale = shorthand.groups()
+            text = f"{number} {'degF' if scale.upper() == 'F' else 'degC'}"
+        elif brix:
+            # "12 bx", "12 brix", "12 °Bx" -> the registry's Brix unit (case-sensitive there).
+            text = f"{brix.group(1)} Brix"
+        if not self._STARTS_WITH_NUMBER.match(text):
+            logger.debug(f"ReadingField: no number in {text!r}")
+            raise ValidationError(self.error_messages['invalid_amount'], code='invalid_amount')
+        ureg = settings.DJANGO_PINT_UNIT_REGISTER
+        try:
+            try:
+                quantity = ureg.Quantity(text)
+            except Exception:
+                quantity = ureg.Quantity(text.lower())
+        except Exception:
+            logger.debug(f"ReadingField: could not parse {text!r}")
+            raise ValidationError(self.error_messages['invalid_amount'], code='invalid_amount')
+        if not isinstance(quantity, ureg.Quantity):
+            quantity = ureg.Quantity(float(quantity))
+        return quantity

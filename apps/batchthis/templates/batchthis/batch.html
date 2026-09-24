@@ -190,7 +190,7 @@
           <table class="cl-reading-table">
             <thead><tr><th>Date</th><th>SG</th></tr></thead>
             <tbody>
-              {% for test in gravityTests %}<tr><td>{{ test.datetime|date:"m/d/y" }}</td><td>{{ test.value }}</td></tr>{% endfor %}
+              {% for test in gravityTests %}<tr><td>{{ test.datetime|date:"m/d/y" }}</td><td>{{ test.display_value }}</td></tr>{% endfor %}
             </tbody>
           </table>
         </details>

@@ -1,5 +1,6 @@
 import pdb
 import datetime
+import json
 
 from django.forms import ModelForm, inlineformset_factory
 from django.db.models import Q, CharField
@@ -8,14 +9,14 @@ from django.core.exceptions import ValidationError
 
 import apps.batchthis.models
 from .models import BatchTest, BatchNote, BatchAddition, Batch, Unit, Fermenter, Vessel, BatchCategory, BatchStyle
-from .models import BatchStage
+from .models import BatchStage, BatchTestType, READING_SPECS
 from .services import allowed_next_stages, vessel_name_problem, VESSEL_TYPES
 from .models import Fermentable, Adjunct, Yeast, Recipe, AdjunctUsage, RecipeFermentable
 from django.forms.widgets import NumberInput, DateInput
 from django.utils import timezone
 from pint import Quantity
 from quantityfield.fields import QuantityFormField, QuantityWidget
-from .fields import AmountField, DescriptiveQuantityFormField, PrecisionQuantityWidget, PrecisionTextWidget, VolumeField
+from .fields import AmountField, DescriptiveQuantityFormField, PrecisionQuantityWidget, PrecisionTextWidget, ReadingField, VolumeField
 import logging
 
 logger = logging.getLogger(__name__)
@@ -29,14 +30,49 @@ class DateTimeWidget(forms.DateTimeInput):
 
 class BatchTestForm(ModelForm):
     # No `batch` field: the view attaches the reading to the batch in the URL.
+    # The value's unit is checked against the chosen test type (READING_SPECS).
+    value = ReadingField(label="Value")
+
     class Meta:
         model = BatchTest
-        fields = ['datetime', 'type', 'value', 'units', 'description']
+        fields = ['datetime', 'type', 'value', 'description']
 
-    def __init__(self,*args,**kwargs):
-        super().__init__(*args,**kwargs)
+    def __init__(self, *args, batch: Batch | None = None, **kwargs):
+        # The batch's starting gravity corrects a Brix reading for alcohol.
+        self.batch = batch
+        super().__init__(*args, **kwargs)
         self.fields["datetime"].widget = DateTimeWidget()
         self.fields["datetime"].input_formats = ["%Y-%m-%dT%H:%M", "%Y-%m-%d %H:%M"]
+
+    def clean(self):
+        cleaned = super().clean()
+        test_type, value = cleaned.get('type'), cleaned.get('value')
+        spec = READING_SPECS.get(test_type.shortid) if test_type else None
+        if spec is None:
+            return cleaned
+        errors = self.errors.get('value')
+        if errors and errors.as_data()[0].code == 'invalid_amount':
+            # Word the "not a number" error for the chosen type.
+            self.errors['value'] = self.error_class([f"Enter a number, e.g. {spec.example}."])
+        elif value is not None:
+            problem = spec.problem(test_type.name, value)
+            if problem:
+                self.add_error('value', ValidationError(problem[1], code=problem[0]))
+            else:
+                start_sg = self.batch.startingGravity.magnitude if self.batch and self.batch.startingGravity else None
+                cleaned['value'], note = spec.normalize(value, start_sg=start_sg)
+                if note:
+                    # Keep the Brix that was actually read, next to any description typed.
+                    description = (cleaned.get('description') or '').strip()
+                    cleaned['description'] = (f"{description} - {note}" if description
+                                              else note[0].upper() + note[1:])[:250]
+        return cleaned
+
+    @property
+    def reading_examples_json(self) -> str:
+        """{test type pk: placeholder} as JSON, for addTest.html's placeholder switch."""
+        return json.dumps({str(t.pk): f"e.g. {READING_SPECS[t.shortid].example}"
+                           for t in BatchTestType.objects.filter(shortid__in=READING_SPECS)}, ensure_ascii=False)
 
 class BatchNoteForm(ModelForm):
     # No `batch` field: the view attaches the note to the batch in the URL.

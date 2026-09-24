@@ -708,8 +708,8 @@ class Batch(models.Model):
     def current_gravity(self):
         gravity_tests = self.tests.filter(type__shortid='specific-gravity')
         if len(gravity_tests) > 1:
-            return gravity_tests.last().value
-        return gravity_tests[0].value
+            return gravity_tests.last().chart_value
+        return gravity_tests[0].chart_value
 
 
     def percent_complete(self):
@@ -832,6 +832,108 @@ class TimelineBar:
         return None
 
 
+@dataclass(frozen=True)
+class ReadingSpec:
+    """
+    The units a test type's readings take (Aaron's table) and how a reading is
+    charted and shown. `kind` picks the rules below; `units_label` and `example`
+    feed the form's error message and placeholder.
+    """
+    kind: str  # gravity | temperature | concentration | acidity | ph
+    units_label: str
+    example: str
+    positive: bool = True
+
+    def problem(self, type_name: str, quantity) -> tuple[str, str] | None:
+        """(error code, message) if `quantity` isn't a valid reading of this type, else None."""
+        unit = str(quantity.units)
+        bare = unit == 'dimensionless'
+        wrong = ('wrong_unit', f"Use {self.units_label} for {type_name}, e.g. {self.example}.")
+        if self.kind == 'ph':
+            if not bare:
+                return 'wrong_unit', f"pH has no unit, e.g. {self.example}."
+        elif self.kind == 'gravity':
+            # sg, a bare number, or Brix (converted in normalize(), never by pint).
+            if not (bare or unit in ('SpecificGravity', 'Brix')):
+                return wrong
+        elif bare:
+            return 'units_required', "Units are required."
+        elif self.kind == 'temperature' and not quantity.check('[temperature]'):
+            return wrong
+        elif self.kind == 'concentration' and not (unit == 'ppm' or quantity.check('[mass] / [volume]')):
+            return wrong
+        elif self.kind == 'acidity' and not quantity.check('[mass] / [volume]'):
+            return wrong
+        if self.positive and quantity.magnitude <= 0:
+            return 'not_positive', "Enter an amount greater than zero."
+        return None
+
+    # A bare Specific Gravity reading above this is a refractometer Brix reading (Aaron).
+    BRIX_THRESHOLD = 1.199
+
+    def normalize(self, quantity, *, start_sg: float | None = None):
+        """
+        (value to store, note or None). Gravity is always stored as sg: a bare number
+        up to 1.199 is sg; above that, or with a Brix unit, it's Brix and is converted
+        like the refractometer tool - alcohol-corrected against the batch's starting
+        gravity (plain Brix -> SG if there isn't one). pint can't do this conversion:
+        the registry defines sg and Brix 1:1, and the real relationship isn't linear.
+        """
+        if self.kind != 'gravity':
+            return quantity, None
+        from .lib.utils import Utils  # local: keep lib imports out of model load
+
+        unit, magnitude = str(quantity.units), quantity.magnitude
+        sg = quantity._REGISTRY.sg
+        if unit == 'SpecificGravity' or (unit == 'dimensionless' and magnitude <= self.BRIX_THRESHOLD):
+            return magnitude * sg, None
+        if start_sg:
+            gravity, _abv = Utils.refractometerCorrection(startSG=start_sg, currentBrix=magnitude)
+            note = f"from {magnitude:g} °Bx (refractometer, alcohol-corrected)"
+        else:
+            gravity = Utils.brixToSg(magnitude)
+            note = f"from {magnitude:g} °Bx (refractometer)"
+        logger.debug(f"ReadingSpec.normalize: {magnitude:g} Brix -> {gravity:.4f} sg (start_sg={start_sg})")
+        return gravity * sg, note
+
+    def chart_value(self, quantity) -> float:
+        """One number per type for charts and fault rules: sg, °F, ppm (1 mg/L = 1 ppm), g/L, pH."""
+        unit = str(quantity.units)
+        if self.kind == 'temperature':
+            return quantity.to('degF').magnitude
+        if self.kind == 'concentration':
+            return quantity.to('ppm').magnitude if unit == 'ppm' else quantity.to('mg/L').magnitude
+        if self.kind == 'acidity':
+            return quantity.to('g/L').magnitude
+        if self.kind == 'gravity' and unit != 'dimensionless':
+            return quantity.to('sg').magnitude
+        return quantity.magnitude
+
+    def display(self, quantity) -> str:
+        unit = str(quantity.units)
+        if self.kind == 'gravity':
+            return f"{self.chart_value(quantity):.3f}"  # CLAUDE.md: SG always 3 decimals
+        if self.kind == 'ph':
+            return f"{quantity.magnitude:.2f}"
+        if self.kind == 'temperature':
+            return f"{quantity.magnitude:g} {'°F' if 'Fahrenheit' in unit else '°C'}"
+        if self.kind == 'concentration':
+            return f"{quantity.magnitude:g} ppm" if unit == 'ppm' else f"{quantity.to('mg/L').magnitude:g} mg/L"
+        return f"{quantity.to('g/L').magnitude:g} g/L"
+
+
+# Keyed by BatchTestType.shortid (seeded in 0002_default_load). A test type not
+# listed here accepts any reading and charts its raw number.
+READING_SPECS = {
+    'specific-gravity': ReadingSpec('gravity', 'sg', '1.050 sg'),
+    'temperature': ReadingSpec('temperature', '°F or °C', '68 °F', positive=False),
+    'so2': ReadingSpec('concentration', 'ppm or mg/L', '30 ppm'),
+    'yan': ReadingSpec('concentration', 'ppm or mg/L', '250 ppm'),
+    'ta': ReadingSpec('acidity', 'g/L', '6.5 g/L'),
+    'ph': ReadingSpec('ph', '', '3.40'),
+}
+
+
 class BatchTest(models.Model):
     def __str__(self):
         fmt = "%m/%d/%y-%H:%M"
@@ -839,10 +941,30 @@ class BatchTest(models.Model):
 
     datetime = models.DateTimeField(auto_now=False)
     type = models.ForeignKey(BatchTestType, on_delete=models.SET("_del"))
-    value = models.FloatField()
+    # The reading with the unit it was entered in ("1.050 sg", "68 °F", "30 ppm", "3.40"),
+    # stored in metric/base units - see DescriptiveQuantityField and READING_SPECS.
+    value = DescriptiveQuantityField(base_units='dimensionless')
     description = models.CharField(max_length=250, blank=True)
-    units = models.ForeignKey(Unit, on_delete=models.SET("_del"))
     batch = models.ForeignKey(Batch, blank=True, on_delete=models.CASCADE, related_name="tests")
+
+    @property
+    def spec(self) -> ReadingSpec | None:
+        return READING_SPECS.get(self.type.shortid)
+
+    def _quantity(self):
+        # A just-created reading may still hold the text it was created with.
+        return self._meta.get_field('value').to_python(self.value)
+
+    @property
+    def chart_value(self) -> float:
+        """The reading as one number in its type's standard unit - for charts and fault rules."""
+        quantity = self._quantity()
+        return self.spec.chart_value(quantity) if self.spec else quantity.magnitude
+
+    @property
+    def display_value(self) -> str:
+        quantity = self._quantity()
+        return self.spec.display(quantity) if self.spec else str(quantity)
 
 #TODO Add Notifications for Users on tasks and updates: https://stackoverflow.com/questions/72264677/how-can-i-implement-notifications-system-in-django
 
@@ -855,11 +977,9 @@ def addGravityTest(sender,instance,created=False,**kwargs):
             gravTest = BatchTest()
             testType = BatchTestType.objects.filter(shortid='specific-gravity')[0]
             gravTest.type = testType
-            gravTest.value = instance.startingGravity.magnitude
+            gravTest.value = f"{instance.startingGravity.magnitude} sg"
             gravTest.description = "Auto created from new batch."
             gravTest.datetime = datetime.now()
-            unit = Unit.objects.filter(name__contains="specific")[0]
-            gravTest.units = unit
             gravTest.batch = instance
             gravTest.save()
             logger.debug(f"Added Gravity Test: {gravTest.value} automatically to newly created batch_id: {instance.id}")
@@ -933,7 +1053,7 @@ def addActivity(sender,instance,created=False,**kwargs):
     if sender.__name__ == "BatchTest":
         batch = instance.batch
         if created:
-            text = "Added [" + instance.type.name + "] :: " + str(instance.value) + " " + instance.units.name
+            text = f"Added [{instance.type.name}] :: {instance.display_value}"
         else:
             text = "Updated [" + instance.type.name + "]"
     if text:

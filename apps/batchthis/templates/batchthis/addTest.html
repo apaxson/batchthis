@@ -16,7 +16,7 @@
 {% endif %}
 
 <div class="cl-panel">
-  <form method="POST" class="cl-form">
+  <form method="POST" class="cl-form" id="testform" data-reading-examples="{{ form.reading_examples_json }}">
     {% csrf_token %}
 
     <div class="cl-form-grid">
@@ -44,11 +44,6 @@
         {{ form.description }}
         {% if form.description.errors %}<div class="cl-field-error">{{ form.description.errors }}</div>{% endif %}
       </div>
-      <div class="cl-field">
-        <label for="{{ form.units.id_for_label }}">Units</label>
-        {{ form.units }}
-        {% if form.units.errors %}<div class="cl-field-error">{{ form.units.errors }}</div>{% endif %}
-      </div>
     </div>
 
     <div class="cl-form-actions">
@@ -68,8 +63,17 @@
       refractoLink.hidden = (selectedText !== 'Specific Gravity');
     }
 
+    // Placeholder shows the units the chosen test type takes, e.g. "e.g. 68 °F".
+    var valueInput = document.getElementById('{{ form.value.id_for_label }}');
+    var examples = JSON.parse(document.getElementById('testform').dataset.readingExamples || '{}');
+    function updatePlaceholder() {
+      valueInput.placeholder = examples[typeSelect.value] || 'e.g. 1.050';
+    }
+
     typeSelect.addEventListener('change', toggleRefractoLink);
+    typeSelect.addEventListener('change', updatePlaceholder);
     toggleRefractoLink();
+    updatePlaceholder();
   });
 </script>
 

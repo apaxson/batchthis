@@ -47,14 +47,14 @@ class FaultRule:
             'test': test,
             'severity': self.severity,
             'label': self.label,
-            'message': self.message.format(batch=batch, value=test.value),
+            'message': self.message.format(batch=batch, value=test.chart_value),
         }
 
     def evaluate(self, batch):
         test = self._latest_test(batch)
         if test is None:
             return None
-        if not self._breach(self.minimum, self.maximum, test.value):
+        if not self._breach(self.minimum, self.maximum, test.chart_value):
             return None
         return self._flag(batch, test)
 
@@ -101,7 +101,7 @@ class StagedFaultRule(FaultRule):
             return None
         elapsed_hours = (test.datetime - batch.startdate).total_seconds() / 3600
         minimum, maximum = self.bounds_at(elapsed_hours)
-        if self._breach(minimum, maximum, test.value):
+        if self._breach(minimum, maximum, test.chart_value):
             return self._flag(batch, test)
         return None
 

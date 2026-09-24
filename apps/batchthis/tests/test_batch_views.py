@@ -32,4 +32,4 @@ def test_add_batch_auto_creates_specific_gravity_test():
     assert batch.startingGravity.magnitude == pytest.approx(1.09)
 
     gravity_test = batch.tests.get(type__shortid="specific-gravity")
-    assert gravity_test.value == pytest.approx(1.09)
+    assert gravity_test.chart_value == pytest.approx(1.09)

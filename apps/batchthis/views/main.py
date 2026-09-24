@@ -67,8 +67,8 @@ def _build_series(batch, shortid, rule=None):
     for test in tests:
         date_str = test.datetime.strftime(strfmt)
         series["dates"].append(date_str)
-        series["values"].append(test.value)
-        series["rows"].append((date_str, test.value))
+        series["values"].append(test.chart_value)
+        series["rows"].append((date_str, test.chart_value))
         if is_staged:
             elapsed_hours = (test.datetime - batch.startdate).total_seconds() / 3600
             band_min, band_max = rule.bounds_at(elapsed_hours)
@@ -495,7 +495,7 @@ def _save_batch_record(request, batch: Batch, form, template: str, what: str, pa
 @login_required
 def batchTest(request, pk):
     batch = get_object_or_404(Batch, pk=pk)
-    form = BatchTestForm(request.POST or None, initial={'datetime': _now_minute()})
+    form = BatchTestForm(request.POST or None, initial={'datetime': _now_minute()}, batch=batch)
     return _save_batch_record(request, batch, form, "batchthis/addTest.html", "test")
 
 
