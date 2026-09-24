@@ -459,12 +459,21 @@ def _now_minute():
     return timezone.localtime().replace(second=0, microsecond=0)
 
 
-def _save_batch_record(request, batch: Batch, form, template: str, what: str):
+def _is_modal_request(request) -> bool:
+    """True when cellar-ledger.js's shared form modal (#formModal) is asking."""
+    return request.headers.get('x-requested-with') == 'XMLHttpRequest'
+
+
+def _save_batch_record(request, batch: Batch, form, template: str, what: str, partial: str | None = None):
     """
     Shared POST/GET handling for Add test / Add note / Add addon: validate, attach
     to the batch from the URL (never from the form), save, redirect to the batch.
     Invalid input re-shows the form with its errors; nothing is saved.
+    With `partial` and a modal request, GET/invalid POST return just the form
+    (the partial template) and a successful POST returns {"saved": true} - the
+    modal then reloads the batch page.
     """
+    modal = partial is not None and _is_modal_request(request)
     if request.method == 'POST':
         if form.is_valid():
             record = form.save(commit=False)
@@ -476,9 +485,11 @@ def _save_batch_record(request, batch: Batch, form, template: str, what: str):
                 form.add_error(None, f"Couldn't save the {what}. Nothing was saved - please try again.")
             else:
                 logger.info("%s: saved %s on batch %s '%s'", what, record.pk, batch.pk, batch.name)
+                if modal:
+                    return JsonResponse({'saved': True})
                 return HttpResponseRedirect(reverse('batch', kwargs={'pk': batch.pk}))
         logger.debug("%s: invalid form for batch %s: %s", what, batch.pk, form.errors.as_data())
-    return render(request, template, {'form': form, 'batch': batch})
+    return render(request, partial if modal else template, {'form': form, 'batch': batch, 'modal': modal})
 
 
 @login_required
@@ -492,7 +503,8 @@ def batchTest(request, pk):
 def batchAddition(request, pk):
     batch = get_object_or_404(Batch, pk=pk)
     form = BatchAdditionForm(request.POST or None)
-    return _save_batch_record(request, batch, form, "batchthis/addAddon.html", "addition")
+    return _save_batch_record(request, batch, form, "batchthis/addAddon.html", "addition",
+                              partial="batchthis/includes/_addon_form.html")
 
 
 @login_required

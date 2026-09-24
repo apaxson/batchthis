@@ -1,0 +1,43 @@
+{% comment %}
+The Add addon form. Rendered inside the full page (addAddon.html) and, on its
+own, inside the shared #formModal on the batch page (cellar-ledger.js loads it,
+posts it, and reloads the batch page when it's saved). `modal` is true then.
+{% endcomment %}
+{% if form.non_field_errors %}
+<div class="cl-flag" style="margin-bottom:16px;">
+  <span class="cl-flag-mark">!</span>
+  <span>{% for error in form.non_field_errors %}{{ error }}{% if not forloop.last %} {% endif %}{% endfor %}</span>
+</div>
+{% endif %}
+<form method="POST" class="cl-form" action="{% url 'addDetailAddon' batch.pk %}">
+  {% csrf_token %}
+  <div class="cl-form-grid">
+    <div class="cl-field cl-field--grow">
+      <label for="{{ form.adjunct.id_for_label }}">Adjunct</label>
+      {{ form.adjunct }}
+      <div data-react-model-select
+           data-endpoint="{% url 'adjunct-list' %}"
+           data-target="#{{ form.adjunct.id_for_label }}"
+           data-placeholder="Search adjuncts&hellip;"></div>
+      {% if form.adjunct.errors %}<div class="cl-field-error">{{ form.adjunct.errors }}</div>{% endif %}
+    </div>
+    <div class="cl-field">
+      <label for="{{ form.amount.id_for_label }}">Amount</label>
+      {{ form.amount }}
+      {% if form.amount.errors %}<div class="cl-field-error">{{ form.amount.errors }}</div>{% endif %}
+    </div>
+    <div class="cl-field cl-field--grow">
+      <label for="{{ form.description.id_for_label }}">Description</label>
+      {{ form.description }}
+      {% if form.description.errors %}<div class="cl-field-error">{{ form.description.errors }}</div>{% endif %}
+    </div>
+  </div>
+  <div class="cl-form-actions">
+    {% if modal %}
+    <button type="button" class="cl-btn cl-btn--secondary" data-dismiss="modal">Cancel</button>
+    {% else %}
+    <a href="{% url 'batch' batch.pk %}" class="cl-btn cl-btn--secondary">Cancel</a>
+    {% endif %}
+    <button type="submit" class="cl-btn cl-btn--primary">Save</button>
+  </div>
+</form>

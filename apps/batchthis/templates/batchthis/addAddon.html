@@ -1,5 +1,7 @@
 {% extends 'batchthis/base.html' %}
+{% load static %}
 {% block content %}
+<script type="module" src="{% static 'batchthis/dist/model-select.js' %}"></script>
 
 <div class="cl-page-head">
   <div class="cl-wordmark font-display">New addition</div>
@@ -8,46 +10,8 @@
   </div>
 </div>
 
-{% if form.non_field_errors %}
-<div class="cl-flag" style="margin-bottom:20px;">
-  <span class="cl-flag-mark">!</span>
-  <span>{% for error in form.non_field_errors %}{{ error }}{% if not forloop.last %} {% endif %}{% endfor %}</span>
-</div>
-{% endif %}
-
 <div class="cl-panel">
-  <form method="POST" class="cl-form">
-    {% csrf_token %}
-
-    <div class="cl-form-grid">
-      <div class="cl-field">
-        <label for="{{ form.name.id_for_label }}">Addition</label>
-        {{ form.name }}
-        {% if form.name.errors %}<div class="cl-field-error">{{ form.name.errors }}</div>{% endif %}
-      </div>
-      <div class="cl-field">
-        <label for="{{ form.amount.id_for_label }}">Amount</label>
-        {{ form.amount }}
-        {% if form.amount.errors %}<div class="cl-field-error">{{ form.amount.errors }}</div>{% endif %}
-      </div>
-      <div class="cl-field">
-        <label for="{{ form.units.id_for_label }}">Units</label>
-        {{ form.units }}
-        {% if form.units.errors %}<div class="cl-field-error">{{ form.units.errors }}</div>{% endif %}
-      </div>
-
-      <div class="cl-field cl-field--grow">
-        <label for="{{ form.description.id_for_label }}">Description</label>
-        {{ form.description }}
-        {% if form.description.errors %}<div class="cl-field-error">{{ form.description.errors }}</div>{% endif %}
-      </div>
-    </div>
-
-    <div class="cl-form-actions">
-      <a href="{% url 'batch' batch.pk %}" class="cl-btn cl-btn--secondary">Cancel</a>
-      <button type="submit" class="cl-btn cl-btn--primary">Save</button>
-    </div>
-  </form>
+  {% include 'batchthis/includes/_addon_form.html' %}
 </div>
 
 {% endblock %}

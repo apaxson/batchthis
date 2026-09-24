@@ -1,5 +1,8 @@
 {% extends 'batchthis/base.html' %}
+{% load static %}
 {% block content %}
+{# react-select pickers inside the shared form modal (e.g. Add addon's adjunct picker) #}
+<script type="module" src="{% static 'batchthis/dist/model-select.js' %}"></script>
 
 <div class="cl-batch-head cl-batch-head--menu">
   <div>
@@ -25,7 +28,7 @@
           {% endif %}
           <li role="none"><a role="menuitem" href="{% url 'addDetailTest' batch.pk %}">Add test</a></li>
           <li role="none"><a role="menuitem" href="{% url 'addDetailNote' batch.pk %}">Add note</a></li>
-          <li role="none"><a role="menuitem" href="{% url 'addDetailAddon' batch.pk %}">Add addon</a></li>
+          <li role="none"><a role="menuitem" href="{% url 'addDetailAddon' batch.pk %}" data-cl-form-modal data-modal-title="Add addon">Add addon</a></li>
           <li role="separator"></li>
           <li role="none"><a role="menuitem" href="{% url 'batchActivity' batch.pk %}">Activity log</a></li>
           <li role="none"><a role="menuitem" href="{% url 'batchGraphs' batch.pk %}">All readings</a></li>

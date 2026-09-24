@@ -222,23 +222,24 @@ class DescriptiveQuantityFormField(QuantityFormField):
 
 
 
-class VolumeField(forms.CharField):
+class MeasurementField(forms.CharField):
     """
-    Form field for a volume typed as text ("6 gallons", "20 L"). Returns the
-    Quantity exactly as entered - DescriptiveQuantityField stores it in liters
-    and gives back the entered unit. Rejects a bare number ("Units are
-    required."), non-volume units and anything that isn't an amount + unit.
+    Base for form fields that take a measurement typed as text ("6 gallons",
+    "4 g"). Returns the Quantity exactly as entered - DescriptiveQuantityField
+    stores it in metric and gives back the entered unit. Rejects a bare number
+    ("Units are required."), units outside `dimensions`, anything that isn't an
+    amount + unit, and zero/negative amounts. Subclasses set `dimensions` and
+    the `wrong_kind` / `invalid_amount` messages.
     """
+    dimensions: tuple[str, ...] = ()
     default_error_messages = {
         'units_required': "Units are required.",
-        'not_volume': "Use a volume unit: gallons or liters.",
-        'invalid_amount': "Enter an amount and a unit, e.g. 6 gallons or 20 liters.",
         'not_positive': "Enter an amount greater than zero.",
     }
     _STARTS_WITH_NUMBER = re.compile(r'^[-+]?(\d|\.\d)')
 
-    def __init__(self, *, placeholder: str = "e.g. 6 gallons", **kwargs):
-        kwargs.setdefault('widget', TextInput(attrs={'placeholder': placeholder}))
+    def __init__(self, *, placeholder: str = "", **kwargs):
+        kwargs.setdefault('widget', TextInput(attrs={'placeholder': placeholder} if placeholder else {}))
         super().__init__(**kwargs)
 
     def to_python(self, value):
@@ -246,24 +247,31 @@ class VolumeField(forms.CharField):
         if text in self.empty_values:
             return None
         if not self._STARTS_WITH_NUMBER.match(text):
-            logger.debug(f"VolumeField: no amount in {text!r}")
+            logger.debug(f"{type(self).__name__}: no amount in {text!r}")
             raise ValidationError(self.error_messages['invalid_amount'], code='invalid_amount')
         ureg = settings.DJANGO_PINT_UNIT_REGISTER
         try:
-            quantity = ureg.Quantity(text.lower())
+            # As typed first (unit symbols are case-sensitive: degF, mL), then
+            # lowercased so "6Gallons" / "20 Liters" still parse.
+            try:
+                quantity = ureg.Quantity(text)
+            except Exception:
+                quantity = ureg.Quantity(text.lower())
         except Exception:
-            logger.debug(f"VolumeField: could not parse {text!r}")
+            logger.debug(f"{type(self).__name__}: could not parse {text!r}")
             raise ValidationError(self.error_messages['invalid_amount'], code='invalid_amount')
-        if not isinstance(quantity, ureg.Quantity) or quantity.dimensionless:
+        # A bare number parses with the unit "dimensionless". (Not .unitless: pint also
+        # calls ppm/percent unitless, and those are units - just the wrong kind.)
+        if not isinstance(quantity, ureg.Quantity) or str(quantity.units) in ('', 'dimensionless'):
             raise ValidationError(self.error_messages['units_required'], code='units_required')
-        if not quantity.check('[volume]'):
-            raise ValidationError(self.error_messages['not_volume'], code='not_volume')
+        if not any(quantity.check(dimension) for dimension in self.dimensions):
+            raise ValidationError(self.error_messages['wrong_kind'], code='wrong_kind')
         if quantity.magnitude <= 0:
             raise ValidationError(self.error_messages['not_positive'], code='not_positive')
         return quantity
 
     def has_changed(self, initial, data) -> bool:
-        # Compare volumes, not text: initial "6.00 gallon" and a re-submitted
+        # Compare measurements, not text: initial "6.00 gallon" and a re-submitted
         # "6 gallons" are the same. A different unit counts as a change (it
         # changes how the value is shown).
         try:
@@ -274,3 +282,27 @@ class VolumeField(forms.CharField):
         if new is None or old is None:
             return (new is None) != (old is None)
         return str(new.units) != str(old.units) or abs(new.magnitude - old.magnitude) > 1e-9
+
+
+class VolumeField(MeasurementField):
+    """A volume ("6 gallons", "20 L") - e.g. batch size, vessel capacity/fill."""
+    dimensions = ('[volume]',)
+    default_error_messages = {
+        'wrong_kind': "Use a volume unit: gallons or liters.",
+        'invalid_amount': "Enter an amount and a unit, e.g. 6 gallons or 20 liters.",
+    }
+
+    def __init__(self, *, placeholder: str = "e.g. 6 gallons", **kwargs):
+        super().__init__(placeholder=placeholder, **kwargs)
+
+
+class AmountField(MeasurementField):
+    """A weight or volume ("4 g", "0.5 oz", "5 ml") - e.g. a batch addition's amount."""
+    dimensions = ('[mass]', '[volume]')
+    default_error_messages = {
+        'wrong_kind': "Use a weight or volume unit, e.g. 4 grams or 5 ml.",
+        'invalid_amount': "Enter an amount and a unit, e.g. 4 grams or 5 ml.",
+    }
+
+    def __init__(self, *, placeholder: str = "e.g. 4 grams", **kwargs):
+        super().__init__(placeholder=placeholder, **kwargs)

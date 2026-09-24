@@ -881,10 +881,11 @@ class BatchAdditionItem(models.Model):
 
 # TODO: Refactor to match Adjuncts/RecipeAdjuncts
 class BatchAddition(models.Model):
-    name = models.ForeignKey(BatchAdditionItem, on_delete=models.SET("_del"))
+    # PROTECT: an adjunct that's been added to a batch can't be deleted, so batch history stays intact.
+    adjunct = models.ForeignKey(Adjunct, on_delete=models.PROTECT, related_name='batch_additions')
     description = models.CharField(max_length=250, blank=True, help_text="Add a brief description of this Addition item and why")
-    units = models.ForeignKey(Unit, on_delete=models.SET("_del"))
-    amount = models.FloatField()
+    # A weight or a volume, stored in metric and returned as entered (see DescriptiveQuantityField).
+    amount = DescriptiveQuantityField(base_units='kilograms')
     batch = models.ForeignKey(Batch, blank=True, on_delete=models.CASCADE, related_name="additions")
 
 
@@ -924,9 +925,11 @@ def addActivity(sender,instance,created=False,**kwargs):
     if sender.__name__ == "BatchAddition":
         batch = instance.batch
         if created:
-            text = "Added [" + instance.name.name + "] :: " + str(instance.amount) + " " + instance.units.name
+            # amount may still be the text it was created with ("4 grams"); show it as stored.
+            amount = instance._meta.get_field('amount').to_python(instance.amount)
+            text = f"Added [{instance.adjunct.display_name}] :: {amount}"
         else:
-            text = "Updated [" + instance.name.name + "]"
+            text = f"Updated [{instance.adjunct.display_name}]"
     if sender.__name__ == "BatchTest":
         batch = instance.batch
         if created:

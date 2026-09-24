@@ -7,10 +7,9 @@ from django.test import Client
 from django.urls import NoReverseMatch, reverse
 from django.utils import timezone
 
-from ..factories import BatchFactory
+from ..factories import AdjunctFactory, BatchFactory
 from ..models import (
     BatchAddition,
-    BatchAdditionItem,
     BatchNote,
     BatchNoteType,
     BatchTest,
@@ -58,8 +57,8 @@ def _note_data(**overrides):
 
 
 def _addition_data(**overrides):
-    item, _ = BatchAdditionItem.objects.get_or_create(name="Fermaid-O")
-    data = {"name": item.pk, "amount": "4", "units": Unit.objects.first().pk, "description": "1/3 sugar break"}
+    # Additions pick from Adjuncts, and the amount is a weight or volume with its unit.
+    data = {"adjunct": AdjunctFactory(name="Fermaid-O").pk, "amount": "4 grams", "description": "1/3 sugar break"}
     data.update(overrides)
     return data
 
@@ -199,7 +198,7 @@ def test_completed_batches_still_accept_notes(client, batch):
         ("addDetailNote", _note_data, BatchNote, {"text": ""}, "text"),
         ("addDetailNote", _note_data, BatchNote, {"notetype": ""}, "notetype"),
         ("addDetailAddon", _addition_data, BatchAddition, {"amount": "a pinch"}, "amount"),
-        ("addDetailAddon", _addition_data, BatchAddition, {"name": ""}, "name"),
+        ("addDetailAddon", _addition_data, BatchAddition, {"adjunct": ""}, "adjunct"),
     ],
 )
 def test_invalid_input_shows_the_error_and_saves_nothing(client, batch, url_name, data, model, overrides, field):

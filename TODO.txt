@@ -8,6 +8,9 @@ BUGS:
 FUTURE ENHANCEMENTS:
 * Batch page: open "Add test", "Add note" and "Add addon" as MODAL forms on
   the batch page instead of separate pages (Aaron, 2026-09-24).
+    * DONE for Add addon (2026-09-24): shared #formModal + cellar-ledger.js,
+      see the CLAUDE.md modal rule. REMAINING: Add note, then Add test (its
+      "Use refractometer" opens #refractometerModal - modal-on-modal).
     * Today they're full pages: batch/<pk>/addTest, addNote(/<noteType>),
       addAddon - login-required, validated, batch taken from the URL (see
       views/main.py _save_batch_record, tests/test_batch_record_forms.py).

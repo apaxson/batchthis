@@ -736,6 +736,10 @@ a.nav-link, a.sub-link, a.dropdown-item {
 .cl-field input[aria-invalid="true"],
 .cl-field select[aria-invalid="true"],
 .cl-field textarea[aria-invalid="true"] { border-color: var(--brick); box-shadow: 0 0 0 1px var(--brick); }
+/* A react-select picker's real field is a hidden input, so mark its visible control instead. */
+.cl-field:has(> input[type="hidden"][aria-invalid="true"]) .model-select__control {
+  border-color: var(--brick); box-shadow: 0 0 0 1px var(--brick);
+}
 .cl-field input:focus, .cl-field select:focus, .cl-field textarea:focus {
   outline: 2px solid var(--focus);
   outline-offset: 1px;

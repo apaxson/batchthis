@@ -15,7 +15,7 @@ from django.forms.widgets import NumberInput, DateInput
 from django.utils import timezone
 from pint import Quantity
 from quantityfield.fields import QuantityFormField, QuantityWidget
-from .fields import DescriptiveQuantityFormField, PrecisionQuantityWidget, PrecisionTextWidget, VolumeField
+from .fields import AmountField, DescriptiveQuantityFormField, PrecisionQuantityWidget, PrecisionTextWidget, VolumeField
 import logging
 
 logger = logging.getLogger(__name__)
@@ -51,9 +51,23 @@ class BatchNoteForm(ModelForm):
 
 class BatchAdditionForm(ModelForm):
     # No `batch` field: the view attaches the addition to the batch in the URL.
+    # The adjunct is picked with the react-select picker (fills this hidden input).
+    adjunct = forms.ModelChoiceField(
+        queryset=Adjunct.objects.all(), widget=forms.HiddenInput(),
+        error_messages={'required': "Choose an adjunct."},
+    )
+    amount = AmountField()
+
     class Meta:
         model = BatchAddition
-        fields = ['name', 'amount', 'units', 'description']
+        fields = ['adjunct', 'amount', 'description']
+
+    def full_clean(self):
+        super().full_clean()
+        # Django doesn't mark hidden inputs aria-invalid; do it so the picker gets
+        # the red border (see .model-select__control in cellar-ledger.css).
+        if 'adjunct' in self.errors:
+            self.fields['adjunct'].widget.attrs['aria-invalid'] = 'true'
 
 class BatchAddForm(forms.Form):
     name = forms.CharField(widget=forms.TextInput(attrs={'placeholder':'Name of Batch'}),required=True)

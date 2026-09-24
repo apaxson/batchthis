@@ -170,6 +170,24 @@
     </div>
   </div>
 
+  <!-- Shared form modal - reusable site-wide. Any link with data-cl-form-modal (and an
+       optional data-modal-title) opens its page's form here instead of navigating; the
+       view returns just the form for the modal, and a successful save reloads the page.
+       See cellar-ledger.js and views/main.py _save_batch_record. -->
+  <div class="modal fade cl-modal" id="formModal" tabindex="-1" role="dialog" aria-labelledby="formModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="formModalLabel"></h5>
+          <button class="close" type="button" data-dismiss="modal" aria-label="Close">
+            <span aria-hidden="true">×</span>
+          </button>
+        </div>
+        <div class="modal-body" id="formModalBody"></div>
+      </div>
+    </div>
+  </div>
+
   <!-- Custom scripts for all pages-->
   <script>
     // URL template consumed by utils-rpc.js -- '__ACTION__' is swapped for the action name at call time.

@@ -349,3 +349,111 @@ document.addEventListener('DOMContentLoaded', function () {
     });
   });
 });
+
+// Shared form modal (#formModal in base.html). A link with data-cl-form-modal opens
+// its href's form here instead of navigating: the view answers a modal request
+// (X-Requested-With) with just the form; submitting posts it in the background -
+// errors re-render inside the modal, and {"saved": true} reloads the page so the
+// newest data shows. Without JavaScript the link still opens the full page.
+(function ($) {
+  if (!$) return;
+  $(document).ready(function () {
+    var $modal = $('#formModal');
+    if (!$modal.length) return;
+    var body = document.getElementById('formModalBody');
+    var title = document.getElementById('formModalLabel');
+    var opener = null;
+    var headers = { 'X-Requested-With': 'XMLHttpRequest' };
+
+    function focusFirst(selector) {
+      // react-select renders its input a tick after mounting.
+      setTimeout(function () {
+        var el = body.querySelector(selector) ||
+          body.querySelector('.cl-field input:not([type=hidden]), .cl-field select, .cl-field textarea');
+        if (el) el.focus();
+      }, 100);
+    }
+
+    function showMessage(html) {
+      body.innerHTML = '<div class="cl-flag"><span class="cl-flag-mark">!</span><span>' + html + '</span></div>';
+    }
+
+    function bindForm(url) {
+      if (window.BatchThis && window.BatchThis.mountModelSelects) window.BatchThis.mountModelSelects(body);
+      var form = body.querySelector('form');
+      if (!form) return;
+      form.addEventListener('submit', function (e) {
+        e.preventDefault();
+        var submit = form.querySelector('[type=submit]');
+        if (submit) submit.disabled = true;
+        fetch(form.getAttribute('action') || url, {
+          method: 'POST', body: new FormData(form), headers: headers, credentials: 'same-origin'
+        }).then(function (response) {
+          if (!response.ok) throw new Error('HTTP ' + response.status);
+          var type = response.headers.get('content-type') || '';
+          return type.indexOf('application/json') !== -1 ? response.json() : response.text();
+        }).then(function (data) {
+          if (data && data.saved) { window.location.reload(); return; }
+          body.innerHTML = data;
+          bindForm(url);
+          focusFirst('[aria-invalid="true"]');
+        }).catch(function (err) {
+          console.error('form modal: saving ' + url + ' failed', err);
+          if (submit) submit.disabled = false;
+          showMessage('Couldn\'t save. Check your connection and try again, or <a href="' + url + '">open it as a page</a>.');
+        });
+      });
+    }
+
+    $(document).on('click', '[data-cl-form-modal]', function (e) {
+      e.preventDefault();
+      var url = this.getAttribute('href');
+      // Opened from an actions menu: close it, and return focus to its button afterwards.
+      var menu = this.closest('[data-cl-menu]');
+      opener = this;
+      if (menu) {
+        var toggle = menu.querySelector('.cl-menu-toggle');
+        menu.querySelector('[role="menu"]').hidden = true;
+        toggle.setAttribute('aria-expanded', 'false');
+        opener = toggle;
+      }
+      title.textContent = this.getAttribute('data-modal-title') || this.textContent.trim();
+      body.innerHTML = '<p class="cl-empty">Loading&hellip;</p>';
+      $modal.modal('show');
+      fetch(url, { headers: headers, credentials: 'same-origin' }).then(function (response) {
+        if (!response.ok) throw new Error('HTTP ' + response.status);
+        return response.text();
+      }).then(function (html) {
+        body.innerHTML = html;
+        bindForm(url);
+        focusFirst();
+      }).catch(function (err) {
+        console.error('form modal: loading ' + url + ' failed', err);
+        showMessage('Couldn\'t load the form. <a href="' + url + '">Open it as a page</a> instead.');
+      });
+    });
+
+    // Bootstrap focuses the dialog itself once its opening animation ends - move
+    // focus on to the first field then (loading the form also focuses it).
+    $modal.on('shown.bs.modal', function () { focusFirst(); });
+
+    // Escape with a react-select dropdown open should close just the dropdown, not
+    // the whole modal (and the half-filled form). React closes the menu before the
+    // key bubbles back up, so note whether one was open on the way down (capture)
+    // and stop the key from reaching Bootstrap on the way up.
+    var dropdownWasOpen = false;
+    body.addEventListener('keydown', function (e) {
+      dropdownWasOpen = e.key === 'Escape' && !!body.querySelector('.model-select__menu');
+    }, true);
+    body.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape' && dropdownWasOpen) e.stopPropagation();
+      dropdownWasOpen = false;
+    });
+
+    $modal.on('hidden.bs.modal', function () {
+      body.innerHTML = '';
+      if (opener) opener.focus();
+      opener = null;
+    });
+  });
+})(window.jQuery);
