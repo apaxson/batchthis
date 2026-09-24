@@ -18,6 +18,9 @@
         </button>
         <ul class="cl-menu-list" id="vessel-actions-menu" role="menu" aria-labelledby="vessel-actions-toggle" hidden>
           <li role="none"><a role="menuitem" href="{% url 'editVessel' vessel.pk %}">Edit vessel</a></li>
+          {% if can_take_out_of_service %}
+          <li role="none"><a role="menuitem" href="{% url 'takeVesselOutOfServiceForm' vessel.pk %}" data-cl-form-modal data-modal-title="Take {{ vessel.name }} out of service">Take out of service</a></li>
+          {% endif %}
           <li role="separator"></li>
           <li role="none"><a role="menuitem" href="{% url 'vesselListing' %}">All vessels</a></li>
         </ul>
@@ -81,21 +84,7 @@
     </div>
     {% endif %}
 
-    {% if can_take_out_of_service %}
-    <div class="cl-panel">
-      <div class="cl-section-head"><div class="cl-section-title">Take out of service</div></div>
-      <form class="cl-form" method="post" action="{% url 'takeVesselOutOfService' vessel.pk %}">
-        {% csrf_token %}
-        <div class="cl-field">
-          <label for="id_oos_reason">Reason</label>
-          <input type="text" id="id_oos_reason" name="reason" maxlength="250" required placeholder="e.g. Cracked valve, awaiting part">
-        </div>
-        <div class="cl-form-actions">
-          <button type="submit" class="cl-btn cl-btn--secondary">Take out of service</button>
-        </div>
-      </form>
-    </div>
-    {% elif is_out_of_service %}
+    {% if is_out_of_service %}
     <div class="cl-panel">
       <div class="cl-section-head"><div class="cl-section-title">Out of service</div></div>
       <div class="cl-kv-row"><span class="cl-kv-label">Reason</span><span class="cl-kv-value">{{ out_of_service_reason|default:"&mdash;" }}</span></div>

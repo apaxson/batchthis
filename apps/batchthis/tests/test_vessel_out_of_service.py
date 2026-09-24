@@ -267,3 +267,80 @@ def test_vessel_page_shows_the_out_of_service_artwork(client, wrapper, prefix):
     page = client.get(reverse("vessel", kwargs={"pk": vessel.pk})).content.decode()
 
     assert f"batchthis/img/{prefix}-out-of-service.svg" in page
+
+
+# ---------- Take out of service in the shared form modal ----------
+
+MODAL = {"HTTP_X_REQUESTED_WITH": "XMLHttpRequest"}
+
+
+@pytest.mark.django_db
+def test_vessel_actions_menu_opens_take_out_of_service_in_the_form_modal(client):
+    vessel = VesselFactory(status=Vessel.STATUS_READY)
+
+    page = client.get(reverse("vessel", kwargs={"pk": vessel.pk})).content.decode()
+
+    form_url = reverse("takeVesselOutOfServiceForm", kwargs={"pk": vessel.pk})
+    assert f'href="{form_url}"' in page
+    assert "data-cl-form-modal" in page
+    assert 'name="reason"' not in page  # no inline form on the page any more
+
+
+@pytest.mark.django_db
+def test_take_out_of_service_form_modal_request_returns_just_the_form(client):
+    vessel = VesselFactory(status=Vessel.STATUS_DIRTY)
+
+    response = client.get(reverse("takeVesselOutOfServiceForm", kwargs={"pk": vessel.pk}), **MODAL)
+
+    body = response.content.decode()
+    assert response.status_code == 200
+    assert 'name="reason"' in body
+    assert reverse("takeVesselOutOfService", kwargs={"pk": vessel.pk}) in body
+    assert "<html" not in body
+
+
+@pytest.mark.django_db
+def test_take_out_of_service_form_without_javascript_is_a_full_page(client):
+    vessel = VesselFactory(status=Vessel.STATUS_READY)
+
+    response = client.get(reverse("takeVesselOutOfServiceForm", kwargs={"pk": vessel.pk}))
+
+    body = response.content.decode()
+    assert response.status_code == 200
+    assert "<html" in body and 'name="reason"' in body
+
+
+@pytest.mark.django_db
+def test_take_out_of_service_form_for_an_in_use_vessel_redirects_with_an_error(client):
+    vessel = VesselFactory(status=Vessel.STATUS_ACTIVE)
+
+    response = client.get(reverse("takeVesselOutOfServiceForm", kwargs={"pk": vessel.pk}), follow=True)
+
+    assert response.redirect_chain[-1][0] == reverse("vessel", kwargs={"pk": vessel.pk})
+    assert list(response.context["messages"])
+
+
+@pytest.mark.django_db
+def test_take_out_of_service_modal_post_answers_saved(client):
+    vessel = VesselFactory(status=Vessel.STATUS_READY)
+
+    response = client.post(
+        reverse("takeVesselOutOfService", kwargs={"pk": vessel.pk}), {"reason": "Cracked valve"}, **MODAL
+    )
+
+    assert response.json() == {"saved": True}
+    vessel.refresh_from_db()
+    assert vessel.status == Vessel.STATUS_OUT
+
+
+@pytest.mark.django_db
+def test_take_out_of_service_modal_post_without_a_reason_re_shows_the_form_with_the_error(client):
+    vessel = VesselFactory(status=Vessel.STATUS_READY)
+
+    response = client.post(reverse("takeVesselOutOfService", kwargs={"pk": vessel.pk}), {"reason": " "}, **MODAL)
+
+    body = response.content.decode()
+    assert response.status_code == 200
+    assert "A reason is required" in body and 'name="reason"' in body
+    vessel.refresh_from_db()
+    assert vessel.status == Vessel.STATUS_READY

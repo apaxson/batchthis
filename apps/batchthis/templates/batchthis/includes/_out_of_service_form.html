@@ -1,0 +1,29 @@
+{% comment %}
+The Take out of service reason form. Rendered inside the full page
+(vesselOutOfService.html) and, on its own, inside the shared #formModal from the
+vessel page's actions menu (`modal` is true then).
+{% endcomment %}
+{% if error %}
+<div class="cl-flag" style="margin-bottom:16px;">
+  <span class="cl-flag-mark">!</span>
+  <span>{{ error }}</span>
+</div>
+{% endif %}
+<form method="POST" class="cl-form" action="{% url 'takeVesselOutOfService' vessel.pk %}">
+  {% csrf_token %}
+  <div class="cl-form-grid">
+    <div class="cl-field cl-field--grow">
+      <label for="id_oos_reason">Reason</label>
+      <input type="text" id="id_oos_reason" name="reason" maxlength="250" required value="{{ reason|default:'' }}"
+             placeholder="e.g. Cracked valve, awaiting part"{% if error %} aria-invalid="true"{% endif %}>
+    </div>
+  </div>
+  <div class="cl-form-actions">
+    {% if modal %}
+    <button type="button" class="cl-btn cl-btn--secondary" data-dismiss="modal">Cancel</button>
+    {% else %}
+    <a href="{% url 'vessel' vessel.pk %}" class="cl-btn cl-btn--secondary">Cancel</a>
+    {% endif %}
+    <button type="submit" class="cl-btn cl-btn--primary">Take out of service</button>
+  </div>
+</form>

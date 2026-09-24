@@ -36,6 +36,7 @@ urlpatterns = [
     path('vessel/<int:pk>/edit', views.vesselEdit, name='editVessel'),
     path('vessel/<int:pk>/clean', views.markVesselCleaned, name='markVesselCleaned'),
     path('vessel/<int:pk>/out-of-service', views.takeVesselOutOfService, name='takeVesselOutOfService'),
+    path('vessel/<int:pk>/out-of-service/form', views.takeVesselOutOfServiceForm, name='takeVesselOutOfServiceForm'),
     path('vessel/<int:pk>/return-to-service', views.returnVesselToService, name='returnVesselToService'),
     path('workflows', views.workflowListing, name='workflowListing'),
     path('workflows/add', views.workflowCreate, name='addWorkflow'),
