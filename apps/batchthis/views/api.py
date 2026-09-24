@@ -71,7 +71,10 @@ class VesselListAPIView(APIView):
         # Batch.vessel is unset on batches older than it; those are still in their fermenter.
         current_batches = {
             vessel_id or fermenter_vessel_id: name
-            for vessel_id, fermenter_vessel_id, name in Batch.objects.filter(active=True).values_list(
+            # A packaged batch (Bottles / Kegs) is in no vessel - not its starting fermenter.
+            for vessel_id, fermenter_vessel_id, name in Batch.objects.filter(active=True).exclude(
+                vessel__isnull=True, packaging__gt=''
+            ).values_list(
                 'vessel_id', 'fermenter__vessel_id', 'name'
             )
         }

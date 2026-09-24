@@ -201,6 +201,9 @@ class BatchStageForm(forms.Form):
         widget=forms.HiddenInput(),
         error_messages={'invalid_choice': f"That vessel isn't {Vessel.STATUS_READY}. Pick a clean, ready vessel."},
     )
+    # Sterile Filtering only: package into Bottles / Kegs instead of a destination vessel.
+    packaging = forms.ChoiceField(label="Into", required=False,
+                                  choices=[('', 'A clean vessel')] + PlanStep.PACKAGING_CHOICES)
     notes = forms.CharField(max_length=250, required=False)
 
     def __init__(self, *args, batch: Batch, **kwargs):
@@ -215,8 +218,15 @@ class BatchStageForm(forms.Form):
         stage = cleaned.get('stage')
         if stage is None:
             return cleaned
+        if cleaned.get('packaging'):
+            if stage.to_state != BatchStage.STATE_BOTTLING:
+                self.add_error('packaging', "Only Sterile Filtering can package the batch.")
+            else:
+                cleaned['dst_vessel'] = None   # the picker is hidden when packaging; drop any leftover choice
+            return cleaned
         if stage.transfers_batch and not cleaned.get('dst_vessel') and 'dst_vessel' not in self.errors:
-            self.add_error('dst_vessel', f"{stage.name} transfers the batch - choose a clean, ready destination vessel.")
+            also = " or Bottles / Kegs" if stage.to_state == BatchStage.STATE_BOTTLING else ""
+            self.add_error('dst_vessel', f"{stage.name} transfers the batch - choose a clean, ready destination vessel{also}.")
         elif not stage.transfers_batch:
             # A value left over from switching stages in the form; this stage doesn't move the batch.
             cleaned['dst_vessel'] = None

@@ -21,13 +21,15 @@
 
 <div class="cl-panel">
   {% if form.fields.stage.queryset %}
-  <form method="POST" class="cl-form" id="stageform" data-transfer-stage-ids="{{ transfer_stage_ids }}">
+  <form method="POST" class="cl-form" id="stageform" data-transfer-stage-ids="{{ transfer_stage_ids }}"
+        data-packaging-stage-ids="{{ packaging_stage_ids }}" data-stage-plans='{{ stage_plans }}'>
     {% csrf_token %}
 
     <div class="cl-form-grid">
       <div class="cl-field">
         <label for="{{ form.stage.id_for_label }}">Stage</label>
         {{ form.stage }}
+        <div class="cl-field-note" id="stage-plan-hint"{% if not next_step %} hidden{% endif %}>{% if next_step %}{{ next_step_hint }}{% endif %}</div>
         {% if form.stage.errors %}<div class="cl-field-error">{{ form.stage.errors }}</div>{% endif %}
       </div>
       <div class="cl-field">
@@ -36,12 +38,19 @@
         {% if form.timestamp.errors %}<div class="cl-field-error">{{ form.timestamp.errors }}</div>{% endif %}
       </div>
 
+      <div class="cl-field" id="packaging-field" hidden>
+        <label for="{{ form.packaging.id_for_label }}">Into</label>
+        {{ form.packaging }}
+        {% if form.packaging.errors %}<div class="cl-field-error">{{ form.packaging.errors }}</div>{% endif %}
+      </div>
+
       <div class="cl-field cl-field--grow" id="dst-vessel-field" hidden>
         <label for="{{ form.dst_vessel.id_for_label }}">Destination vessel <small>(clean &amp; ready only)</small></label>
         {{ form.dst_vessel }}
-        <div data-react-model-select
+        <div data-react-model-select id="dst-vessel-picker"
              data-endpoint="{% url 'vessel-list' %}?status=Clean/Ready"
              data-target="#{{ form.dst_vessel.id_for_label }}"
+             data-prefer-type="" data-prefer-label="" data-other-label="Other clean vessels"
              data-placeholder="Search clean, ready vessels&hellip;"></div>
         {% if form.dst_vessel.errors %}<div class="cl-field-error">{{ form.dst_vessel.errors }}</div>{% endif %}
       </div>
@@ -64,23 +73,46 @@
 </div>
 
 <script>
-  // Show the destination picker only for stages that transfer the batch
-  // (Racking and every Filtering); clear it otherwise.
+  // Stages that transfer the batch (Racking, every Filtering) show the destination
+  // picker; Sterile Filtering can instead go "Into" Bottles / Kegs. With a batch plan,
+  // the chosen stage's planned step drives the hint, the picker's "Planned" group
+  // (data-prefer-type, read by ModelSelect.jsx) and the planned packaging.
   document.addEventListener('DOMContentLoaded', function () {
     var form = document.getElementById('stageform');
     if (!form) return;
     var transferIds = (form.dataset.transferStageIds || '').split(',');
+    var packagingIds = (form.dataset.packagingStageIds || '').split(',');
+    var plans = {};
+    try { plans = JSON.parse(form.dataset.stagePlans || '{}'); } catch (err) { console.error('Log stage: bad data-stage-plans', err); }
     var stageSelect = document.getElementById('{{ form.stage.id_for_label }}');
     var dstField = document.getElementById('dst-vessel-field');
     var dstInput = document.getElementById('{{ form.dst_vessel.id_for_label }}');
+    var picker = document.getElementById('dst-vessel-picker');
+    var packagingField = document.getElementById('packaging-field');
+    var packagingSelect = document.getElementById('{{ form.packaging.id_for_label }}');
+    var hint = document.getElementById('stage-plan-hint');
 
-    function toggleDestination() {
-      var transfers = transferIds.indexOf(stageSelect.value) !== -1;
+    function update(stageChanged) {
+      var stage = stageSelect.value;
+      var plan = plans[stage] || null;
+      var canPackage = packagingIds.indexOf(stage) !== -1;
+      if (stageChanged) packagingSelect.value = (plan && plan.packaging) || '';
+      if (!canPackage) packagingSelect.value = '';
+      packagingField.hidden = !canPackage;
+
+      var packaged = canPackage && packagingSelect.value !== '';
+      var transfers = transferIds.indexOf(stage) !== -1 && !packaged;
       dstField.hidden = !transfers;
       if (!transfers) dstInput.value = '';
+
+      hint.hidden = !plan;
+      hint.textContent = plan ? plan.hint : '';
+      picker.dataset.preferType = (plan && plan.vessel_type) || '';
+      picker.dataset.preferLabel = (plan && plan.vessel_label) || '';
     }
-    stageSelect.addEventListener('change', toggleDestination);
-    toggleDestination();
+    stageSelect.addEventListener('change', function () { update(true); });
+    packagingSelect.addEventListener('change', function () { update(false); });
+    update(false);
   });
 </script>
 {% endblock %}

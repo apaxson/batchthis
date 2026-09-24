@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import Select from 'react-select'
 
 // Matches the Cellar Ledger token palette (apps/batchthis/static/batchthis/css/
@@ -35,6 +35,15 @@ const cellarLedgerStyles = {
     fontSize: '0.9rem',
     cursor: 'pointer',
   }),
+  // Group headings (e.g. "Planned: any Barrel") read like the app's field labels, not all caps.
+  groupHeading: (base) => ({
+    ...base,
+    textTransform: 'none',
+    fontSize: '0.72rem',
+    fontWeight: 600,
+    letterSpacing: '0.02em',
+    color: 'var(--ink-soft, #5B6154)',
+  }),
   singleValue: (base) => ({ ...base, color: 'var(--ink, #23291F)' }),
   placeholder: (base) => ({ ...base, color: 'var(--ink-faint, #8B9080)' }),
   input: (base) => ({ ...base, color: 'var(--ink, #23291F)', fontFamily: "'IBM Plex Sans', sans-serif" }),
@@ -43,10 +52,41 @@ const cellarLedgerStyles = {
   clearIndicator: (base) => ({ ...base, color: 'var(--ink-soft, #5B6154)' }),
 }
 
-export default function ModelSelect({ endpoint, targetInput, placeholder }) {
+// Optional grouping: when the mount element carries data-prefer-type (e.g. the Log stage
+// page's planned vessel type), options whose `vessel_type` matches are listed first under
+// "Planned: <data-prefer-label>", the rest under data-other-label. The page can change
+// the attribute at any time (a different stage chosen); the grouping follows it.
+function readPreference(container) {
+  if (!container) return { type: '', label: '', other: '' }
+  return {
+    type: container.dataset.preferType || '',
+    label: container.dataset.preferLabel || container.dataset.preferType || '',
+    other: container.dataset.otherLabel || 'Other',
+  }
+}
+
+export default function ModelSelect({ endpoint, targetInput, placeholder, container }) {
   const [options, setOptions] = useState([])
   const [status, setStatus] = useState('loading')
   const [selected, setSelected] = useState(null)
+  const [preference, setPreference] = useState(() => readPreference(container))
+
+  useEffect(() => {
+    if (!container) return undefined
+    const observer = new MutationObserver(() => setPreference(readPreference(container)))
+    observer.observe(container, { attributes: true, attributeFilter: ['data-prefer-type', 'data-prefer-label'] })
+    return () => observer.disconnect()
+  }, [container])
+
+  const groupedOptions = useMemo(() => {
+    if (!preference.type) return options
+    const planned = options.filter((option) => option.type === preference.type)
+    if (planned.length === 0) return options
+    const others = options.filter((option) => option.type !== preference.type)
+    const groups = [{ label: `Planned: ${preference.label}`, options: planned }]
+    if (others.length) groups.push({ label: preference.other, options: others })
+    return groups
+  }, [options, preference])
 
   useEffect(() => {
     let cancelled = false
@@ -63,6 +103,7 @@ export default function ModelSelect({ endpoint, targetInput, placeholder }) {
         const loadedOptions = data.map((item) => ({
           value: item.id,
           label: item.display_name,
+          type: item.vessel_type,
         }))
         setOptions(loadedOptions)
 
@@ -100,7 +141,7 @@ export default function ModelSelect({ endpoint, targetInput, placeholder }) {
       isClearable
       isLoading={status === 'loading'}
       isDisabled={status === 'loading'}
-      options={options}
+      options={groupedOptions}
       value={selected}
       onChange={handleChange}
       placeholder={placeholder ?? 'Search...'}

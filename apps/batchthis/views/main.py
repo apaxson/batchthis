@@ -27,7 +27,7 @@ from apps.batchthis.services import (
     transition_stage_event, transfer_batch, create_vessel, update_vessel,
     plan_totals, save_workflow_template, delete_workflow_template, save_recipe_plan, clear_recipe_plan,
     copy_plan_to_batch, save_batch_plan, batch_plan_locked_reason,
-    plan_progress,
+    plan_progress, allowed_next_stages,
 )
 from apps.batchthis.lib.faults import get_active_flags, get_rule_for, StagedFaultRule
 from django.contrib.auth.decorators import login_required
@@ -565,6 +565,46 @@ def batchNote(request, pk, noteType=None):
                               partial="batchthis/includes/_note_form.html")
 
 
+def _into_label(step) -> str:
+    """A planned step's vessel type mid-sentence: "any Aging Tank", "Bottles", "same vessel"."""
+    label = step.vessel_type_hint
+    return label if step.vessel_type in dict(PlanStep.PACKAGING_CHOICES) else label[0].lower() + label[1:]
+
+
+def _plan_hint(step) -> str:
+    """ "Planned next: Racking into any Aging Tank (~30 days planned)" for the Log stage page."""
+    hint = f"Planned next: {step.stage.name}"
+    if step.vessel_type != PlanStep.VESSEL_CURRENT:
+        hint += f" into {_into_label(step)}"
+    if step.has_duration:
+        hint += f" (~{_days_label(step.planned_days)} planned)"
+    return hint
+
+
+def _stage_plans(batch) -> tuple[dict, "BatchPlanStep | None"]:
+    """
+    For the Log stage page: per allowed next stage, the next upcoming planned step with
+    that stage (its vessel type, packaging and hint), plus the step to suggest - the
+    first upcoming planned step the workflow allows now. Empty / None without a plan.
+    """
+    allowed = {stage.pk for stage in allowed_next_stages(batch)}
+    upcoming = [row.step for row in plan_progress(batch) if row.status == 'upcoming' and row.step.stage_id in allowed]
+    plans = {}
+    for step in upcoming:
+        if str(step.stage_id) in plans:
+            continue
+        packaging = step.vessel_type if step.vessel_type in dict(PlanStep.PACKAGING_CHOICES) else ""
+        plans[str(step.stage_id)] = {
+            'vessel_type': step.vessel_type if step.vessel_type in dict(Vessel.TYPE_CHOICES) else "",
+            'vessel_label': _into_label(step),
+            'packaging': packaging,
+            'hint': _plan_hint(step),
+        }
+    next_step = upcoming[0] if upcoming else None
+    logger.debug("_stage_plans: batch %s next=%s plans=%s", batch.pk, next_step and next_step.stage.shortid, plans)
+    return plans, next_step
+
+
 @login_required
 def batchStage(request, pk):
     """Log the batch's next workflow stage (Pitch, Racking, a Filtering, Complete Batch)."""
@@ -576,7 +616,8 @@ def batchStage(request, pk):
             try:
                 transition_stage_event(
                     batch, data['stage'],
-                    timestamp=data['timestamp'], dst_vessel=data['dst_vessel'], notes=data['notes'],
+                    timestamp=data['timestamp'], dst_vessel=data['dst_vessel'], packaging=data['packaging'],
+                    notes=data['notes'],
                 )
             except ValidationError as e:
                 # Workflow rule from the service (e.g. timestamp bounds); nothing was saved.
@@ -587,13 +628,25 @@ def batchStage(request, pk):
             else:
                 return HttpResponseRedirect(reverse('batch', kwargs={'pk': pk}))
         logger.debug("batchStage: batch %s form errors: %s", pk, form.errors.as_data())
-    else:
-        form = BatchStageForm(batch=batch, initial={'timestamp': timezone.localtime().replace(second=0, microsecond=0)})
+    stage_plans, next_step = _stage_plans(batch)
+    if request.method != 'POST':
+        initial = {'timestamp': timezone.localtime().replace(second=0, microsecond=0)}
+        if next_step is not None:   # suggest the plan's next step (step 11d)
+            initial['stage'] = next_step.stage.pk
+            if next_step.vessel_type in dict(PlanStep.PACKAGING_CHOICES):
+                initial['packaging'] = next_step.vessel_type
+        form = BatchStageForm(batch=batch, initial=initial)
 
     context = {
         'batch': batch,
         'form': form,
         'current_state': batch.current_state,
+        'next_step': next_step,
+        'next_step_hint': _plan_hint(next_step) if next_step else '',
+        'stage_plans': mark_safe(json.dumps(stage_plans)),   # stage pks and fixed labels only
+        'packaging_stage_ids': ",".join(
+            str(pk) for pk in BatchStage.objects.filter(to_state=BatchStage.STATE_BOTTLING).values_list('pk', flat=True)
+        ),
         # Lets the page show the destination picker only for stages that move the batch.
         'transfer_stage_ids': ",".join(
             str(pk) for pk in BatchStage.objects.filter(transfers_batch=True).order_by('pk').values_list('pk', flat=True)

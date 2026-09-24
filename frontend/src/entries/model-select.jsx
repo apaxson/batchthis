@@ -22,6 +22,7 @@ function mountModelSelects(root = document) {
         endpoint={endpoint}
         targetInput={targetInput}
         placeholder={container.dataset.placeholder}
+        container={container}
       />
     )
   })

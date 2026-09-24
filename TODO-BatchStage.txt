@@ -760,6 +760,17 @@ Steps:
       11d. Log stage page: pre-select the next planned stage; the destination
            picker puts clean vessels of that step's planned type first, marked
            "Planned"; Sterile Filtering also offers Bottles / Kegs.
+           [DONE 2026-09-24] views._stage_plans(): per allowed next stage, its
+           next upcoming planned step (vessel type, packaging, hint); the first
+           one is pre-selected (+ planned packaging). BatchStageForm.packaging
+           ("Into": a clean vessel / Bottles / Kegs, Sterile Filtering only;
+           packaging drops a leftover vessel choice). addBatchStage.html: hint
+           "Planned next: Racking into any Aging Tank (~30 days planned)", Into
+           field, picker data-prefer-type. ModelSelect.jsx groups options by
+           data-prefer-type ("Planned: any Barrel" / data-other-label) and
+           follows changes (MutationObserver); dist rebuilt. Vessels API no
+           longer lists a packaged batch in its starting fermenter.
+           Tests: tests/test_log_stage_plan.py.
       11e. Batch page Plan section: after Pitch it becomes plan vs actual -
            Step, Stage, Planned type / Actual (vessel or packaging), Planned day
            / Actual day, Planned / Actual time (+/-), Status; unplanned stages
