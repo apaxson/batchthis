@@ -86,6 +86,43 @@ FUTURE ENHANCEMENTS:
     * Per CLAUDE.md, a forecast across all active batches is heavy/
       recurring work - compute it in a Celery task on the 5-minute
       schedule and cache the result, not inside a page request.
+* FLEXIBLE WORKFLOW STEPS IN JSON (Aaron, 2026-09-24): make workflow steps
+  more flexible by describing them in JSON.
+    * Today a step is fixed columns on PlanStep (sort_order, stage,
+      planned_duration, vessel_type, notes), shared by WorkflowTemplateStep
+      and RecipePlanStep (later BatchPlanStep); the rules are code in
+      services.allowed_vessel_types() / plan_step_problems().
+    * To decide: what the JSON holds - the whole plan on its owner (one
+      JSONField) or extra per-step attributes (e.g. target readings,
+      additions, reminders) next to the columns; whether the stage rules
+      move into data too; how it's validated (a schema checked by
+      plan_step_problems) and edited (the step editor and PlanStepFormSet).
+    * Keep: durations as measurements (CLAUDE.md), copies (template ->
+      recipe -> batch) stay independent, the per-row error messages.
+    * Needs a migration that converts existing steps.
+* VESSEL TYPES IN THE DATABASE (Aaron, 2026-09-24): move vessel types out
+  of code into a table.
+    * Today they're code: Vessel.TYPE_CHOICES (Fermenter, Aging Tank,
+      Barrel), one wrapper model each (Fermenter/AgingTank/Barrel) mapped
+      in services.VESSEL_TYPES, plus plan-only choices on PlanStep
+      (Bottles, Kegs - Sterile Filtering only - and None / Current). Plan
+      steps store the type as text; Vessel.vessel_type is derived from
+      which wrapper row exists.
+    * To decide: whether the wrapper models are replaced by a VesselType
+      FK on Vessel (type-specific details like passivation date, serial,
+      toast level become optional fields or per-type JSON - see the JSON
+      item above); how plan-only destinations (Bottles/Kegs) and None /
+      Current are represented; whether the per-stage rules
+      (allowed_vessel_types) become data on the type or the stage.
+    * Affects: Vessel.vessel_type, create_vessel/update_vessel, VesselForm,
+      Batch.fermenter (FK to the Fermenter wrapper) and Add batch's
+      fermenter list, the vessels API, status icons, PlanStep.vessel_type
+      (text -> FK) and the step editor's rules. Data migration for existing
+      vessels and plan steps (makemigrations + a data migration - ask
+      first, per CLAUDE.md).
+    * Admin: new registrations view-only unless Aaron says otherwise; see
+      the vessel-type admin risks discussed 2026-09-24 (duplicate/missing
+      type rows) - a single FK removes most of them.
 
 7/17/23
 * Create Form page for Fermentables - DONE
