@@ -203,7 +203,9 @@ def _timestamp_problem(batch: Batch, timestamp: datetime, what: str) -> Optional
     if latest is not None and timestamp < latest.timestamp:
         return (f"{what} can't be earlier than the batch's latest stage or transfer "
                 f"({latest.label}, {timezone.localtime(latest.timestamp):%b %d, %Y %H:%M}).")
-    if timestamp < batch.startdate:
+    # By local date, not time: a batch created today has startdate = the moment it was saved, so a
+    # stage logged earlier that day (or at the form's minute-rounded default time) is still valid.
+    if timezone.localtime(timestamp).date() < timezone.localtime(batch.startdate).date():
         return f"{what} can't be before the batch's start date ({timezone.localtime(batch.startdate):%b %d, %Y})."
     return None
 

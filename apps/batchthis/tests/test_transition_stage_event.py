@@ -327,3 +327,50 @@ def test_set_vessel_status_accepts_a_timestamp():
     event = set_vessel_status(vessel, Vessel.STATUS_READY, timestamp=when)
 
     assert event.timestamp == when
+
+
+# ---------- Same day as the start date is fine (Aaron, 2026-09-24) ----------
+
+def _started_now():
+    batch = _batch()
+    batch.startdate = timezone.now()
+    batch.save()
+    return batch
+
+
+@pytest.mark.django_db
+def test_pitch_earlier_on_the_batch_start_date_is_allowed():
+    batch = _started_now()
+    start_of_day = timezone.localtime().replace(hour=0, minute=0, second=0, microsecond=0)
+
+    event = transition_stage_event(batch, _stage("pitch"), timestamp=start_of_day)
+
+    assert event.stage.shortid == "pitch"
+
+
+@pytest.mark.django_db
+def test_pitch_the_day_before_the_start_date_is_still_rejected():
+    batch = _started_now()
+    day_before = timezone.localtime().replace(hour=23, minute=59) - datetime.timedelta(days=1)
+
+    with pytest.raises(ValidationError, match="start date"):
+        transition_stage_event(batch, _stage("pitch"), timestamp=day_before)
+
+
+@pytest.mark.django_db
+def test_log_stage_page_accepts_pitch_at_its_default_time_on_a_batch_created_today():
+    from django.contrib.auth import get_user_model
+    from django.test import Client
+    from django.urls import reverse
+
+    batch = _started_now()
+    client = Client()
+    client.force_login(get_user_model().objects.create_user(username="cellarhand", password="pw"))
+    url = reverse("addDetailStage", kwargs={"pk": batch.pk})
+    default_time = client.get(url).context["form"]["timestamp"].value()
+
+    response = client.post(url, {"stage": _stage("pitch").pk, "timestamp": default_time.strftime("%Y-%m-%dT%H:%M"),
+                                 "dst_vessel": "", "notes": ""})
+
+    assert response.status_code == 302
+    assert batch.stage_events.get().stage.shortid == "pitch"
