@@ -622,7 +622,7 @@ def _into_label(step) -> str:
 
 
 def _plan_hint(step) -> str:
-    """ "Planned next: Racking into any Aging Tank (~30 days planned)" for the Log stage page."""
+    """ "Planned next: Racking into any Aging Tank (~30 days planned)" for the Stage transition page."""
     hint = f"Planned next: {step.stage.name}"
     if step.vessel_type != PlanStep.VESSEL_CURRENT:
         hint += f" into {_into_label(step)}"
@@ -633,7 +633,7 @@ def _plan_hint(step) -> str:
 
 def _stage_plans(batch) -> tuple[dict, "BatchPlanStep | None"]:
     """
-    For the Log stage page: per allowed next stage, the next upcoming planned step with
+    For the Stage transition page: per allowed next stage, the next upcoming planned step with
     that stage (its vessel type, packaging and hint), plus the step to suggest - the
     first upcoming planned step the workflow allows now. Empty / None without a plan.
     """

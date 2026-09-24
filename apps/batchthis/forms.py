@@ -152,7 +152,7 @@ class BatchAddForm(forms.Form):
 class BatchEditForm(forms.Form):
     """
     Correct an existing batch's details. Deliberately has no fermenter/vessel
-    or start date: vessel moves go through Log stage / Transfer batch (so
+    or start date: vessel moves go through Stage transition / Ad-hoc transfer (so
     vessel status and stage events stay right), and startdate anchors the
     timeline and fault checks.
     """

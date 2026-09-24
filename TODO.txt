@@ -51,6 +51,11 @@ FUTURE ENHANCEMENTS:
     * Keyboard/focus: focus the first field on open, Escape closes, focus
       returns to the link that opened it.
 
+* RESOLVED (Aaron, 2026-09-24): the two batch actions are now "Stage
+  transition" (was "Log stage"; button "Transition batch") and "Ad-hoc
+  transfer" (was "Transfer batch"; button "Transfer batch"). "Save" was
+  rejected for the button - it reads as keeping the current state. The time
+  bar's segment label for a transfer is still "Transfer". Original note:
 * PINNED - review later (Aaron, 2026-09-24): relabel "Log stage". It's
   ambiguous and doesn't say the batch moves FORWARD. Candidates:
   "Advance stage" (recommended - clearly forward, unlike "Transfer batch"),

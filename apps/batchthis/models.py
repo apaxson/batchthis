@@ -103,7 +103,7 @@ class BatchStage(models.Model):
 
     def can_follow(self, state: str | None) -> bool:
         """
-        The workflow order rule, shared by the live workflow (Log stage) and recipe
+        The workflow order rule, shared by the live workflow (Stage transition) and recipe
         plans: can this transition happen when the batch is in `state` (None = not
         pitched yet)? Pitch only first; every other stage from its from_state;
         Racking also repeatable during Aging; nothing after Completed.

@@ -1,4 +1,4 @@
-"""Step 11d: Log stage suggests the next planned step; Sterile Filtering can package into Bottles / Kegs."""
+"""Step 11d: Stage transition suggests the next planned step; Sterile Filtering can package into Bottles / Kegs."""
 import datetime
 import html
 import json

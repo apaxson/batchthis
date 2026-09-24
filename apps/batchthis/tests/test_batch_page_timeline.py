@@ -1,4 +1,5 @@
 import datetime
+import re
 
 import pytest
 from django.contrib.auth import get_user_model
@@ -49,7 +50,7 @@ def _page(client, batch):
     return client.get(reverse("batch", kwargs={"pk": batch.pk}))
 
 
-# ---------- "Log stage" link ----------
+# ---------- "Stage transition" link ----------
 
 @pytest.mark.django_db
 def test_active_batch_page_links_to_log_stage(client):
@@ -82,7 +83,6 @@ def test_unpitched_batch_shows_an_empty_timeline(client):
 
     page = response.content.decode()
     assert "Stage timeline" in page
-    assert "Not pitched" in page
     assert "No stages logged yet." in page
     assert response.context["vessel_stays"] == []
     assert response.context["full_aging"] is None
@@ -131,7 +131,10 @@ def test_full_aging_is_ongoing_until_a_filtering(client):
     response = _page(client, batch)
 
     assert response.context["full_aging"].is_open
-    assert "ongoing" in response.content.decode()
+    # Shown on the time bar's Aging band heading (the Stage timeline box grid was removed).
+    band = re.search(r'<div class="cl-timebar-band[^"]*"[^>]*>\s*<span>Aging</span>(.*?)</div>',
+                     response.content.decode(), re.DOTALL).group(1)
+    assert "Full aging" in band and "(ongoing)" in band
 
 
 @pytest.mark.django_db
@@ -146,6 +149,9 @@ def test_full_aging_is_closed_by_the_first_filtering(client):
     aging = response.context["full_aging"]
     assert not aging.is_open
     assert aging.duration.days == 30
+    band = re.search(r'<div class="cl-timebar-band[^"]*"[^>]*>\s*<span>Aging</span>(.*?)</div>',
+                     response.content.decode(), re.DOTALL).group(1)
+    assert "Full aging" in band and "(ongoing)" not in band
 
 
 # ---------- Queries ----------

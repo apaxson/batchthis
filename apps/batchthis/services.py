@@ -183,7 +183,7 @@ def _workflow_problem(batch: Batch, stage: BatchStage, current: Optional[BatchSt
     if stage.can_follow(state):
         return None
     if current is None:
-        return f"Log Pitch first - '{batch.name}' hasn't been pitched yet."
+        return f"Pitch the batch first - '{batch.name}' hasn't been pitched yet."
     return f"{stage.name} needs a batch in {stage.get_from_state_display()}; '{batch.name}' is in {state}."
 
 

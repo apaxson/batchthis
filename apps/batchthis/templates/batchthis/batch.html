@@ -22,8 +22,8 @@
         </button>
         <ul class="cl-menu-list" id="batch-actions-menu" role="menu" aria-labelledby="batch-actions-toggle" hidden>
           {% if batch.active %}
-          <li role="none"><a role="menuitem" href="{% url 'addDetailStage' batch.pk %}">Log stage</a></li>
-          {% if not batch.is_packaged %}<li role="none"><a role="menuitem" href="{% url 'transferBatch' batch.pk %}">Transfer batch</a></li>{% endif %}
+          <li role="none"><a role="menuitem" href="{% url 'addDetailStage' batch.pk %}">Stage transition</a></li>
+          {% if not batch.is_packaged %}<li role="none"><a role="menuitem" href="{% url 'transferBatch' batch.pk %}">Ad-hoc transfer</a></li>{% endif %}
           <li role="separator"></li>
           {% endif %}
           <li role="none"><a role="menuitem" href="{% url 'addDetailTest' batch.pk %}" data-cl-form-modal data-modal-title="Add test">Add test</a></li>
@@ -74,30 +74,16 @@
 <!-- Specific Gravity -->
 <div class="cl-section-head">
   <div class="cl-section-title">Stage timeline</div>
-  {% if batch.active %}<div class="cl-section-note"><a href="{% url 'addDetailStage' batch.pk %}">Log stage</a></div>{% endif %}
+  {% if batch.active %}<div class="cl-section-note"><a href="{% url 'addDetailStage' batch.pk %}">Stage transition</a></div>{% endif %}
 </div>
-<div class="cl-readouts cl-readouts--3">
-  <div class="cl-readout">
-    <div class="cl-readout-label">Stage</div>
-    <div class="cl-readout-value">{{ current_state|default:"Not pitched" }}</div>
-  </div>
-  <div class="cl-readout">
-    <div class="cl-readout-label">Full aging{% if full_aging.is_open %} <small>(ongoing)</small>{% endif %}</div>
-    <div class="cl-readout-value">{% if full_aging %}{% if full_aging.is_open %}{{ full_aging.start|timesince }}{% else %}{{ full_aging.start|timesince:full_aging.end }}{% endif %}{% else %}&mdash;{% endif %}</div>
-  </div>
-  <div class="cl-readout">
-    <div class="cl-readout-label">Time in current vessel{% if current_stay.vessel %} &middot; {{ current_stay.vessel.name }}{% endif %}</div>
-    <div class="cl-readout-value">{% if current_stay %}{{ current_stay.start|timesince }}{% else %}&mdash;{% endif %}</div>
-  </div>
-</div>
-
-{% if not vessel_stays %}<p class="cl-timebar-empty">No stages logged yet. Log Pitch to start the timeline.</p>{% endif %}
+{% if not vessel_stays %}<p class="cl-timebar-empty">No stages logged yet. Pitch the batch with a Stage transition to start the timeline.</p>{% endif %}
 <div class="cl-timebar-scroll">
   <div class="cl-timebar" style="grid-template-columns: {{ timeline_columns }};" role="group" aria-label="Batch timeline; widths show time spent">
     {% for band in timeline.bands %}
     <div class="cl-timebar-band cl-timebar-band--{{ band.kind }}" style="grid-column: span {{ band.segments|length }};">
       <span>{{ band.state|default:"Before pitch" }}</span>
       <span class="cl-timebar-band-time cl-num">{% if band.kind == 'past' %}{{ band.start|timesince:band.end }}{% elif band.kind == 'current' %}{{ band.start|timesince }}{% elif band.duration %}~{{ band.duration.days }} days{% else %}Not planned{% endif %}</span>
+      {% if band.state == 'Aging' and full_aging %}<span class="cl-timebar-band-time cl-timebar-band-extra cl-num" title="First Racking to first Filtering">&middot; Full aging {% if full_aging.is_open %}{{ full_aging.start|timesince }} (ongoing){% else %}{{ full_aging.start|timesince:full_aging.end }}{% endif %}</span>{% endif %}
     </div>
     {% endfor %}
 
@@ -145,7 +131,7 @@
     <div class="cl-panel">
       <div class="cl-section-head">
         <div class="cl-section-title">Current Vessel</div>
-        {% if batch.active and not batch.is_packaged %}<div class="cl-section-note"><a href="{% url 'transferBatch' batch.pk %}" title="Only for moves outside the normal workflow - use Log stage for racking and filtering">Transfer batch</a></div>{% endif %}
+        {% if batch.active and not batch.is_packaged %}<div class="cl-section-note"><a href="{% url 'transferBatch' batch.pk %}" title="Only for moves outside the normal workflow - use Stage transition for racking and filtering">Ad-hoc transfer</a></div>{% endif %}
       </div>
       {% with v=batch.current_vessel %}
       {% if v %}

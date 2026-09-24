@@ -4,7 +4,7 @@
 <script type="module" src="{% static 'batchthis/dist/model-select.js' %}"></script>
 
 <div class="cl-page-head">
-  <div class="cl-wordmark font-display">Log stage</div>
+  <div class="cl-wordmark font-display">Stage transition</div>
   <div class="cl-batch-sub" style="margin-top:6px;">
     <span><a href="{% url 'batch' batch.pk %}">&larr; Back to {{ batch.name }}</a></span>
     <span>Now <b>{{ current_state|default:"Not pitched" }}</b></span>
@@ -64,7 +64,7 @@
 
     <div class="cl-form-actions">
       <a href="{% url 'batch' batch.pk %}" class="cl-btn cl-btn--secondary">Cancel</a>
-      <button type="submit" class="cl-btn cl-btn--primary">Log stage</button>
+      <button type="submit" class="cl-btn cl-btn--primary">Transition batch</button>
     </div>
   </form>
   {% else %}
@@ -83,7 +83,7 @@
     var transferIds = (form.dataset.transferStageIds || '').split(',');
     var packagingIds = (form.dataset.packagingStageIds || '').split(',');
     var plans = {};
-    try { plans = JSON.parse(form.dataset.stagePlans || '{}'); } catch (err) { console.error('Log stage: bad data-stage-plans', err); }
+    try { plans = JSON.parse(form.dataset.stagePlans || '{}'); } catch (err) { console.error('Stage transition: bad data-stage-plans', err); }
     var stageSelect = document.getElementById('{{ form.stage.id_for_label }}');
     var dstField = document.getElementById('dst-vessel-field');
     var dstInput = document.getElementById('{{ form.dst_vessel.id_for_label }}');

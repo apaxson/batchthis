@@ -567,6 +567,8 @@ a.nav-link, a.sub-link, a.dropdown-item {
 /* Name and duration never break inside; the duration wraps under the name when the band is narrow. */
 .cl-timebar-band > span { white-space: nowrap; }
 .cl-timebar-band-time { font-size: 0.75rem; font-weight: 500; color: var(--ink-soft); }
+/* Extra figure on a band heading, e.g. the Aging band's "Full aging" (first Racking to first Filtering). */
+.cl-timebar-band-extra { color: var(--ink-soft); font-weight: 400; }
 .cl-timebar-band--current { border-bottom-color: var(--honey-line); }
 .cl-timebar-band--future { border-bottom: 2px dashed var(--line); color: var(--ink-faint); }
 .cl-timebar-band--future .cl-timebar-band-time { color: var(--ink-faint); }
