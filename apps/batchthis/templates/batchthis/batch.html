@@ -129,9 +129,9 @@
       {% if v %}
         <div class="cl-kv-row"><span class="cl-kv-label">Vessel</span><span class="cl-kv-value"><a href="{% url 'vessel' v.pk %}">{{ v.name }}</a></span></div>
         <div class="cl-kv-row"><span class="cl-kv-label">Status</span><span class="cl-kv-value">{{ v.status }}</span></div>
-        <div class="cl-kv-row"><span class="cl-kv-label">Capacity</span><span class="cl-kv-value">{{ v.max_size }} {{ v.max_size_units.identifier }}</span></div>
-        {% if v.used_size %}
-        <div class="cl-kv-row"><span class="cl-kv-label">Fill</span><span class="cl-kv-value">{{ v.used_size }} {{ v.used_size_units.identifier }}</span></div>
+        <div class="cl-kv-row"><span class="cl-kv-label">Capacity</span><span class="cl-kv-value">{{ v.capacity }}</span></div>
+        {% if v.fill %}
+        <div class="cl-kv-row"><span class="cl-kv-label">Fill</span><span class="cl-kv-value">{{ v.fill }}</span></div>
         {% endif %}
         <div class="cl-kv-row"><span class="cl-kv-label">Intended use</span><span class="cl-kv-value">{{ v.intended_use }}</span></div>
       {% else %}

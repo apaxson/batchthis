@@ -93,8 +93,7 @@ class VesselFactory(factory.django.DjangoModelFactory):
         model = Vessel
 
     name = factory.Sequence(lambda n: f"Vessel{n}")
-    max_size = 6
-    max_size_units = factory.SubFactory(UnitFactory, identifier="gal", label="gal", name="Gallons", category=Unit.VOLUME)
+    capacity = "6 gallons"
     status = Vessel.STATUS_READY
     intended_use = "PRI"
 

@@ -731,6 +731,11 @@ a.nav-link, a.sub-link, a.dropdown-item {
   width: 100%;
 }
 .cl-field textarea { resize: vertical; min-height: 38px; }
+/* Any field Django flags with an error (it adds aria-invalid="true") gets a red border, app-wide. */
+/* Element + attribute selectors so this outranks .cl-field input[type="text"] etc. above. */
+.cl-field input[aria-invalid="true"],
+.cl-field select[aria-invalid="true"],
+.cl-field textarea[aria-invalid="true"] { border-color: var(--brick); box-shadow: 0 0 0 1px var(--brick); }
 .cl-field input:focus, .cl-field select:focus, .cl-field textarea:focus {
   outline: 2px solid var(--focus);
   outline-offset: 1px;

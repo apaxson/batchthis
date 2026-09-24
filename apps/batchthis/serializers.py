@@ -129,7 +129,7 @@ class VesselSerializer(serializers.ModelSerializer):
                   'status_since', 'intended_use', 'detail_url', 'display_name']
 
     def get_capacity(self, obj: Vessel) -> str:
-        return f"{obj.max_size} {obj.max_size_units.identifier}"
+        return str(obj.capacity)
 
     def get_current_batch(self, obj: Vessel) -> str:
         return self.context.get('current_batches', {}).get(obj.pk, '')

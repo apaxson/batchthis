@@ -15,7 +15,7 @@ from django.forms.widgets import NumberInput, DateInput
 from django.utils import timezone
 from pint import Quantity
 from quantityfield.fields import QuantityFormField, QuantityWidget
-from .fields import DescriptiveQuantityFormField, PrecisionQuantityWidget, PrecisionTextWidget
+from .fields import DescriptiveQuantityFormField, PrecisionQuantityWidget, PrecisionTextWidget, VolumeField
 import logging
 
 logger = logging.getLogger(__name__)
@@ -55,7 +55,7 @@ class BatchAdditionForm(ModelForm):
 class BatchAddForm(forms.Form):
     name = forms.CharField(widget=forms.TextInput(attrs={'placeholder':'Name of Batch'}),required=True)
     startdate = forms.DateField(label="Start Date",widget=DateInput(attrs={'type':'date'}),required=True)
-    size = forms.CharField(widget=forms.TextInput(attrs={'placeholder':'i.e. 6 gallons'}),label = "Batch Size", required=True)
+    size = VolumeField(label="Batch Size", placeholder="i.e. 6 gallons")
     # A new batch can only go into a Clean/Ready vessel; enforced on POST, not
     # just by what the dropdown shows.
     fermenter = forms.ModelChoiceField(

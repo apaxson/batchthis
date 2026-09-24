@@ -1,7 +1,12 @@
 import pdb
 
+import re
+
 from quantityfield.fields import QuantityField, QuantityFormField
 from pint import Quantity
+from django import forms
+from django.conf import settings
+from django.core.exceptions import ValidationError
 from django.forms.widgets import TextInput
 from quantityfield.widgets import QuantityWidget
 import logging
@@ -105,10 +110,12 @@ class DescriptiveQuantityField(QuantityField):
             # Nothing to parse.  Assume base_units
             return self.ureg.Quantity(value * getattr(self.ureg, self.base_units))
         elif len(value.split(":")) == 1:
-            #old style.  Convert text to markdown
-            formatted_quantity = self.createDescriptiveMarkup(value)
-            data_value = self.convertFromDescriptiveMarkup(formatted_quantity)
-            return
+            # Old style, no ":unit" part: a bare number is in base units; text
+            # like "6 gallon" is converted to markup and read back.
+            try:
+                return self.ureg.Quantity(float(value) * getattr(self.ureg, self.base_units))
+            except ValueError:
+                return self.convertFromDescriptiveMarkup(self.createDescriptiveMarkup(value))
 
         else:
             return self.convertFromDescriptiveMarkup(value)
@@ -213,3 +220,44 @@ class DescriptiveQuantityFormField(QuantityFormField):
             return val
 
 
+
+
+class VolumeField(forms.CharField):
+    """
+    Form field for a volume typed as text ("6 gallons", "20 L"). Returns the
+    Quantity exactly as entered - DescriptiveQuantityField stores it in liters
+    and gives back the entered unit. Rejects a bare number ("Units are
+    required."), non-volume units and anything that isn't an amount + unit.
+    """
+    default_error_messages = {
+        'units_required': "Units are required.",
+        'not_volume': "Use a volume unit: gallons or liters.",
+        'invalid_amount': "Enter an amount and a unit, e.g. 6 gallons or 20 liters.",
+        'not_positive': "Enter an amount greater than zero.",
+    }
+    _STARTS_WITH_NUMBER = re.compile(r'^[-+]?(\d|\.\d)')
+
+    def __init__(self, *, placeholder: str = "e.g. 6 gallons", **kwargs):
+        kwargs.setdefault('widget', TextInput(attrs={'placeholder': placeholder}))
+        super().__init__(**kwargs)
+
+    def to_python(self, value):
+        text = super().to_python(value)
+        if text in self.empty_values:
+            return None
+        if not self._STARTS_WITH_NUMBER.match(text):
+            logger.debug(f"VolumeField: no amount in {text!r}")
+            raise ValidationError(self.error_messages['invalid_amount'], code='invalid_amount')
+        ureg = settings.DJANGO_PINT_UNIT_REGISTER
+        try:
+            quantity = ureg.Quantity(text.lower())
+        except Exception:
+            logger.debug(f"VolumeField: could not parse {text!r}")
+            raise ValidationError(self.error_messages['invalid_amount'], code='invalid_amount')
+        if not isinstance(quantity, ureg.Quantity) or quantity.dimensionless:
+            raise ValidationError(self.error_messages['units_required'], code='units_required')
+        if not quantity.check('[volume]'):
+            raise ValidationError(self.error_messages['not_volume'], code='not_volume')
+        if quantity.magnitude <= 0:
+            raise ValidationError(self.error_messages['not_positive'], code='not_positive')
+        return quantity

@@ -35,11 +35,11 @@
   </div>
   <div class="cl-readout">
     <div class="cl-readout-label">Capacity</div>
-    <div class="cl-readout-value">{{ vessel.max_size }} <small>{{ vessel.max_size_units.identifier }}</small></div>
+    <div class="cl-readout-value">{{ vessel.capacity }}</div>
   </div>
   <div class="cl-readout">
     <div class="cl-readout-label">Fill</div>
-    <div class="cl-readout-value">{% if vessel.used_size %}{{ vessel.used_size }} <small>{{ vessel.used_size_units.identifier }}</small>{% else %}&mdash;{% endif %}</div>
+    <div class="cl-readout-value">{% if vessel.fill %}{{ vessel.fill }}{% else %}&mdash;{% endif %}</div>
   </div>
 </div>
 

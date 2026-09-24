@@ -151,12 +151,11 @@ class Vessel(models.Model):
     )
 
     def __str__(self):
-        return self.name + " (" + str(self.max_size) + self.max_size_units.identifier + ")"
+        return f"{self.name} ({self.capacity})"
     name = models.CharField(max_length=25)
-    max_size = models.IntegerField()
-    max_size_units = models.ForeignKey(Unit, related_name="fermenter_max_size_units", on_delete=models.SET("_del"))
-    used_size = models.IntegerField(blank=True, null=True)
-    used_size_units = models.ForeignKey(Unit, blank=True, null=True,related_name="fermenter_used_size_units", on_delete=models.SET("_del"))
+    # Stored in liters, returned in the unit entered (see DescriptiveQuantityField).
+    capacity = DescriptiveQuantityField(base_units='liters', unit_choices=['liters', 'gallons'])
+    fill = DescriptiveQuantityField(base_units='liters', unit_choices=['liters', 'gallons'], null=True, blank=True)
     status = models.CharField(max_length=15, choices=STATUS_CHOICES, default=STATUS_READY)
     intended_use = models.CharField(max_length=30)
 

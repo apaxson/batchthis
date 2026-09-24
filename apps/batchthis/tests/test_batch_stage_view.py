@@ -252,4 +252,4 @@ def test_vessel_list_can_be_filtered_to_clean_ready_vessels_with_display_names(u
 
     payload = response.json()
     assert [entry["id"] for entry in payload] == [ready.pk]
-    assert payload[0]["display_name"] == "Ready Tank (Aging Tank, 6 gal)"
+    assert payload[0]["display_name"] == "Ready Tank (Aging Tank, 6.00 gallon)"

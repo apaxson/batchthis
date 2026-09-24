@@ -58,7 +58,7 @@ class BatchListAPIView(APIView):
 class VesselListAPIView(APIView):
     def get(self, request: Request) -> Response:
         vessels = (
-            Vessel.objects.select_related('max_size_units')
+            Vessel.objects
             .prefetch_related('fermenter_set', 'agingtank_set', 'barrel_set')
             .annotate(status_since=Max('status_events__timestamp'))
             .order_by('name')

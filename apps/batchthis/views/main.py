@@ -608,7 +608,7 @@ def vesselListing(request):
 
 @login_required
 def vessel(request, pk):
-    vessel = get_object_or_404(Vessel.objects.select_related('max_size_units', 'used_size_units'), pk=pk)
+    vessel = get_object_or_404(Vessel, pk=pk)
     # Newest first for display; Meta.ordering on VesselStatusEvent is oldest-first.
     history = vessel.status_events.select_related('batch').order_by('-timestamp')
     current_event = history.first()
