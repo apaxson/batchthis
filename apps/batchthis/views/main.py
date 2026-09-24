@@ -18,13 +18,13 @@ from django.shortcuts import get_object_or_404
 from apps.batchthis.forms import BatchTestForm, BatchNoteForm, BatchAdditionForm, RefractometerCorrectionForm, BatchAddForm, BatchEditForm, \
     BatchCategory
 from apps.batchthis.forms import RecipeAddForm, FermentableForm, AdjunctForm, YeastForm, BatchStageForm, BatchTransferForm, VesselForm
-from apps.batchthis.forms import WorkflowTemplateForm, PlanStepFormSet
+from apps.batchthis.forms import WorkflowTemplateForm, PlanStepFormSet, RecipePlanForm
 from django.forms.formsets import formset_factory
 from apps.batchthis.lib.utils import Utils
 from apps.batchthis.services import (
     set_vessel_status, take_vessel_out_of_service, return_vessel_to_service, status_before_out_of_service,
     transition_stage_event, transfer_batch, create_vessel, update_vessel,
-    plan_totals, save_workflow_template, delete_workflow_template,
+    plan_totals, save_workflow_template, delete_workflow_template, save_recipe_plan, clear_recipe_plan,
 )
 from apps.batchthis.lib.faults import get_active_flags, get_rule_for, StagedFaultRule
 from django.contrib.auth.decorators import login_required
@@ -750,6 +750,65 @@ def returnVesselToService(request, pk):
     return HttpResponseRedirect(reverse('vessel', kwargs={'pk': pk}))
 
 
+# ---------- Recipe plan (Edit plan) ----------
+
+@login_required
+def editRecipePlan(request, pk):
+    """
+    Edit a recipe's own plan. ?template=<pk> pre-fills the rows from a workflow
+    (nothing is saved until Save, which records it as "Copied from"). A recipe
+    with no plan starts from the default chain.
+    """
+    recipe = get_object_or_404(Recipe.objects.select_related('workflow_template'), pk=pk)
+    if request.method == 'POST':
+        form = RecipePlanForm(request.POST)
+        formset = PlanStepFormSet(request.POST, prefix='steps')
+        if form.is_valid() and formset.is_valid():
+            try:
+                save_recipe_plan(recipe, formset.plan_rows(), template=form.cleaned_data['workflow_template'])
+            except ValidationError as e:
+                form.add_error(None, e.messages)
+            except Exception:
+                logger.exception("editRecipePlan: failed to save the plan for recipe %s", pk)
+                form.add_error(None, "Couldn't save the plan. Nothing was changed - please try again.")
+            else:
+                return HttpResponseRedirect(reverse('recipe', kwargs={'pk': pk}))
+        logger.debug("editRecipePlan: recipe %s errors form=%s steps=%s non-form=%s", pk,
+                     form.errors.as_data(), formset.errors, formset.non_form_errors())
+        chosen = form.cleaned_data.get('workflow_template') if form.is_valid() else None
+    else:
+        chosen = None
+        if request.GET.get('template'):
+            chosen = get_object_or_404(WorkflowTemplate, pk=request.GET['template'])
+            initial = _plan_step_initial(chosen.steps)
+        elif recipe.plan_steps.exists():
+            initial = _plan_step_initial(recipe.plan_steps)
+        else:
+            initial = _default_plan_initial()
+        form = RecipePlanForm(initial={'workflow_template': chosen.pk if chosen else None})
+        formset = PlanStepFormSet(initial=initial, prefix='steps')
+    context = {
+        'recipe': recipe, 'form': form, 'formset': formset, 'chosen': chosen,
+        'templates': WorkflowTemplate.objects.all(), 'has_plan': recipe.plan_steps.exists(),
+        'stage_rules': _stage_rules_json(),
+    }
+    return render(request, 'batchthis/recipePlan.html', context)
+
+
+@login_required
+@require_POST
+def clearRecipePlan(request, pk):
+    """A plan is optional: remove the recipe's steps and its "Copied from" reference."""
+    recipe = get_object_or_404(Recipe, pk=pk)
+    try:
+        clear_recipe_plan(recipe)
+    except Exception:
+        logger.exception("clearRecipePlan: failed for recipe %s", pk)
+        messages.error(request, "Couldn't clear the plan. Nothing was changed - please try again.")
+        return HttpResponseRedirect(reverse('editRecipePlan', kwargs={'pk': pk}))
+    return HttpResponseRedirect(reverse('recipe', kwargs={'pk': pk}))
+
+
 # ---------- Workflow templates (Settings > Workflows) ----------
 
 def _days_label(days: float) -> str:
@@ -768,6 +827,26 @@ def workflowListing(request):
         rows.append({'template': template, 'planned': _days_label(total) if total else None})
     logger.debug("workflowListing: %d workflow template(s)", len(rows))
     return render(request, 'batchthis/workflows.html', {'rows': rows})
+
+
+def _plan_step_initial(steps) -> list[dict]:
+    """Saved plan steps (a template's or a recipe's) as PlanStepFormSet initial rows."""
+    return [{'stage': s.stage, 'vessel_type': s.vessel_type, 'planned_duration': s.planned_duration, 'notes': s.notes}
+            for s in steps.select_related('stage')]
+
+
+def _default_plan_initial() -> list[dict]:
+    """A new plan starts as the shortest valid chain; vessel types only where the stage fixes them."""
+    stages = {s.shortid: s for s in BatchStage.objects.filter(
+        shortid__in=['pitch', 'racking', 'sterile-filtering', 'complete-batch'])}
+    return [{'stage': stages['pitch'], 'vessel_type': Vessel.TYPE_FERMENTER},
+            {'stage': stages['racking']},
+            {'stage': stages['sterile-filtering']},
+            {'stage': stages['complete-batch'], 'vessel_type': PlanStep.VESSEL_CURRENT}]
+
+
+def _stage_rules_json() -> str:
+    return mark_safe(json.dumps(PlanStepFormSet.stage_rules()))  # stage pks and fixed labels only
 
 
 def _workflow_form_page(request, template: WorkflowTemplate | None):
@@ -791,21 +870,9 @@ def _workflow_form_page(request, template: WorkflowTemplate | None):
         logger.debug("workflow form: errors form=%s steps=%s non-form=%s",
                      form.errors.as_data(), formset.errors, formset.non_form_errors())
     else:
-        if template is not None:
-            initial = [{'stage': s.stage, 'vessel_type': s.vessel_type, 'planned_duration': s.planned_duration,
-                        'notes': s.notes} for s in template.steps.select_related('stage')]
-        else:  # the shortest valid chain; vessel types only where the stage fixes them
-            stages = {s.shortid: s for s in BatchStage.objects.filter(
-                shortid__in=['pitch', 'racking', 'sterile-filtering', 'complete-batch'])}
-            initial = [{'stage': stages['pitch'], 'vessel_type': Vessel.TYPE_FERMENTER},
-                       {'stage': stages['racking']},
-                       {'stage': stages['sterile-filtering']},
-                       {'stage': stages['complete-batch'], 'vessel_type': PlanStep.VESSEL_CURRENT}]
+        initial = _plan_step_initial(template.steps) if template is not None else _default_plan_initial()
         formset = PlanStepFormSet(initial=initial, prefix='steps')
-    context = {
-        'form': form, 'formset': formset, 'template': template,
-        'stage_rules': mark_safe(json.dumps(PlanStepFormSet.stage_rules())),  # pks and fixed labels only
-    }
+    context = {'form': form, 'formset': formset, 'template': template, 'stage_rules': _stage_rules_json()}
     return render(request, 'batchthis/workflowForm.html', context)
 
 

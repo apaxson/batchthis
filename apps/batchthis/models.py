@@ -455,11 +455,15 @@ class PlanStep(models.Model):
     but left out of the time bar and every total (services.plan_totals). Plans
     never pick a vessel - vessel_type is "any clean vessel of this type"; the
     specific vessel is chosen when the batch reaches the step. Rules per stage
-    (Pitch -> Fermenter, moves -> a real type, Complete Batch -> None/Current)
-    are in services.plan_problems.
+    (Pitch -> Fermenter, moves -> a real type, Sterile Filtering may also plan
+    Bottles/Kegs, Complete Batch -> None/Current) are in services.allowed_vessel_types.
     """
     VESSEL_CURRENT = 'current'  # no change - the batch stays in its current vessel
-    VESSEL_TYPE_CHOICES = Vessel.TYPE_CHOICES + [(VESSEL_CURRENT, 'None / Current')]
+    # Packaging: planned destinations for Sterile Filtering only - not vessels you add or track.
+    VESSEL_BOTTLES = 'Bottles'
+    VESSEL_KEGS = 'Kegs'
+    PACKAGING_CHOICES = [(VESSEL_BOTTLES, 'Bottles'), (VESSEL_KEGS, 'Kegs')]
+    VESSEL_TYPE_CHOICES = Vessel.TYPE_CHOICES + PACKAGING_CHOICES + [(VESSEL_CURRENT, 'None / Current')]
 
     class Meta:
         abstract = True

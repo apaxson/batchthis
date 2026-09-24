@@ -83,7 +83,7 @@ def test_plan_step_problems_points_each_message_at_its_step():
         (1, "Pitch always starts in a Fermenter."),
         (2, ("Sterile Filtering can't come after Pitch - the batch would be in Fermentation, "
              "and Sterile Filtering needs Aging.")),
-        (2, "Sterile Filtering moves the batch - choose Fermenter, Aging Tank or Barrel."),
+        (2, "Sterile Filtering moves the batch - choose Fermenter, Aging Tank, Barrel, Bottles or Kegs."),
     ]
 
 
@@ -164,7 +164,7 @@ def test_formset_puts_plan_problems_on_their_own_row():
     assert formset.forms[1].non_field_errors() == [
         ("Sterile Filtering can't come after Pitch - the batch would be in Fermentation, "
          "and Sterile Filtering needs Aging."),
-        "Sterile Filtering moves the batch - choose Fermenter, Aging Tank or Barrel.",
+        "Sterile Filtering moves the batch - choose Fermenter, Aging Tank, Barrel, Bottles or Kegs.",
     ]
 
 

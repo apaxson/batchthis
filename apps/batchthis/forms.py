@@ -417,6 +417,12 @@ class WorkflowTemplateForm(forms.Form):
         return name
 
 
+class RecipePlanForm(forms.Form):
+    """The workflow a recipe's plan rows were started from - recorded as "Copied from" on Save."""
+    workflow_template = forms.ModelChoiceField(queryset=apps.batchthis.models.WorkflowTemplate.objects.all(),
+                                               required=False, widget=forms.HiddenInput)
+
+
 class PlanStepForm(forms.Form):
     """
     One step of a plan (workflow template now, recipe plan next): the stage that

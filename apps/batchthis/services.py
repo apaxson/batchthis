@@ -466,13 +466,16 @@ def allowed_vessel_types(stage: BatchStage) -> list[str]:
     The vessel types a plan step for this stage may name (Aaron, 2026-09-24):
     Pitch always starts in a Fermenter, Complete Batch stays put (None / Current),
     and every other stage - they all move the batch - needs a real vessel type.
+    Sterile Filtering (into Bottling) may also plan Bottles or Kegs.
     """
     if stage.from_state == "":  # Pitch
         return [Vessel.TYPE_FERMENTER]
     if stage.to_state == BatchStage.STATE_COMPLETED:
         return [PlanStep.VESSEL_CURRENT]
-    real_types = [value for value, _ in Vessel.TYPE_CHOICES]
-    return real_types if stage.transfers_batch else real_types + [PlanStep.VESSEL_CURRENT]
+    allowed = [value for value, _ in Vessel.TYPE_CHOICES]
+    if stage.to_state == BatchStage.STATE_BOTTLING:  # Sterile Filtering
+        allowed += [value for value, _ in PlanStep.PACKAGING_CHOICES]
+    return allowed if stage.transfers_batch else allowed + [PlanStep.VESSEL_CURRENT]
 
 
 def _vessel_type_problem(stage: BatchStage, vessel_type) -> str | None:
@@ -481,13 +484,17 @@ def _vessel_type_problem(stage: BatchStage, vessel_type) -> str | None:
         return None
     if vessel_type not in {value for value, _ in PlanStep.VESSEL_TYPE_CHOICES}:
         return "choose a vessel type."
-    if vessel_type in allowed_vessel_types(stage):
+    allowed = allowed_vessel_types(stage)
+    if vessel_type in allowed:
         return None
     if stage.from_state == "":  # Pitch
         return f"{stage.name} always starts in a Fermenter."
     if stage.to_state == BatchStage.STATE_COMPLETED:
         return f"{stage.name} ends the batch - its vessel type is None / Current."
-    return f"{stage.name} moves the batch - choose Fermenter, Aging Tank or Barrel."
+    if vessel_type in dict(PlanStep.PACKAGING_CHOICES):
+        return f"{stage.name} can't move the batch into {vessel_type} - only Sterile Filtering can."
+    labels = [label for value, label in PlanStep.VESSEL_TYPE_CHOICES if value in allowed]
+    return f"{stage.name} moves the batch - choose {', '.join(labels[:-1])} or {labels[-1]}."
 
 
 def plan_step_problems(steps) -> list[tuple[int, str]]:
@@ -577,6 +584,23 @@ def workflow_name_problem(name: str, exclude_pk: int | None = None) -> str | Non
     return f"A workflow named '{existing.name}' already exists." if existing else None
 
 
+def _plan_rows_problems(rows: list[dict]) -> list[str]:
+    """Why step rows (dicts of stage, planned_duration, vessel_type, notes) can't be saved as a plan."""
+    problems = [] if rows else ["Add at least one step."]
+    return problems + plan_problems([(r['stage'], r['planned_duration'], r['vessel_type']) for r in rows])
+
+
+def _replace_plan_steps(step_model, owner_field: str, owner, rows: list[dict]) -> list:
+    """Replace the owner's plan steps with `rows`, numbered in the order given. Call inside a transaction."""
+    step_model.objects.filter(**{owner_field: owner}).delete()
+    return step_model.objects.bulk_create([
+        step_model(**{owner_field: owner}, sort_order=order, stage=row['stage'],
+                   planned_duration=row['planned_duration'], vessel_type=row['vessel_type'],
+                   notes=row.get('notes', ''))
+        for order, row in enumerate(rows, start=1)
+    ])
+
+
 def save_workflow_template(template: WorkflowTemplate | None, *, name: str, description: str,
                            rows: list[dict]) -> WorkflowTemplate:
     """
@@ -592,9 +616,7 @@ def save_workflow_template(template: WorkflowTemplate | None, *, name: str, desc
     name_problem = workflow_name_problem(name, exclude_pk=template.pk if template else None)
     if name_problem:
         problems.append(name_problem)
-    if not rows:
-        problems.append("Add at least one step.")
-    problems += plan_problems([(r['stage'], r['planned_duration'], r['vessel_type']) for r in rows])
+    problems += _plan_rows_problems(rows)
     if problems:
         logger.debug(f"save_workflow_template: rejected: {problems}")
         raise ValidationError(problems)
@@ -603,15 +625,42 @@ def save_workflow_template(template: WorkflowTemplate | None, *, name: str, desc
         template = template or WorkflowTemplate()
         template.name, template.description = name.strip(), description.strip()
         template.save()
-        template.steps.all().delete()
-        WorkflowTemplateStep.objects.bulk_create([
-            WorkflowTemplateStep(template=template, sort_order=order, stage=row['stage'],
-                                 planned_duration=row['planned_duration'], vessel_type=row['vessel_type'],
-                                 notes=row.get('notes', ''))
-            for order, row in enumerate(rows, start=1)
-        ])
+        _replace_plan_steps(WorkflowTemplateStep, 'template', template, rows)
     logger.info(f"Workflow template '{template}' saved with {len(rows)} step(s)")
     return template
+
+
+def save_recipe_plan(recipe: Recipe, rows: list[dict], template: WorkflowTemplate | None = None) -> list[RecipePlanStep]:
+    """
+    REPLACE the recipe's own plan with `rows` (same shape and rules as
+    save_workflow_template). `template` is the workflow the rows were started
+    from, recorded as "Copied from"; None keeps whatever the recipe had.
+    Invalid -> ValidationError and the old plan stays.
+    """
+    logger.debug(f"save_recipe_plan: recipe={recipe.pk} '{recipe}' {len(rows)} step(s), "
+                 f"template={template.pk if template else None}")
+    problems = _plan_rows_problems(rows)
+    if problems:
+        logger.debug(f"save_recipe_plan: rejected: {problems}")
+        raise ValidationError(problems)
+
+    with transaction.atomic():
+        steps = _replace_plan_steps(RecipePlanStep, 'recipe', recipe, rows)
+        if template is not None:
+            recipe.workflow_template = template
+            recipe.save(update_fields=['workflow_template'])
+    logger.info(f"Recipe '{recipe}' plan saved with {len(steps)} step(s)"
+                + (f", copied from '{template}'" if template else ""))
+    return steps
+
+
+def clear_recipe_plan(recipe: Recipe) -> None:
+    """A plan is optional: remove the recipe's steps and its "Copied from" reference."""
+    with transaction.atomic():
+        count, _ = recipe.plan_steps.all().delete()
+        recipe.workflow_template = None
+        recipe.save(update_fields=['workflow_template'])
+    logger.info(f"Recipe '{recipe}' plan cleared ({count} step(s) removed)")
 
 
 def delete_workflow_template(template: WorkflowTemplate) -> None:

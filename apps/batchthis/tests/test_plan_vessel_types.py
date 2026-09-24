@@ -47,7 +47,7 @@ def test_plan_step_vessel_type_is_required_with_a_none_current_option():
     for model in (WorkflowTemplateStep, RecipePlanStep):
         field = model._meta.get_field("vessel_type")
         assert not field.blank and not field.null
-        assert field.choices == Vessel.TYPE_CHOICES + [(CURRENT, "None / Current")]
+        assert field.choices == Vessel.TYPE_CHOICES + PlanStep.PACKAGING_CHOICES + [(CURRENT, "None / Current")]
         assert "vessel_role" not in {f.name for f in model._meta.get_fields()}
 
 
@@ -89,7 +89,10 @@ def test_steps_that_move_the_batch_need_a_real_vessel_type(shortid):
     problems = plan_problems(_plan(*rows))
 
     name = _stage(shortid).name
-    assert problems == [f"Step {len(rows)}: {name} moves the batch - choose Fermenter, Aging Tank or Barrel."]
+    # Sterile Filtering may also plan Bottles / Kegs, so its message lists them too.
+    choices = "Fermenter, Aging Tank, Barrel, Bottles or Kegs" if shortid == "sterile-filtering" \
+        else "Fermenter, Aging Tank or Barrel"
+    assert problems == [f"Step {len(rows)}: {name} moves the batch - choose {choices}."]
 
 
 @pytest.mark.django_db
@@ -123,7 +126,7 @@ def test_order_and_vessel_type_problems_are_both_reported():
         "Step 1: Pitch always starts in a Fermenter.",
         ("Step 2: Sterile Filtering can't come after Pitch - the batch would be in Fermentation, "
          "and Sterile Filtering needs Aging."),
-        "Step 2: Sterile Filtering moves the batch - choose Fermenter, Aging Tank or Barrel.",
+        "Step 2: Sterile Filtering moves the batch - choose Fermenter, Aging Tank, Barrel, Bottles or Kegs.",
     ]
 
 
@@ -148,3 +151,64 @@ def test_factories_default_to_a_valid_pitch_step():
 
     assert (step.stage.shortid, step.vessel_type) == ("pitch", FERMENTER)
     assert plan_problems([step]) == []
+
+
+# ---------- Bottles / Kegs: planned destinations for Sterile Filtering only ----------
+
+BOTTLES, KEGS = PlanStep.VESSEL_BOTTLES, PlanStep.VESSEL_KEGS
+TO_AGING = [("pitch", "14 days", FERMENTER), ("racking", "30 days", AGING_TANK)]
+
+
+def test_bottles_and_kegs_are_plan_choices_not_vessel_types():
+    assert (BOTTLES, "Bottles") in PlanStep.VESSEL_TYPE_CHOICES
+    assert (KEGS, "Kegs") in PlanStep.VESSEL_TYPE_CHOICES
+    assert BOTTLES not in [value for value, _ in Vessel.TYPE_CHOICES]
+    assert KEGS not in VESSEL_TYPES
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize("vessel_type", [BOTTLES, KEGS, FERMENTER, AGING_TANK, BARREL])
+def test_sterile_filtering_may_plan_bottles_kegs_or_a_vessel(vessel_type):
+    rows = [*TO_AGING, ("sterile-filtering", "5 days", vessel_type), ("complete-batch", None, CURRENT)]
+
+    assert plan_problems(_plan(*rows)) == []
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize("shortid", ["racking", "coarse-filtering", "fine-filtering"])
+@pytest.mark.parametrize("vessel_type, label", [(BOTTLES, "Bottles"), (KEGS, "Kegs")])
+def test_only_sterile_filtering_may_plan_bottles_or_kegs(shortid, vessel_type, label):
+    rows = [*TO_AGING, (shortid, "7 days", vessel_type)]
+
+    name = _stage(shortid).name
+    message = f"Step 3: {name} can't move the batch into {label} - only Sterile Filtering can."
+    assert plan_problems(_plan(*rows)) == [message]
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize("shortid, message", [
+    ("pitch", "Step 1: Pitch always starts in a Fermenter."),
+    ("complete-batch", "Step 4: Complete Batch ends the batch - its vessel type is None / Current."),
+])
+def test_pitch_and_complete_batch_rules_still_win_for_bottles(shortid, message):
+    rows = ([("pitch", "14 days", BOTTLES)] if shortid == "pitch" else
+            [*TO_AGING, ("sterile-filtering", "5 days", BOTTLES), ("complete-batch", None, BOTTLES)])
+
+    assert plan_problems(_plan(*rows)) == [message]
+
+
+@pytest.mark.django_db
+def test_sterile_filtering_into_current_lists_every_allowed_destination():
+    rows = [*TO_AGING, ("sterile-filtering", "5 days", CURRENT)]
+
+    assert plan_problems(_plan(*rows)) == [
+        "Step 3: Sterile Filtering moves the batch - choose Fermenter, Aging Tank, Barrel, Bottles or Kegs.",
+    ]
+
+
+@pytest.mark.django_db
+def test_step_editor_offers_bottles_and_kegs_only_on_sterile_filtering():
+    from ..services import allowed_vessel_types
+
+    assert allowed_vessel_types(_stage("sterile-filtering")) == [FERMENTER, AGING_TANK, BARREL, BOTTLES, KEGS]
+    assert allowed_vessel_types(_stage("racking")) == [FERMENTER, AGING_TANK, BARREL]

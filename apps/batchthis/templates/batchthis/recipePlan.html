@@ -1,0 +1,98 @@
+{% extends 'batchthis/base.html' %}
+{% block content %}
+
+<div class="cl-page-head">
+  <div class="cl-wordmark font-display">{{ recipe.name }} &mdash; plan</div>
+  <div class="cl-batch-sub" style="margin-top:6px;">
+    <span><a href="{% url 'recipe' recipe.pk %}">&larr; Back to recipe</a></span>
+    {% if chosen %}
+    <span>Starting from <b>{{ chosen.name }}</b> &mdash; save to use these steps</span>
+    {% elif recipe.workflow_template %}
+    <span>Copied from {{ recipe.workflow_template.name }}</span>
+    {% elif not has_plan %}
+    <span>No plan yet</span>
+    {% endif %}
+  </div>
+</div>
+
+{% for message in messages %}
+<div class="cl-flag" style="margin-bottom:20px;"><span class="cl-flag-mark">!</span><span>{{ message }}</span></div>
+{% endfor %}
+
+<div class="cl-panel" style="margin-bottom:26px;">
+  {% if templates %}
+  <form method="GET" action="{% url 'editRecipePlan' recipe.pk %}" class="cl-form">
+    <div class="cl-form-grid">
+      <div class="cl-field">
+        <label for="plan-template-picker">Start from a workflow</label>
+        <select name="template" id="plan-template-picker">
+          {% for t in templates %}<option value="{{ t.pk }}"{% if chosen.pk == t.pk %} selected{% endif %}>{{ t.name }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="cl-field cl-plan-picker-action">
+        <button type="submit" class="cl-btn cl-btn--secondary">Use workflow</button>
+      </div>
+      <div class="cl-field cl-plan-picker-note">Replaces the steps below. Nothing is saved until you save the plan.</div>
+    </div>
+  </form>
+  {% else %}
+  <p class="cl-empty">No workflows to start from yet. <a href="{% url 'addWorkflow' %}">Add a workflow</a>, or fill in the steps below.</p>
+  {% endif %}
+</div>
+
+{% if form.non_field_errors or form.workflow_template.errors or formset.non_form_errors %}
+<div class="cl-flag" style="margin-bottom:20px;">
+  <span class="cl-flag-mark">!</span>
+  <span>{% for error in form.non_field_errors %}{{ error }} {% endfor %}{% for error in form.workflow_template.errors %}That workflow no longer exists. {% endfor %}{% for error in formset.non_form_errors %}{{ error }} {% endfor %}</span>
+</div>
+{% endif %}
+
+<form method="POST" class="cl-form" id="recipeplanform" action="{% url 'editRecipePlan' recipe.pk %}">
+  {% csrf_token %}
+  {{ form.workflow_template }}
+
+  <div class="cl-section-head">
+    <div class="cl-section-title">Steps</div>
+    <div class="cl-section-note">Vessel type means any clean vessel of that type. Leave the duration blank for a step with no planned time.</div>
+  </div>
+
+  {{ formset.management_form }}
+  <div id="plan_step_set" class="cl-plan-steps" data-stage-rules='{{ stage_rules }}'>
+    {% for step_form in formset %}
+      {% include 'batchthis/includes/_plan_step_row.html' %}
+    {% endfor %}
+  </div>
+
+  <template id="plan-step-empty-form">
+    {% with formset.empty_form as step_form %}
+      {% include 'batchthis/includes/_plan_step_row.html' %}
+    {% endwith %}
+  </template>
+
+  <div class="cl-form-actions">
+    <button type="button" class="cl-btn cl-btn--secondary" id="addPlanStepButton">Add step</button>
+    <a class="cl-btn cl-btn--secondary" href="{% url 'recipe' recipe.pk %}">Cancel</a>
+    <button type="submit" class="cl-btn cl-btn--primary">Save plan</button>
+    {% if has_plan %}
+    <button type="submit" form="clearplanform" class="cl-btn cl-btn--secondary cl-btn--push-right">Clear plan</button>
+    {% endif %}
+  </div>
+</form>
+
+{% if has_plan %}
+<form method="POST" id="clearplanform" action="{% url 'clearRecipePlan' recipe.pk %}">{% csrf_token %}</form>
+{% endif %}
+
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    CellarLedger.initFormsetAdd({
+      addButtonId: 'addPlanStepButton',
+      rowSetId: 'plan_step_set',
+      templateId: 'plan-step-empty-form',
+      totalFormsId: 'id_steps-TOTAL_FORMS',
+    });
+    CellarLedger.initFormsetReorder({ rowSetId: 'plan_step_set', formId: 'recipeplanform', prefix: 'steps' });
+    CellarLedger.initPlanSteps({ rowSetId: 'plan_step_set' });
+  });
+</script>
+{% endblock %}

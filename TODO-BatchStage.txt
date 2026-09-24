@@ -577,6 +577,15 @@ THIS wins:
     above (plain (stage, duration) pairs still check order/durations only);
     copy_template_to_recipe copies vessel_type. Tests:
     tests/test_plan_vessel_types.py.
+    [ADDED 2026-09-24] Bottles and Kegs (PlanStep.PACKAGING_CHOICES,
+    migration 0043): planned destinations for Sterile Filtering ONLY - not
+    vessel types (not in Vessel.TYPE_CHOICES, nothing to create or track).
+    Sterile Filtering may plan Fermenter, Aging Tank, Barrel, Bottles or
+    Kegs; any other stage naming them is rejected by plan_step_problems.
+    OPEN (for steps 10-11): a planned Bottles/Kegs step has no vessel to
+    pick when the batch reaches it - Sterile Filtering into packaging needs
+    its own handling (no destination vessel; source vessel -> Needs
+    Cleaning) instead of a vessel transfer.
     OPEN (for steps 10-11, not step 8): when the batch reaches a planned
     step, does the stage page's destination picker ENFORCE the planned
     type or only SUGGEST it (planned type first, others allowed)?
@@ -645,6 +654,17 @@ Steps:
       PlanStepFormSet.stage_rules(); services.allowed_vessel_types()).
       Service is save_workflow_template(template, name, description, rows)
       - 8b adds the recipe equivalent. Tests: tests/test_workflow_templates.py.
+      [8b DONE 2026-09-24] Recipe "Edit plan" page recipePlan.html at
+      recipe/<pk>/editPlan (editRecipePlan), linked from recipe.html's
+      actions. "Start from a workflow" picker = GET ?template=<pk>, which
+      pre-fills the rows (nothing saved); a hidden workflow_template field
+      carries it to Save, which records "Copied from". Saving without picking
+      keeps the existing "Copied from". No plan yet -> the default chain.
+      "Clear plan" = POST recipe/<pk>/clearPlan (clearRecipePlan), only shown
+      when there is a plan. services.save_recipe_plan(recipe, rows,
+      template=None) / clear_recipe_plan(recipe), sharing _plan_rows_problems
+      + _replace_plan_steps with save_workflow_template.
+      Tests: tests/test_recipe_plan_page.py.
   9.  Show the plan on recipe.html (step chain + total planned time).
   10. Batch plan: copy the recipe's steps onto the batch at creation,
       editable until the batch is pitched.

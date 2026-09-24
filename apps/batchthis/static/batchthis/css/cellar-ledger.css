@@ -721,6 +721,9 @@ a.nav-link, a.sub-link, a.dropdown-item {
 .cl-plan-steps > .cl-formset-row:first-child [data-move="up"],
 .cl-plan-steps > .cl-formset-row:last-child [data-move="down"] { visibility: hidden; }
 .cl-field select option:disabled { color: var(--ink-faint); }
+/* recipePlan.html "Start from a workflow" picker: button and note line up with the select. */
+.cl-plan-picker-action { justify-content: flex-end; align-items: flex-start; }
+.cl-plan-picker-note { justify-content: center; font-size: 0.82rem; color: var(--ink-soft); padding-top: 18px; }
 @media (max-width: 900px) {
   .cl-formset-row--plan { grid-template-columns: 28px 1fr 1fr; }
   .cl-formset-row--plan .cl-plan-step-duration,
@@ -811,6 +814,7 @@ a.nav-link, a.sub-link, a.dropdown-item {
 .cl-btn--danger { background: var(--brick); color: var(--paper-raised); }
 .cl-btn--danger:hover { background: color-mix(in srgb, var(--brick) 85%, black); }
 a.cl-btn { display: inline-block; text-decoration: none; }
+.cl-btn--push-right { margin-left: auto; }
 
 @media (prefers-reduced-motion: reduce) {
   .cl-sidebar, .cl-rail-btn svg, .cl-collapse-toggle svg { transition: none !important; }
