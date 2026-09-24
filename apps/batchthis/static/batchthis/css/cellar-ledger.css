@@ -319,6 +319,9 @@ a.nav-link, a.sub-link, a.dropdown-item {
 /* Totals row, e.g. a plan's planned time (includes/plan_steps.html). */
 .cl-ledger tfoot td { font-weight: 600; border-bottom: none; border-top: 1px solid var(--ink); }
 .cl-plan-states { margin-left: 14px; font-weight: 400; color: var(--ink-soft); }
+.cl-plan-progress th, .cl-plan-progress td { white-space: nowrap; padding-left: 8px; padding-right: 8px; }
+.cl-plan-progress td { font-size: 0.86rem; }
+.cl-plan-progress-ahead td:not(:nth-child(3)) { color: var(--ink-soft); }
 
 /* ---------- Model table (React: ModelTable component) ---------- */
 .cl-model-table .cl-table-toolbar {
@@ -380,6 +383,10 @@ a.nav-link, a.sub-link, a.dropdown-item {
 .cl-stage--ready { color: var(--moss); }
 .cl-stage--dirty { color: var(--brick); }
 .cl-stage--out { color: var(--ink-soft); }
+/* Plan vs actual step statuses (includes/plan_progress.html); Done/Current reuse --complete/--active. */
+.cl-stage--skipped { color: var(--ink-soft); }
+.cl-stage--upcoming { color: var(--ink-faint); }
+.cl-stage--unplanned { color: var(--plum); }
 
 .cl-num { font-family: 'IBM Plex Mono', monospace; font-variant-numeric: tabular-nums; }
 .cl-yeast-metric { font-size: 0.78rem; white-space: nowrap; }

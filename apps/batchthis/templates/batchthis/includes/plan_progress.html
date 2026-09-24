@@ -1,0 +1,41 @@
+{% comment %}
+A batch's plan vs actual (step 11e), from views._plan_vs_actual() over
+services.plan_progress(): each planned step next to the stage that fulfilled it.
+Skipped = passed over; Unplanned = logged but not in the plan, shown where it
+happened. Days count from Pitch; +/- is actual minus planned time in the step.
+{% endcomment %}
+<div class="cl-table-scroll">
+  <table class="cl-ledger cl-plan-progress">
+    <thead>
+      <tr>
+        <th>Step</th><th>Stage</th><th>Status</th><th>Planned vessel</th><th>Actual vessel</th>
+        <th>Planned day</th><th>Actual day</th><th>Planned time</th><th>Actual time</th><th>+/-</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for row in progress.rows %}
+      <tr{% if row.status == 'Upcoming' or row.status == 'Skipped' %} class="cl-plan-progress-ahead"{% endif %}>
+        <td class="cl-num">{{ row.number }}</td>
+        <td class="js-mouse-tooltip" data-toggle="tooltip" title="{{ row.notes|default:row.stage.description|default:'' }}">{{ row.stage.name }}</td>
+        <td><span class="cl-stage {{ row.badge }}">{{ row.status }}</span></td>
+        <td>{{ row.planned_vessel }}</td>
+        <td>{{ row.actual_vessel }}</td>
+        <td class="cl-num">{{ row.planned_day }}</td>
+        <td class="cl-num">{{ row.actual_day }}</td>
+        <td class="cl-num">{{ row.planned_time }}</td>
+        <td class="cl-num">{{ row.actual_time }}</td>
+        <td class="cl-num">{{ row.difference }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+    <tfoot>
+      <tr>
+        <td></td>
+        <td colspan="9">
+          Planned time <span class="cl-num">{{ progress.planned_total|default:"—" }}</span>
+          <span class="cl-plan-states">Actual <span class="cl-num">{{ progress.actual }}</span></span>
+        </td>
+      </tr>
+    </tfoot>
+  </table>
+</div>

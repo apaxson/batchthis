@@ -775,6 +775,15 @@ Steps:
            Step, Stage, Planned type / Actual (vessel or packaging), Planned day
            / Actual day, Planned / Actual time (+/-), Status; unplanned stages
            appear in order where they happened.
+           [DONE 2026-09-24] includes/plan_progress.html via views._plan_vs_actual()
+           (Step, Stage, Status badge, Planned / Actual vessel, Planned / Actual
+           day, Planned / Actual time, +/-; footer planned total vs actual since
+           Pitch, "so far" while active). A step still in progress shows "N days
+           left" until it runs over, then "+N days". Before Pitch the plain plan
+           table (plan_steps.html) still shows. Tests:
+           tests/test_batch_plan_vs_actual.py.
+      STEP 11 DONE (2026-09-24). Next: TIMEBAR PROGRESS task 3 (progress bar)
+      and 2b (plan changes after Pitch - update steps in place).
       Files: models.py, migration 0045, services.py, forms.py (BatchStageForm),
       views/main.py (batchStage, batch), views/api.py + the react-select vessel
       picker (planned-type ordering), addBatchStage.html, batch.html, a plan

@@ -206,8 +206,9 @@ def batch(request, pk):
             "current_stay": vessel_stays[-1] if vessel_stays and vessel_stays[-1].is_open else None,
             "full_aging": full_aging,
             "timeline": timeline,
-            # The batch's own plan (step 10): editable until Pitch.
+            # The batch's own plan (step 10): editable until Pitch; plan vs actual after (11e).
             "plan": plan,
+            "plan_vs_actual": _plan_vs_actual(batch, progress) if progress and batch.current_state else None,
             "plan_editable": plan_locked is None,
             # One grid column per timeline segment, sized by its time; bands span their segments.
             "timeline_columns": " ".join(f"minmax(9rem, {seg.weight:.1f}fr)" for seg in timeline.segments),
@@ -230,6 +231,55 @@ def _plan_summary(steps) -> dict:
         'by_state': [(state, _days_label(totals.by_state[state]))
                      for state in BatchStage.TIMELINE_STATES if state in totals.by_state],
     }
+
+
+PROGRESS_STATUS = {   # plan_progress() status -> (label, badge class)
+    'done': ("Done", "cl-stage--complete"),
+    'current': ("Current", "cl-stage--active"),
+    'skipped': ("Skipped", "cl-stage--skipped"),
+    'upcoming': ("Upcoming", "cl-stage--upcoming"),
+    'unplanned': ("Unplanned", "cl-stage--unplanned"),
+}
+
+
+def _difference_label(days: float | None) -> str:
+    if days is None:
+        return "—"
+    if days == 0:
+        return "On plan"
+    return ("+" if days > 0 else "−") + _days_label(abs(days))
+
+
+def _plan_vs_actual(batch, progress) -> dict:
+    """plan_progress() rows formatted for includes/plan_progress.html, plus the footer totals."""
+    rows = []
+    for row in progress:
+        label, badge = PROGRESS_STATUS[row.status]
+        actual_time = "—" if row.actual_days is None else _days_label(row.actual_days)
+        if row.status == 'current' and row.actual_days is not None:
+            actual_time += " so far"
+        rows.append({
+            'number': row.step.sort_order if row.step else "—",
+            'stage': row.stage, 'status': label, 'badge': badge,
+            'planned_vessel': row.step.vessel_type_hint if row.step else "—",
+            'actual_vessel': row.actual_vessel or "—",
+            'planned_day': "—" if row.planned_day is None else f"Day {row.planned_day:g}",
+            'actual_day': "—" if row.actual_day is None else f"Day {row.actual_day:g}",
+            'planned_time': "—" if row.planned_days is None else _days_label(row.planned_days),
+            'actual_time': actual_time,
+            # A step still in progress hasn't finished early - show the time left until it runs over.
+            'difference': (f"{_days_label(-row.difference_days)} left"
+                           if row.status == 'current' and row.difference_days is not None and row.difference_days < 0
+                           else _difference_label(row.difference_days)),
+            'notes': row.event.notes if row.event else (row.step.notes if row.step else ""),
+        })
+    planned_total = plan_totals(batch.plan_steps.all()).total_days
+    pitched = next((row.event.timestamp for row in progress if row.event is not None), None)
+    end = batch.enddate if not batch.active and batch.enddate else timezone.now()
+    actual = None
+    if pitched:
+        actual = _days_label(round((end - pitched).total_seconds() / 86400, 1)) + ("" if not batch.active else " so far")
+    return {'rows': rows, 'planned_total': _days_label(planned_total) if planned_total else None, 'actual': actual}
 
 
 def recipe(request, pk):
