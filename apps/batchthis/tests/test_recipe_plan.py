@@ -18,6 +18,7 @@ from ..models import (
     BatchStage,
     PlanStep,
     RecipePlanStep,
+    Vessel,
     WorkflowTemplate,
     WorkflowTemplateStep,
 )
@@ -33,6 +34,13 @@ def _stage(shortid):
 def _plan(*shortids_and_durations):
     return [(_stage(shortid), duration) for shortid, duration in shortids_and_durations]
 
+
+# A valid vessel type per stage (tests/test_plan_vessel_types.py has the rules).
+VESSEL_TYPE_FOR = {
+    "pitch": Vessel.TYPE_FERMENTER, "racking": Vessel.TYPE_AGING_TANK, "coarse-filtering": Vessel.TYPE_AGING_TANK,
+    "fine-filtering": Vessel.TYPE_AGING_TANK, "sterile-filtering": Vessel.TYPE_AGING_TANK,
+    "complete-batch": PlanStep.VESSEL_CURRENT,
+}
 
 FULL_PLAN = [
     ("pitch", "14 days"), ("racking", "30 days"), ("racking", "2 months"),
@@ -75,7 +83,7 @@ def test_template_steps_and_recipe_steps_share_one_step_shape():
     for model in (WorkflowTemplateStep, RecipePlanStep):
         assert issubclass(model, PlanStep)
         names = {f.name for f in model._meta.get_fields()}
-        assert {"sort_order", "stage", "planned_duration", "vessel_role", "notes"} <= names
+        assert {"sort_order", "stage", "planned_duration", "vessel_type", "notes"} <= names
         duration = model._meta.get_field("planned_duration")
         assert isinstance(duration, DescriptiveQuantityField) and duration.null
 
@@ -234,15 +242,16 @@ def test_copying_a_template_gives_the_recipe_its_own_steps_and_remembers_the_tem
     template = WorkflowTemplateFactory(name="Traditional mead")
     for order, (shortid, duration) in enumerate(FULL_PLAN, start=1):
         WorkflowTemplateStepFactory(template=template, sort_order=order, stage=_stage(shortid),
-                                    planned_duration=duration, vessel_role=f"role {order}", notes=f"note {order}")
+                                    planned_duration=duration, vessel_type=VESSEL_TYPE_FOR[shortid],
+                                    notes=f"note {order}")
     recipe = RecipeFactory()
 
     copy_template_to_recipe(template, recipe)
 
     recipe.refresh_from_db()
     assert recipe.workflow_template == template
-    copied = [(s.sort_order, s.stage.shortid, s.planned_days, s.vessel_role, s.notes) for s in recipe.plan_steps.all()]
-    original = [(s.sort_order, s.stage.shortid, s.planned_days, s.vessel_role, s.notes) for s in template.steps.all()]
+    copied = [(s.sort_order, s.stage.shortid, s.planned_days, s.vessel_type, s.notes) for s in recipe.plan_steps.all()]
+    original = [(s.sort_order, s.stage.shortid, s.planned_days, s.vessel_type, s.notes) for s in template.steps.all()]
     assert copied == original
 
 

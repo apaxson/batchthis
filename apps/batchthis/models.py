@@ -196,15 +196,26 @@ class Vessel(models.Model):
     def status_badge_class(self) -> str:
         return self.STATUS_BADGE_CLASSES.get(self.status, '')
 
+    # The vessel types - one wrapper model each (Fermenter, AgingTank, Barrel).
+    # Shared by vessel pages, services.VESSEL_TYPES and plan steps.
+    TYPE_FERMENTER = 'Fermenter'
+    TYPE_AGING_TANK = 'Aging Tank'
+    TYPE_BARREL = 'Barrel'
+    TYPE_CHOICES = [
+        (TYPE_FERMENTER, TYPE_FERMENTER),
+        (TYPE_AGING_TANK, TYPE_AGING_TANK),
+        (TYPE_BARREL, TYPE_BARREL),
+    ]
+
     @property
     def vessel_type(self) -> str:
         # .all() rather than .exists() so prefetch_related() on list queries is used.
         if self.fermenter_set.all():
-            return 'Fermenter'
+            return self.TYPE_FERMENTER
         if self.agingtank_set.all():
-            return 'Aging Tank'
+            return self.TYPE_AGING_TANK
         if self.barrel_set.all():
-            return 'Barrel'
+            return self.TYPE_BARREL
         return ''
 
     @property
@@ -442,8 +453,14 @@ class PlanStep(models.Model):
     planned_duration is how long the batch stays after it. A step with no or a
     0 duration is point-in-time: still followed in order (services.plan_problems)
     but left out of the time bar and every total (services.plan_totals). Plans
-    set time, never vessels - vessel_role is only a descriptive label.
+    never pick a vessel - vessel_type is "any clean vessel of this type"; the
+    specific vessel is chosen when the batch reaches the step. Rules per stage
+    (Pitch -> Fermenter, moves -> a real type, Complete Batch -> None/Current)
+    are in services.plan_problems.
     """
+    VESSEL_CURRENT = 'current'  # no change - the batch stays in its current vessel
+    VESSEL_TYPE_CHOICES = Vessel.TYPE_CHOICES + [(VESSEL_CURRENT, 'None / Current')]
+
     class Meta:
         abstract = True
         ordering = ['sort_order', 'pk']
@@ -452,7 +469,7 @@ class PlanStep(models.Model):
     stage = models.ForeignKey(BatchStage, on_delete=models.PROTECT, related_name='%(class)s_steps')
     # As entered ("14 days", "2 weeks"). Blank or 0 = point-in-time step.
     planned_duration = DescriptiveQuantityField(base_units='second', null=True, blank=True)
-    vessel_role = models.CharField(max_length=50, blank=True)  # e.g. "Aging vessel 1" - a label, not a Vessel
+    vessel_type = models.CharField(max_length=15, choices=VESSEL_TYPE_CHOICES)
     notes = models.CharField(max_length=250, blank=True)
 
     @property

@@ -38,13 +38,13 @@ class WorkflowTemplateAdmin(_ViewOnlyAdmin):
 
 @admin.register(WorkflowTemplateStep)
 class WorkflowTemplateStepAdmin(_ViewOnlyAdmin):
-    list_display = ('template', 'sort_order', 'stage', 'planned_duration', 'vessel_role')
+    list_display = ('template', 'sort_order', 'stage', 'planned_duration', 'vessel_type')
     list_filter = ('template',)
 
 
 @admin.register(RecipePlanStep)
 class RecipePlanStepAdmin(_ViewOnlyAdmin):
-    list_display = ('recipe', 'sort_order', 'stage', 'planned_duration', 'vessel_role')
+    list_display = ('recipe', 'sort_order', 'stage', 'planned_duration', 'vessel_type')
     list_filter = ('recipe',)
 
 

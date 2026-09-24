@@ -290,7 +290,7 @@ class VesselForm(forms.Form):
 
     def clean(self):
         cleaned = super().clean()
-        if self.chosen_type == "Barrel":
+        if self.chosen_type == Vessel.TYPE_BARREL:
             for field in ('serial', 'toast_level'):
                 if not cleaned.get(field) and field not in self.errors:
                     self.add_error(field, "Required for a barrel.")

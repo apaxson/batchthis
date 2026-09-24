@@ -346,7 +346,7 @@ def transfer_batch(
 # ---------- Vessel create / edit ----------
 
 # The vessel type is the wrapper row linked to the Vessel (see Vessel.vessel_type).
-VESSEL_TYPES = {"Fermenter": Fermenter, "Aging Tank": AgingTank, "Barrel": Barrel}
+VESSEL_TYPES = {Vessel.TYPE_FERMENTER: Fermenter, Vessel.TYPE_AGING_TANK: AgingTank, Vessel.TYPE_BARREL: Barrel}
 
 
 def vessel_name_problem(name: str, exclude_pk: Optional[int] = None) -> Optional[str]:
@@ -356,11 +356,11 @@ def vessel_name_problem(name: str, exclude_pk: Optional[int] = None) -> Optional
 
 
 def _save_type_details(vessel: Vessel, vessel_type: str, *, last_passivation, serial: str, toast_level: str) -> None:
-    if vessel_type == "Fermenter":
+    if vessel_type == Vessel.TYPE_FERMENTER:
         Fermenter.objects.update_or_create(vessel=vessel, defaults={"last_passivation": last_passivation})
-    elif vessel_type == "Barrel":
+    elif vessel_type == Vessel.TYPE_BARREL:
         Barrel.objects.update_or_create(vessel=vessel, defaults={"serial": serial, "toastLevel": toast_level})
-    elif vessel_type == "Aging Tank":
+    elif vessel_type == Vessel.TYPE_AGING_TANK:
         AgingTank.objects.get_or_create(vessel=vessel)
 
 
@@ -435,22 +435,45 @@ def update_vessel(
 
 # ---------- Plans: workflow templates and recipes (phase 2) ----------
 
-def _plan_items(steps) -> list[tuple[BatchStage, Optional[float]]]:
-    """(stage, planned days or None) per step. Accepts (stage, duration) pairs - duration
-    as text ("2 weeks"), a Quantity or None - or saved PlanStep rows. 0 counts as None."""
+_UNCHECKED = object()  # vessel type not given - check order/durations only
+
+
+def _plan_items(steps) -> list[tuple]:
+    """
+    (stage, planned days or None, vessel type) per step. Accepts saved PlanStep
+    rows, (stage, duration, vessel type) triples, or (stage, duration) pairs -
+    pairs skip the vessel type checks (e.g. totals). Duration as text ("2 weeks"),
+    a Quantity or None; 0 counts as None.
+    """
     ureg = settings.DJANGO_PINT_UNIT_REGISTER
     items = []
     for step in steps:
         if isinstance(step, PlanStep):
-            items.append((step.stage, step.planned_days))
+            items.append((step.stage, step.planned_days, step.vessel_type))
             continue
-        stage, duration = step
+        stage, duration, *rest = step
         days = None
         if duration is not None:
             quantity = ureg.Quantity(duration) if isinstance(duration, str) else duration
             days = quantity.to('day').magnitude or None
-        items.append((stage, days))
+        items.append((stage, days, rest[0] if rest else _UNCHECKED))
     return items
+
+
+def _vessel_type_problem(stage: BatchStage, vessel_type) -> str | None:
+    """The per-stage vessel type rule for plan steps (Aaron, 2026-09-24)."""
+    if vessel_type is _UNCHECKED:
+        return None
+    if vessel_type not in {value for value, _ in PlanStep.VESSEL_TYPE_CHOICES}:
+        return "choose a vessel type."
+    if stage.from_state == "":  # Pitch
+        return None if vessel_type == Vessel.TYPE_FERMENTER else f"{stage.name} always starts in a Fermenter."
+    if stage.to_state == BatchStage.STATE_COMPLETED:
+        return (None if vessel_type == PlanStep.VESSEL_CURRENT
+                else f"{stage.name} ends the batch - its vessel type is None / Current.")
+    if stage.transfers_batch and vessel_type == PlanStep.VESSEL_CURRENT:
+        return f"{stage.name} moves the batch - choose Fermenter, Aging Tank or Barrel."
+    return None
 
 
 def plan_problems(steps) -> list[str]:
@@ -458,11 +481,13 @@ def plan_problems(steps) -> list[str]:
     Why a per-step plan isn't valid, as user-readable messages (empty = valid).
     Every step - with or without a duration - must follow the workflow order
     (BatchStage.can_follow(), the same rule the live workflow uses). Durations are
-    optional, except Complete Batch ends the batch and can't have one.
+    optional, except Complete Batch ends the batch and can't have one. Each step
+    needs a vessel type: Pitch is always Fermenter, steps that move the batch need
+    a real type, Complete Batch is always None / Current.
     """
     problems = []
     state, previous = None, None
-    for number, (stage, days) in enumerate(_plan_items(steps), start=1):
+    for number, (stage, days, vessel_type) in enumerate(_plan_items(steps), start=1):
         if state == BatchStage.STATE_COMPLETED:
             problems.append(f"Step {number}: nothing can come after Complete Batch.")
             break
@@ -476,6 +501,9 @@ def plan_problems(steps) -> list[str]:
                 )
         if days is not None and stage.to_state == BatchStage.STATE_COMPLETED:
             problems.append(f"Step {number}: {stage.name} ends the batch - leave its duration blank.")
+        vessel_problem = _vessel_type_problem(stage, vessel_type)
+        if vessel_problem:
+            problems.append(f"Step {number}: {vessel_problem}")
         state, previous = stage.to_state, stage
     logger.debug(f"plan_problems: {len(problems)} problem(s): {problems}")
     return problems
@@ -494,7 +522,7 @@ def plan_totals(steps) -> PlanTotals:
     Pitch -> Fermentation, Racking/Filtering -> Aging, Sterile Filtering -> Bottling.
     """
     by_state: dict = {}
-    for stage, days in _plan_items(steps):
+    for stage, days, _vessel_type in _plan_items(steps):
         if days:
             by_state[stage.to_state] = by_state.get(stage.to_state, 0) + days
     return PlanTotals(total_days=sum(by_state.values()), by_state=by_state)
@@ -511,7 +539,7 @@ def copy_template_to_recipe(template: WorkflowTemplate, recipe: Recipe) -> list[
         recipe.plan_steps.all().delete()
         copies = RecipePlanStep.objects.bulk_create([
             RecipePlanStep(recipe=recipe, sort_order=step.sort_order, stage=step.stage,
-                           planned_duration=step.planned_duration, vessel_role=step.vessel_role, notes=step.notes)
+                           planned_duration=step.planned_duration, vessel_type=step.vessel_type, notes=step.notes)
             for step in template.steps.all()
         ])
         recipe.workflow_template = template

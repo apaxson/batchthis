@@ -191,6 +191,7 @@ class _PlanStepFields(factory.django.DjangoModelFactory):
     # Seeded by migration 0035_default_load2.
     stage = factory.LazyFunction(lambda: BatchStage.objects.get(shortid="pitch"))
     planned_duration = "14 days"
+    vessel_type = Vessel.TYPE_FERMENTER  # Pitch always starts in a Fermenter
 
 
 class WorkflowTemplateStepFactory(_PlanStepFields):

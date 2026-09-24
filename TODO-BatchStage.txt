@@ -482,7 +482,9 @@ OPEN DECISIONS (ask Aaron / decide before coding)
     RESOLVED: done as step 1 of this work (2026-09-23).
 [ ] Recipe-side expected workflow (vessel chain) - phase 2, not required
     for v1. Design fleshed out below in "RECIPE WORKFLOW (VESSEL CHAIN)".
-[ ] vessel_role as free-text label vs. FK to a small lookup table of
+[x] (SUPERSEDED 2026-09-24: replaced by a required vessel_type - see
+    UNIFIED PLAN DESIGN "VESSEL TYPE per step".)
+    vessel_role as free-text label vs. FK to a small lookup table of
     reusable role names ("Primary Fermenter", "Aging Vessel", ...).
     -> Recommend: free-text CharField for v1 (simplest); revisit as an
        FK only if roles need to be reused/reported on across recipes.
@@ -568,6 +570,13 @@ THIS wins:
                                                 they always move the batch)
       Complete Batch                         -> always None/Current
     The step editor pre-sets and locks Pitch and Complete Batch.
+    [DONE 2026-09-24] Migration 0042_plan_step_vessel_type: PlanStep.
+    vessel_type (required, choices Vessel.TYPE_CHOICES + VESSEL_CURRENT
+    "None / Current"); vessel types defined once on Vessel (TYPE_*),
+    reused by services.VESSEL_TYPES; plan_problems() checks the rules
+    above (plain (stage, duration) pairs still check order/durations only);
+    copy_template_to_recipe copies vessel_type. Tests:
+    tests/test_plan_vessel_types.py.
     OPEN (for steps 10-11, not step 8): when the batch reaches a planned
     step, does the stage page's destination picker ENFORCE the planned
     type or only SUGGEST it (planned type first, others allowed)?
