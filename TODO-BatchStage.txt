@@ -532,6 +532,71 @@ OPEN DECISIONS (ask Aaron / decide before coding)
 
 RECIPE WORKFLOW (VESSEL CHAIN) - PHASE 2
 -----------------------------------------
+UNIFIED PLAN DESIGN (Aaron, 2026-09-24) - reconciles this section with
+"FUTURE WORK: TIMEBAR PROGRESS" at the end of the file; where they differ,
+THIS wins:
+  * Plans are PER STEP everywhere - workflow templates, recipes and
+    batches all hold the same ordered steps (stage + optional planned
+    duration + notes; shared abstract model).
+  * Durations are optional per step. A step with no duration or 0 is a
+    point-in-time step: still followed in order (order is validated), but
+    left OUT of the time bar and all totals. Totals (plan total, and per
+    state Fermentation/Aging/Bottling for the progress bar) sum only the
+    steps with a duration. Complete Batch never has a duration.
+  * Workflow TEMPLATES: reusable, named plans (e.g. "Traditional mead").
+  * A RECIPE may have a plan or not. It can pick a template - the steps
+    are COPIED into the recipe (adjust freely afterwards) and the recipe
+    remembers which template it came from, for reference; editing the
+    template later doesn't change the recipe. Or it fills in its own
+    steps from scratch.
+  * A BATCH gets its own copy of a plan at creation: the recipe's plan if
+    it has one, otherwise a template picked on Add batch (so every new
+    batch still starts with a plan, as TIMEBAR PROGRESS required).
+    Adjustable before start; after start, changes are logged (TIMEBAR
+    PROGRESS task 2b).
+  * TIMEBAR PROGRESS's "one interval per state" becomes: per-state totals
+    DERIVED from the per-step plan.
+
+REVISED PLAN (Aaron, 2026-09-24) - supersedes the details further down where
+they differ. Phase 2 is back ON (UI layout work is done).
+Decisions:
+  * The recipe plan sets PLANNED TIME, never vessels (vessels are chosen at
+    transfer time). vessel_role stays an optional descriptive label only.
+  * Planned time is PER STEP: each RecipeVesselStep has a planned duration
+    = how long the batch stays after that step (Complete Batch has none).
+  * Durations are MEASUREMENTS per CLAUDE.md: DescriptiveQuantityField with
+    a time dimension, entered via a MeasurementField subclass ("14 days",
+    "2 weeks"; bare number -> "Units are required.").
+  * Each batch gets its OWN COPY of the recipe's plan when it's created,
+    adjustable before it starts; later recipe edits don't change running
+    batches (keeps expected-vs-actual fair).
+Steps:
+  7.  RecipeVesselStep model (recipe, sort_order, stage, planned_duration,
+      vessel_role, notes) + time support in DescriptiveQuantityField + a
+      duration form field + plan-order validation shared with the live
+      workflow rules + factory + tests. Admin view-only.
+      [DONE 2026-09-24, reworked for the UNIFIED PLAN DESIGN] Migration
+      0041_workflow_plans: abstract PlanStep (sort_order, stage,
+      planned_duration, vessel_role, notes) + WorkflowTemplate /
+      WorkflowTemplateStep + RecipePlanStep (renamed from the earlier
+      RecipeVesselStep sketch - plans hold time, not vessels) +
+      Recipe.workflow_template (SET_NULL, reference only).
+      TimeSpanField accepts 0 (= point-in-time). services: plan_problems()
+      (order always, durations optional, Complete Batch none),
+      plan_totals() (sums only timed steps, per state), and
+      copy_template_to_recipe(). BatchStage.can_follow(state) is the single
+      order rule for the live workflow and plans. Tests:
+      tests/test_recipe_plan.py.
+  8.  Edit the plan on a recipe: reorderable formset page (pattern of
+      editFermentables/Adjuncts/Yeasts) + shared move-up/down helper in
+      cellar-ledger.js; linked from recipe.html.
+  9.  Show the plan on recipe.html (step chain + total planned time).
+  10. Batch plan: copy the recipe's steps onto the batch at creation,
+      editable until the batch is pitched.
+  11. Batch page: time bar future segments from the batch plan (to scale,
+      "~30 days planned"); BatchStageEvent links to the planned step it
+      fulfils -> expected vs actual ("Racking: planned day 14, actual 17").
+
 Per Aaron (2026-09-19): the recipe-level workflow is a chain of vessel
 occupancy, linked by the transition/action that moves the batch from one
 vessel into the next. Aaron's original example used placeholder verb
@@ -824,6 +889,10 @@ phase 1 or the current UI work.
 Goal: make the batch page time bar a more graphical progress bar that
 shows current progress (% complete) and time remaining.
 
+NOTE 2026-09-24: see "UNIFIED PLAN DESIGN" in the PHASE 2 section - plans
+are per step (templates, recipes AND batches), with per-state totals
+derived; a batch copies its recipe's plan, or a template if the recipe
+has none. Tasks 1-2 below are read in that light.
 REVISED (Aaron, 2026-09-23): planned timing comes from a reusable BATCH
 WORKFLOW TEMPLATE, not from fields on the Recipe. When starting a batch,
 pick a template with pre-determined intervals; its intervals are attached

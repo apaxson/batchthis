@@ -15,6 +15,9 @@ from .models import (
     FermentableType,
     Fermenter,
     Recipe,
+    RecipePlanStep,
+    WorkflowTemplate,
+    WorkflowTemplateStep,
     Unit,
     Vessel,
     VesselStatusEvent,
@@ -171,6 +174,37 @@ class RecipeFactory(factory.django.DjangoModelFactory):
     estOG = Quantity(1.09, "sg")
     estFG = Quantity(1.0, "sg")
     estABV = 12.0
+
+
+class WorkflowTemplateFactory(factory.django.DjangoModelFactory):
+    class Meta:
+        model = WorkflowTemplate
+
+    name = factory.Sequence(lambda n: f"Template {n}")
+
+
+class _PlanStepFields(factory.django.DjangoModelFactory):
+    class Meta:
+        abstract = True
+
+    sort_order = factory.Sequence(lambda n: n + 1)
+    # Seeded by migration 0035_default_load2.
+    stage = factory.LazyFunction(lambda: BatchStage.objects.get(shortid="pitch"))
+    planned_duration = "14 days"
+
+
+class WorkflowTemplateStepFactory(_PlanStepFields):
+    class Meta:
+        model = WorkflowTemplateStep
+
+    template = factory.SubFactory(WorkflowTemplateFactory)
+
+
+class RecipePlanStepFactory(_PlanStepFields):
+    class Meta:
+        model = RecipePlanStep
+
+    recipe = factory.SubFactory(RecipeFactory)
 
 
 class BatchFactory(factory.django.DjangoModelFactory):

@@ -1,6 +1,7 @@
 from django.contrib import admin
 from .models import Unit, Fermenter, BatchNoteType, BatchTestType, BatchNote, BatchTest, BatchCategory, BatchStyle
 from .models import AdjunctType, Adjunct, Yeast, FermentableType, Fermentable, Recipe, AdjunctUsage, BatchStage, BatchStageEvent
+from .models import RecipePlanStep, WorkflowTemplate, WorkflowTemplateStep
 # Register your models here.
 
 admin.site.register(Unit)
@@ -16,6 +17,35 @@ admin.site.register(BatchNote)
 admin.site.register(BatchTest)
 admin.site.register(BatchStyle)
 admin.site.register(BatchCategory)
+
+
+class _ViewOnlyAdmin(admin.ModelAdmin):
+    # Default for admin registrations: view only. Plans are edited on the app's pages.
+    def has_add_permission(self, request):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False
+
+
+@admin.register(WorkflowTemplate)
+class WorkflowTemplateAdmin(_ViewOnlyAdmin):
+    list_display = ('name', 'description')
+
+
+@admin.register(WorkflowTemplateStep)
+class WorkflowTemplateStepAdmin(_ViewOnlyAdmin):
+    list_display = ('template', 'sort_order', 'stage', 'planned_duration', 'vessel_role')
+    list_filter = ('template',)
+
+
+@admin.register(RecipePlanStep)
+class RecipePlanStepAdmin(_ViewOnlyAdmin):
+    list_display = ('recipe', 'sort_order', 'stage', 'planned_duration', 'vessel_role')
+    list_filter = ('recipe',)
 
 
 @admin.register(BatchStageEvent)

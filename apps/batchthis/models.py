@@ -101,6 +101,19 @@ class BatchStage(models.Model):
             self.shortid = slugify(self.name)
         super().save(*args, **kwargs)
 
+    def can_follow(self, state: str | None) -> bool:
+        """
+        The workflow order rule, shared by the live workflow (Log stage) and recipe
+        plans: can this transition happen when the batch is in `state` (None = not
+        pitched yet)? Pitch only first; every other stage from its from_state;
+        Racking also repeatable during Aging; nothing after Completed.
+        """
+        if state is None:
+            return self.from_state == ""
+        if state == self.STATE_COMPLETED:
+            return False
+        return self.from_state == state or (self.shortid == self.RACKING and state == self.STATE_AGING)
+
     name = models.CharField(max_length=20)
     shortid = models.SlugField(unique=True)
     sort_order = models.PositiveSmallIntegerField(default=0)
@@ -403,6 +416,10 @@ class Recipe(models.Model):
     estOG = PrecisionQuantityField(base_units='sg', unit_choices=['sg'])
     estFG = DescriptiveQuantityField(base_units='sg', unit_choices=['sg'])
     estABV = models.FloatField()
+    # The template this recipe's plan was last copied from - for reference only;
+    # the recipe keeps its own copy of the steps (plan_steps). Blank = no template.
+    workflow_template = models.ForeignKey('WorkflowTemplate', on_delete=models.SET_NULL, null=True, blank=True,
+                                          related_name='recipes')
 
 
 class RecipeItem(models.Model):
@@ -415,6 +432,74 @@ class RecipeItem(models.Model):
     _amount_volume = DescriptiveQuantityField('liters', null=True, blank=True, unit_choices=['floz', 'ml', 'gallon', 'liter'])
     recipe_notes = models.CharField(max_length=200, null=True, blank=True)
     amount = DescriptiveQuantityField(null=True, blank=True)
+
+
+class PlanStep(models.Model):
+    """
+    One step of a per-step plan - shared by workflow templates, recipes (and,
+    later, batches); see TODO-BatchStage.txt "UNIFIED PLAN DESIGN". The stage is
+    the transition INTO the step (Pitch, Racking, a Filtering, Complete Batch);
+    planned_duration is how long the batch stays after it. A step with no or a
+    0 duration is point-in-time: still followed in order (services.plan_problems)
+    but left out of the time bar and every total (services.plan_totals). Plans
+    set time, never vessels - vessel_role is only a descriptive label.
+    """
+    class Meta:
+        abstract = True
+        ordering = ['sort_order', 'pk']
+
+    sort_order = models.PositiveSmallIntegerField(default=0)
+    stage = models.ForeignKey(BatchStage, on_delete=models.PROTECT, related_name='%(class)s_steps')
+    # As entered ("14 days", "2 weeks"). Blank or 0 = point-in-time step.
+    planned_duration = DescriptiveQuantityField(base_units='second', null=True, blank=True)
+    vessel_role = models.CharField(max_length=50, blank=True)  # e.g. "Aging vessel 1" - a label, not a Vessel
+    notes = models.CharField(max_length=250, blank=True)
+
+    @property
+    def planned_days(self) -> float | None:
+        """Planned duration in days, or None for a point-in-time step (blank or 0)."""
+        if self.planned_duration is None:
+            return None
+        days = self._meta.get_field('planned_duration').to_python(self.planned_duration).to('day').magnitude
+        # Rounded: storing converts through seconds, so copies pick up float noise.
+        return round(days, 6) or None
+
+    @property
+    def has_duration(self) -> bool:
+        return self.planned_days is not None
+
+
+class WorkflowTemplate(models.Model):
+    """A reusable, named per-step plan (e.g. "Traditional mead") that recipes copy from."""
+    class Meta:
+        ordering = ['name']
+
+    def __str__(self):
+        return self.name
+
+    name = models.CharField(max_length=50, unique=True)
+    description = models.CharField(max_length=250, blank=True)
+
+
+class WorkflowTemplateStep(PlanStep):
+    class Meta(PlanStep.Meta):
+        pass
+
+    def __str__(self):
+        return f"{self.template} #{self.sort_order}: {self.stage}"
+
+    template = models.ForeignKey(WorkflowTemplate, on_delete=models.CASCADE, related_name='steps')
+
+
+class RecipePlanStep(PlanStep):
+    """A recipe's own plan step - filled in by hand or copied from a template."""
+    class Meta(PlanStep.Meta):
+        pass
+
+    def __str__(self):
+        return f"{self.recipe} #{self.sort_order}: {self.stage}"
+
+    recipe = models.ForeignKey(Recipe, on_delete=models.CASCADE, related_name='plan_steps')
 
 
 class RecipeFermentable(RecipeItem):

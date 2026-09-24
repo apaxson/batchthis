@@ -1,7 +1,9 @@
 import logging
+from dataclasses import dataclass
 from datetime import date, datetime
 from typing import Optional
 
+from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db import transaction
 from django.utils import timezone
@@ -14,8 +16,12 @@ from .models import (
     BatchStage,
     BatchStageEvent,
     Fermenter,
+    PlanStep,
+    Recipe,
+    RecipePlanStep,
     Vessel,
     VesselStatusEvent,
+    WorkflowTemplate,
 )
 
 logger = logging.getLogger(__name__)
@@ -169,14 +175,11 @@ def _workflow_problem(batch: Batch, stage: BatchStage, current: Optional[BatchSt
     state = current.stage.to_state if current else None
     if state == BatchStage.STATE_COMPLETED or not batch.active:
         return f"Batch '{batch.name}' is complete; no more stages can be logged."
-    if current is None and stage.from_state != "":
+    if stage.can_follow(state):
+        return None
+    if current is None:
         return f"Log Pitch first - '{batch.name}' hasn't been pitched yet."
-    if current is not None:
-        repeat_racking = stage.shortid == BatchStage.RACKING and state == BatchStage.STATE_AGING
-        if stage.from_state != state and not repeat_racking:
-            expected = stage.get_from_state_display()
-            return f"{stage.name} needs a batch in {expected}; '{batch.name}' is in {state}."
-    return None
+    return f"{stage.name} needs a batch in {stage.get_from_state_display()}; '{batch.name}' is in {state}."
 
 
 def allowed_next_stages(batch: Batch) -> list[BatchStage]:
@@ -428,3 +431,90 @@ def update_vessel(
     vessel.refresh_from_db()
     logger.info(f"Vessel {vessel.pk} '{vessel.name}' updated")
     return vessel
+
+
+# ---------- Plans: workflow templates and recipes (phase 2) ----------
+
+def _plan_items(steps) -> list[tuple[BatchStage, Optional[float]]]:
+    """(stage, planned days or None) per step. Accepts (stage, duration) pairs - duration
+    as text ("2 weeks"), a Quantity or None - or saved PlanStep rows. 0 counts as None."""
+    ureg = settings.DJANGO_PINT_UNIT_REGISTER
+    items = []
+    for step in steps:
+        if isinstance(step, PlanStep):
+            items.append((step.stage, step.planned_days))
+            continue
+        stage, duration = step
+        days = None
+        if duration is not None:
+            quantity = ureg.Quantity(duration) if isinstance(duration, str) else duration
+            days = quantity.to('day').magnitude or None
+        items.append((stage, days))
+    return items
+
+
+def plan_problems(steps) -> list[str]:
+    """
+    Why a per-step plan isn't valid, as user-readable messages (empty = valid).
+    Every step - with or without a duration - must follow the workflow order
+    (BatchStage.can_follow(), the same rule the live workflow uses). Durations are
+    optional, except Complete Batch ends the batch and can't have one.
+    """
+    problems = []
+    state, previous = None, None
+    for number, (stage, days) in enumerate(_plan_items(steps), start=1):
+        if state == BatchStage.STATE_COMPLETED:
+            problems.append(f"Step {number}: nothing can come after Complete Batch.")
+            break
+        if not stage.can_follow(state):
+            if state is None:
+                problems.append(f"Step {number}: the plan must start with Pitch.")
+            else:
+                problems.append(
+                    f"Step {number}: {stage.name} can't come after {previous.name} - the batch would be in "
+                    f"{state}, and {stage.name} needs {stage.get_from_state_display()}."
+                )
+        if days is not None and stage.to_state == BatchStage.STATE_COMPLETED:
+            problems.append(f"Step {number}: {stage.name} ends the batch - leave its duration blank.")
+        state, previous = stage.to_state, stage
+    logger.debug(f"plan_problems: {len(problems)} problem(s): {problems}")
+    return problems
+
+
+@dataclass(frozen=True)
+class PlanTotals:
+    total_days: float
+    by_state: dict  # {BatchStage.STATE_*: days}, only states with timed steps
+
+
+def plan_totals(steps) -> PlanTotals:
+    """
+    Planned time, summing ONLY steps with a duration (blank/0 = point-in-time,
+    skipped). Each step's time counts toward the state it moves the batch into:
+    Pitch -> Fermentation, Racking/Filtering -> Aging, Sterile Filtering -> Bottling.
+    """
+    by_state: dict = {}
+    for stage, days in _plan_items(steps):
+        if days:
+            by_state[stage.to_state] = by_state.get(stage.to_state, 0) + days
+    return PlanTotals(total_days=sum(by_state.values()), by_state=by_state)
+
+
+def copy_template_to_recipe(template: WorkflowTemplate, recipe: Recipe) -> list[RecipePlanStep]:
+    """
+    Give the recipe its OWN copy of the template's steps (replacing any plan it
+    had) and remember the template for reference. Later template edits don't
+    change the recipe, and the recipe's steps can be adjusted freely.
+    """
+    logger.debug(f"copy_template_to_recipe: template={template.pk} '{template}' -> recipe={recipe.pk} '{recipe}'")
+    with transaction.atomic():
+        recipe.plan_steps.all().delete()
+        copies = RecipePlanStep.objects.bulk_create([
+            RecipePlanStep(recipe=recipe, sort_order=step.sort_order, stage=step.stage,
+                           planned_duration=step.planned_duration, vessel_role=step.vessel_role, notes=step.notes)
+            for step in template.steps.all()
+        ])
+        recipe.workflow_template = template
+        recipe.save(update_fields=['workflow_template'])
+    logger.info(f"Recipe '{recipe}' plan copied from template '{template}' ({len(copies)} steps)")
+    return copies

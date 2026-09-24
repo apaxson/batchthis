@@ -58,6 +58,8 @@ class DescriptiveQuantityField(QuantityField):
                 self.base_units = 'kilograms'
             elif quantity.check('[temperature]'):
                 self.base_units = 'degC'
+            elif quantity.check('[time]'):
+                self.base_units = 'second'
             elif quantity.check('[Sucrose]'):
                 # Specific gravity. Never converted to Brix - see the refractometer tool.
                 self.base_units = 'sg'
@@ -67,7 +69,7 @@ class DescriptiveQuantityField(QuantityField):
                 # ppm, or a plain number such as pH.
                 self.base_units = 'dimensionless'
             else:
-                raise ValueError(f"Not compatible base_unit: {self.base_units}.  Attempted 'mass', 'volume', 'temp', 'sg', 'concentration' and 'dimensionless': {quantity}")
+                raise ValueError(f"Not compatible base_unit: {self.base_units}.  Attempted 'mass', 'volume', 'temp', 'time', 'sg', 'concentration' and 'dimensionless': {quantity}")
 
     def createDescriptiveMarkup(self, value):
         if isinstance(value, str):
@@ -247,6 +249,7 @@ class MeasurementField(forms.CharField):
     the `wrong_kind` / `invalid_amount` messages.
     """
     dimensions: tuple[str, ...] = ()
+    allow_zero = False  # e.g. TimeSpanField: 0 = a point-in-time plan step
     default_error_messages = {
         'units_required': "Units are required.",
         'not_positive': "Enter an amount greater than zero.",
@@ -281,7 +284,7 @@ class MeasurementField(forms.CharField):
             raise ValidationError(self.error_messages['units_required'], code='units_required')
         if not any(quantity.check(dimension) for dimension in self.dimensions):
             raise ValidationError(self.error_messages['wrong_kind'], code='wrong_kind')
-        if quantity.magnitude <= 0:
+        if quantity.magnitude < 0 or (quantity.magnitude == 0 and not self.allow_zero):
             raise ValidationError(self.error_messages['not_positive'], code='not_positive')
         return quantity
 
@@ -320,6 +323,22 @@ class AmountField(MeasurementField):
     }
 
     def __init__(self, *, placeholder: str = "e.g. 4 grams", **kwargs):
+        super().__init__(placeholder=placeholder, **kwargs)
+
+
+class TimeSpanField(MeasurementField):
+    """
+    A duration ("14 days", "2 weeks", "36 hours") - e.g. a plan step's planned
+    time. 0 is allowed: it marks a point-in-time step, same as leaving it blank.
+    """
+    dimensions = ('[time]',)
+    allow_zero = True
+    default_error_messages = {
+        'wrong_kind': "Use a time unit, e.g. 14 days or 2 weeks.",
+        'invalid_amount': "Enter an amount and a unit, e.g. 14 days or 2 weeks.",
+    }
+
+    def __init__(self, *, placeholder: str = "e.g. 14 days", **kwargs):
         super().__init__(placeholder=placeholder, **kwargs)
 
 
