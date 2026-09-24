@@ -44,6 +44,20 @@ Built so far:
 * Batch.complete() now dirties batch.current_vessel (not the fermenter).
 * Out of Service (STATUS_OUT) - see the section at the bottom.
 
+* Vessel create/edit pages (2026-09-24): vessels/add (addVessel) and
+  vessel/<pk>/edit (editVessel), linked from "Add vessel" on the Vessels
+  list and the vessel page's ... menu. services.create_vessel() /
+  update_vessel(). Decisions (Aaron): new vessels always start
+  Clean/Ready (logged as the first history entry "Vessel added"); type
+  (Fermenter / Aging Tank / Barrel) is set once on Add, never changed;
+  names are unique ignoring case; Fill is optional and can't exceed
+  Capacity. Status is never edited here. Vessel is still NOT in Django
+  admin - these pages replace it.
+* Vessel measurements (2026-09-24): capacity/fill are
+  DescriptiveQuantityFields (liters, returned as entered) entered via
+  VolumeField ("Units are required." for a bare number). Migration 0038
+  is forward-only (the removed max_size_units was required).
+
 Decisions made along the way:
 * ActivityLog is for Batch actions only (incl. the BatchStage
   workflow). Vessel history lives only in VesselStatusEvent.

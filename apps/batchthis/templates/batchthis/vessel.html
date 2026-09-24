@@ -2,18 +2,27 @@
 {% load static %}
 {% block content %}
 
-<div class="cl-batch-head">
+<div class="cl-batch-head cl-batch-head--menu">
   <div>
     <h1 class="cl-batch-title font-display">{{ vessel.name }}</h1>
-    <div class="cl-batch-sub">
-      <span><span class="cl-rack-tag">#{{ vessel.pk }}</span></span>
-      {% if vessel.vessel_type %}<span>{{ vessel.vessel_type }}</span>{% endif %}
-      {% if vessel.intended_use %}<span>Use <b>{{ vessel.intended_use }}</b></span>{% endif %}
-      <span><span class="cl-stage {{ vessel.status_badge_class }}">{{ vessel.status }}</span></span>
+    <div class="cl-batch-subrow">
+      <div class="cl-batch-sub">
+        <span><span class="cl-rack-tag">#{{ vessel.pk }}</span></span>
+        {% if vessel.vessel_type %}<span>{{ vessel.vessel_type }}</span>{% endif %}
+        {% if vessel.intended_use %}<span>Use <b>{{ vessel.intended_use }}</b></span>{% endif %}
+        <span><span class="cl-stage {{ vessel.status_badge_class }}">{{ vessel.status }}</span></span>
+      </div>
+      <div class="cl-menu" data-cl-menu>
+        <button type="button" class="cl-menu-toggle" id="vessel-actions-toggle" aria-haspopup="menu" aria-expanded="false" aria-controls="vessel-actions-menu" aria-label="Vessel actions">
+          <svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="4" cy="10" r="1.7"/><circle cx="10" cy="10" r="1.7"/><circle cx="16" cy="10" r="1.7"/></svg>
+        </button>
+        <ul class="cl-menu-list" id="vessel-actions-menu" role="menu" aria-labelledby="vessel-actions-toggle" hidden>
+          <li role="none"><a role="menuitem" href="{% url 'editVessel' vessel.pk %}">Edit vessel</a></li>
+          <li role="separator"></li>
+          <li role="none"><a role="menuitem" href="{% url 'vesselListing' %}">All vessels</a></li>
+        </ul>
+      </div>
     </div>
-  </div>
-  <div class="cl-batch-actions">
-    <a href="{% url 'vesselListing' %}">&larr; All vessels</a>
   </div>
 </div>
 

@@ -1,0 +1,98 @@
+{% extends 'batchthis/base.html' %}
+{% block content %}
+
+<div class="cl-page-head">
+  <div class="cl-wordmark font-display">{% if vessel %}Edit {{ vessel.name }}{% else %}Add vessel{% endif %}</div>
+  <div class="cl-batch-sub" style="margin-top:6px;">
+    {% if vessel %}
+    <span><a href="{% url 'vessel' vessel.pk %}">&larr; Back to {{ vessel.name }}</a></span>
+    <span>{{ vessel.vessel_type|default:"No type" }}</span>
+    <span><span class="cl-stage {{ vessel.status_badge_class }}">{{ vessel.status }}</span></span>
+    {% else %}
+    <span><a href="{% url 'vesselListing' %}">&larr; Back to vessels</a></span>
+    <span>New vessels start Clean/Ready</span>
+    {% endif %}
+  </div>
+</div>
+
+{% if form.non_field_errors %}
+<div class="cl-flag" style="margin-bottom:20px;">
+  <span class="cl-flag-mark">!</span>
+  <span>{% for error in form.non_field_errors %}{{ error }}{% if not forloop.last %} {% endif %}{% endfor %}</span>
+</div>
+{% endif %}
+
+<div class="cl-panel">
+  <form method="POST" class="cl-form" id="vesselform" data-vessel-type="{{ vessel.vessel_type|default:'' }}">
+    {% csrf_token %}
+    <div class="cl-form-grid">
+      {% if form.vessel_type %}
+      <div class="cl-field">
+        <label for="{{ form.vessel_type.id_for_label }}">Type</label>
+        {{ form.vessel_type }}
+        {% if form.vessel_type.errors %}<div class="cl-field-error">{{ form.vessel_type.errors }}</div>{% endif %}
+      </div>
+      {% endif %}
+      <div class="cl-field">
+        <label for="{{ form.name.id_for_label }}">Name</label>
+        {{ form.name }}
+        {% if form.name.errors %}<div class="cl-field-error">{{ form.name.errors }}</div>{% endif %}
+      </div>
+      <div class="cl-field">
+        <label for="{{ form.intended_use.id_for_label }}">Intended use</label>
+        {{ form.intended_use }}
+        {% if form.intended_use.errors %}<div class="cl-field-error">{{ form.intended_use.errors }}</div>{% endif %}
+      </div>
+      <div class="cl-field">
+        <label for="{{ form.capacity.id_for_label }}">Capacity</label>
+        {{ form.capacity }}
+        {% if form.capacity.errors %}<div class="cl-field-error">{{ form.capacity.errors }}</div>{% endif %}
+      </div>
+      <div class="cl-field">
+        <label for="{{ form.fill.id_for_label }}">Fill <small>(optional)</small></label>
+        {{ form.fill }}
+        {% if form.fill.errors %}<div class="cl-field-error">{{ form.fill.errors }}</div>{% endif %}
+      </div>
+
+      <div class="cl-field" data-vessel-type-field="Fermenter">
+        <label for="{{ form.last_passivation.id_for_label }}">Last passivation <small>(optional)</small></label>
+        {{ form.last_passivation }}
+        {% if form.last_passivation.errors %}<div class="cl-field-error">{{ form.last_passivation.errors }}</div>{% endif %}
+      </div>
+      <div class="cl-field" data-vessel-type-field="Barrel">
+        <label for="{{ form.serial.id_for_label }}">Serial / tag</label>
+        {{ form.serial }}
+        {% if form.serial.errors %}<div class="cl-field-error">{{ form.serial.errors }}</div>{% endif %}
+      </div>
+      <div class="cl-field" data-vessel-type-field="Barrel">
+        <label for="{{ form.toast_level.id_for_label }}">Toast level</label>
+        {{ form.toast_level }}
+        {% if form.toast_level.errors %}<div class="cl-field-error">{{ form.toast_level.errors }}</div>{% endif %}
+      </div>
+    </div>
+
+    <div class="cl-form-actions">
+      <a href="{% if vessel %}{% url 'vessel' vessel.pk %}{% else %}{% url 'vesselListing' %}{% endif %}" class="cl-btn cl-btn--secondary">Cancel</a>
+      <button type="submit" class="cl-btn cl-btn--primary">{% if vessel %}Save vessel{% else %}Add vessel{% endif %}</button>
+    </div>
+  </form>
+</div>
+
+<script>
+  // Show only the fields for the vessel's type: passivation date for a Fermenter,
+  // serial and toast level for a Barrel (Aging Tank has none).
+  document.addEventListener('DOMContentLoaded', function () {
+    var form = document.getElementById('vesselform');
+    var typeSelect = document.getElementById('{{ form.vessel_type.id_for_label|default:"id_vessel_type" }}');
+    function currentType() { return typeSelect ? typeSelect.value : form.dataset.vesselType; }
+    function toggleTypeFields() {
+      var type = currentType();
+      form.querySelectorAll('[data-vessel-type-field]').forEach(function (field) {
+        field.hidden = field.dataset.vesselTypeField !== type;
+      });
+    }
+    if (typeSelect) typeSelect.addEventListener('change', toggleTypeFields);
+    toggleTypeFields();
+  });
+</script>
+{% endblock %}

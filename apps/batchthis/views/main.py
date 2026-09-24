@@ -14,12 +14,12 @@ from apps.batchthis.models import Batch, BatchStage, BatchStageEvent, Fermenter,
 from django.shortcuts import get_object_or_404
 from apps.batchthis.forms import BatchTestForm, BatchNoteForm, BatchAdditionForm, RefractometerCorrectionForm, BatchAddForm, BatchEditForm, \
     BatchCategory
-from apps.batchthis.forms import RecipeAddForm, FermentableForm, AdjunctForm, YeastForm, BatchStageForm, BatchTransferForm
+from apps.batchthis.forms import RecipeAddForm, FermentableForm, AdjunctForm, YeastForm, BatchStageForm, BatchTransferForm, VesselForm
 from django.forms.formsets import formset_factory
 from apps.batchthis.lib.utils import Utils
 from apps.batchthis.services import (
     set_vessel_status, take_vessel_out_of_service, return_vessel_to_service, status_before_out_of_service,
-    transition_stage_event, transfer_batch,
+    transition_stage_event, transfer_batch, create_vessel, update_vessel,
 )
 from apps.batchthis.lib.faults import get_active_flags, get_rule_for, StagedFaultRule
 from django.contrib.auth.decorators import login_required
@@ -604,6 +604,51 @@ def _vessel_status_icon(vessel: Vessel) -> str | None:
 @login_required
 def vesselListing(request):
     return render(request, 'batchthis/vessels.html')
+
+
+def _vessel_form_details(data: dict) -> dict:
+    return {key: data.get(key) for key in ('name', 'capacity', 'fill', 'intended_use', 'last_passivation')} | {
+        'serial': data.get('serial') or '', 'toast_level': data.get('toast_level') or '',
+    }
+
+
+@login_required
+def vesselCreate(request):
+    """Add a vessel (Fermenter / Aging Tank / Barrel); it starts Clean/Ready."""
+    form = VesselForm(request.POST or None)
+    if request.method == 'POST':
+        if form.is_valid():
+            try:
+                vessel = create_vessel(vessel_type=form.cleaned_data['vessel_type'], **_vessel_form_details(form.cleaned_data))
+            except ValidationError as e:
+                form.add_error(None, e.messages)
+            except Exception:
+                logger.exception("vesselCreate: failed to add vessel %r", form.cleaned_data.get('name'))
+                form.add_error(None, "Couldn't add the vessel. Nothing was saved - please try again.")
+            else:
+                return HttpResponseRedirect(reverse('vessel', kwargs={'pk': vessel.pk}))
+        logger.debug("vesselCreate: form errors: %s", form.errors.as_data())
+    return render(request, 'batchthis/vesselForm.html', {'form': form, 'vessel': None})
+
+
+@login_required
+def vesselEdit(request, pk):
+    """Edit a vessel's details. Type and status can't be changed here."""
+    vessel = get_object_or_404(Vessel, pk=pk)
+    form = VesselForm(request.POST or None, vessel=vessel)
+    if request.method == 'POST':
+        if form.is_valid():
+            try:
+                update_vessel(vessel, **_vessel_form_details(form.cleaned_data))
+            except ValidationError as e:
+                form.add_error(None, e.messages)
+            except Exception:
+                logger.exception("vesselEdit: failed to update vessel %s", pk)
+                form.add_error(None, "Couldn't save the vessel. Nothing was changed - please try again.")
+            else:
+                return HttpResponseRedirect(reverse('vessel', kwargs={'pk': pk}))
+        logger.debug("vesselEdit: vessel %s form errors: %s", pk, form.errors.as_data())
+    return render(request, 'batchthis/vesselForm.html', {'form': form, 'vessel': vessel})
 
 
 @login_required

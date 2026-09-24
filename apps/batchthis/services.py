@@ -1,5 +1,5 @@
 import logging
-from datetime import datetime
+from datetime import date, datetime
 from typing import Optional
 
 from django.core.exceptions import ValidationError
@@ -8,9 +8,12 @@ from django.utils import timezone
 
 from .models import (
     ActivityLog,
+    AgingTank,
+    Barrel,
     Batch,
     BatchStage,
     BatchStageEvent,
+    Fermenter,
     Vessel,
     VesselStatusEvent,
 )
@@ -335,3 +338,93 @@ def transfer_batch(
 
     logger.info(f"Batch '{batch.name}' transferred (no stage change) from '{src_vessel.name}' to '{dst_vessel.name}': {reason!r}")
     return event
+
+
+# ---------- Vessel create / edit ----------
+
+# The vessel type is the wrapper row linked to the Vessel (see Vessel.vessel_type).
+VESSEL_TYPES = {"Fermenter": Fermenter, "Aging Tank": AgingTank, "Barrel": Barrel}
+
+
+def vessel_name_problem(name: str, exclude_pk: Optional[int] = None) -> Optional[str]:
+    """Vessel names are unique ignoring case - pickers and the timeline identify vessels by name."""
+    existing = Vessel.objects.filter(name__iexact=name.strip()).exclude(pk=exclude_pk).first()
+    return f"A vessel named '{existing.name}' already exists." if existing else None
+
+
+def _save_type_details(vessel: Vessel, vessel_type: str, *, last_passivation, serial: str, toast_level: str) -> None:
+    if vessel_type == "Fermenter":
+        Fermenter.objects.update_or_create(vessel=vessel, defaults={"last_passivation": last_passivation})
+    elif vessel_type == "Barrel":
+        Barrel.objects.update_or_create(vessel=vessel, defaults={"serial": serial, "toastLevel": toast_level})
+    elif vessel_type == "Aging Tank":
+        AgingTank.objects.get_or_create(vessel=vessel)
+
+
+def create_vessel(
+    *,
+    name: str,
+    vessel_type: str,
+    capacity,
+    intended_use: str,
+    fill=None,
+    last_passivation: Optional[date] = None,
+    serial: str = "",
+    toast_level: str = "",
+) -> Vessel:
+    """
+    Add a vessel: the Vessel, its type row (Fermenter / Aging Tank / Barrel) and
+    its first status history entry - always Clean/Ready. One transaction.
+    capacity/fill are volumes ("6 gallons" or a Quantity), stored in liters.
+    """
+    name = name.strip()
+    logger.debug(f"create_vessel: {name!r} type={vessel_type!r} capacity={capacity} fill={fill}")
+    problem = None
+    if vessel_type not in VESSEL_TYPES:
+        problem = f"Unknown vessel type {vessel_type!r}."
+    else:
+        problem = vessel_name_problem(name)
+    if problem:
+        logger.error(f"create_vessel: rejected - {problem}")
+        raise ValidationError(problem)
+
+    with transaction.atomic():
+        vessel = Vessel.objects.create(
+            name=name, capacity=capacity, fill=fill, intended_use=intended_use, status=Vessel.STATUS_READY,
+        )
+        _save_type_details(vessel, vessel_type, last_passivation=last_passivation, serial=serial, toast_level=toast_level)
+        set_vessel_status(vessel, Vessel.STATUS_READY, notes="Vessel added")
+    logger.info(f"Vessel '{vessel.name}' ({vessel_type}) added")
+    return vessel
+
+
+def update_vessel(
+    vessel: Vessel,
+    *,
+    name: str,
+    capacity,
+    intended_use: str,
+    fill=None,
+    last_passivation: Optional[date] = None,
+    serial: str = "",
+    toast_level: str = "",
+) -> Vessel:
+    """
+    Edit a vessel's details and its type's details. Never changes the type or
+    the status (status only moves through the vessel actions and transfers).
+    """
+    name = name.strip()
+    logger.debug(f"update_vessel: {vessel.pk} {vessel.name!r} -> {name!r} capacity={capacity} fill={fill}")
+    problem = vessel_name_problem(name, exclude_pk=vessel.pk)
+    if problem:
+        logger.error(f"update_vessel: rejected for vessel {vessel.pk} - {problem}")
+        raise ValidationError(problem)
+
+    vessel_type = vessel.vessel_type
+    with transaction.atomic():
+        vessel.name, vessel.capacity, vessel.fill, vessel.intended_use = name, capacity, fill, intended_use
+        vessel.save(update_fields=["name", "capacity", "fill", "intended_use"])
+        _save_type_details(vessel, vessel_type, last_passivation=last_passivation, serial=serial, toast_level=toast_level)
+    vessel.refresh_from_db()
+    logger.info(f"Vessel {vessel.pk} '{vessel.name}' updated")
+    return vessel

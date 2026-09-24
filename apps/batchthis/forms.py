@@ -9,7 +9,7 @@ from django.core.exceptions import ValidationError
 import apps.batchthis.models
 from .models import BatchTest, BatchNote, BatchAddition, Batch, Unit, Fermenter, Vessel, BatchCategory, BatchStyle
 from .models import BatchStage
-from .services import allowed_next_stages
+from .services import allowed_next_stages, vessel_name_problem, VESSEL_TYPES
 from .models import Fermentable, Adjunct, Yeast, Recipe, AdjunctUsage, RecipeFermentable
 from django.forms.widgets import NumberInput, DateInput
 from django.utils import timezone
@@ -197,6 +197,66 @@ class BatchTransferForm(forms.Form):
         )
         state = batch.current_state
         self.fields['stage'].empty_label = f"No stage change (stay in {state})" if state else "No stage change"
+
+
+class VesselForm(forms.Form):
+    """
+    Add or edit a vessel. The type is chosen once, on Add; status is never set
+    here (new vessels start Clean/Ready). Type-specific fields are only
+    required for their type: passivation date (Fermenter), serial and toast
+    level (Barrel).
+    """
+    vessel_type = forms.ChoiceField(label="Type", choices=[(t, t) for t in VESSEL_TYPES])
+    name = forms.CharField(max_length=25)
+    capacity = VolumeField(placeholder="e.g. 6 gallons")
+    fill = VolumeField(required=False, placeholder="Optional, e.g. 5 gallons")
+    intended_use = forms.CharField(max_length=30, label="Intended use",
+                                   widget=forms.TextInput(attrs={'placeholder': 'e.g. Primary, Aging'}))
+    last_passivation = forms.DateField(required=False, label="Last passivation",
+                                       widget=DateInput(attrs={'type': 'date'}, format='%Y-%m-%d'))
+    serial = forms.CharField(max_length=20, required=False, label="Serial / tag")
+    toast_level = forms.CharField(max_length=25, required=False, label="Toast level")
+
+    def __init__(self, *args, vessel: Vessel | None = None, **kwargs):
+        self.vessel = vessel
+        if vessel is not None:
+            initial = {
+                'name': vessel.name, 'capacity': vessel.capacity, 'fill': vessel.fill,
+                'intended_use': vessel.intended_use,
+            }
+            fermenter = vessel.fermenter_set.first()
+            barrel = vessel.barrel_set.first()
+            if fermenter:
+                initial['last_passivation'] = fermenter.last_passivation
+            if barrel:
+                initial.update(serial=barrel.serial, toast_level=barrel.toastLevel)
+            kwargs.setdefault('initial', initial)
+        super().__init__(*args, **kwargs)
+        if vessel is not None:
+            del self.fields['vessel_type']  # set once, on Add
+
+    @property
+    def chosen_type(self) -> str:
+        """The vessel's type: fixed on Edit, the submitted choice on Add."""
+        return self.vessel.vessel_type if self.vessel is not None else self.cleaned_data.get('vessel_type', '')
+
+    def clean_name(self) -> str:
+        name = self.cleaned_data['name'].strip()
+        problem = vessel_name_problem(name, exclude_pk=self.vessel.pk if self.vessel else None)
+        if problem:
+            raise ValidationError(problem)
+        return name
+
+    def clean(self):
+        cleaned = super().clean()
+        if self.chosen_type == "Barrel":
+            for field in ('serial', 'toast_level'):
+                if not cleaned.get(field) and field not in self.errors:
+                    self.add_error(field, "Required for a barrel.")
+        capacity, fill = cleaned.get('capacity'), cleaned.get('fill')
+        if capacity is not None and fill is not None and fill.to(capacity.units) > capacity:
+            self.add_error('fill', f"Fill can't be more than the capacity ({capacity}).")
+        return cleaned
 
 
 # class BatchForm(forms.ModelForm):
