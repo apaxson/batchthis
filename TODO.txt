@@ -51,6 +51,42 @@ FUTURE ENHANCEMENTS:
     * Keyboard/focus: focus the first field on open, Escape closes, focus
       returns to the link that opened it.
 
+* PINNED - review later (Aaron, 2026-09-24): relabel "Log stage". It's
+  ambiguous and doesn't say the batch moves FORWARD. Candidates:
+  "Advance stage" (recommended - clearly forward, unlike "Transfer batch"),
+  "Next stage", "Transition" (matches the code's naming, but reads close
+  to "Transfer batch" in the same menu). Affects the batch ... menu item,
+  the Stage timeline link, the page title/button (addBatchStage.html), the
+  hint on transferBatch.html, CLAUDE.md and the TODO files. Internal names
+  (URL addDetailStage, transition_stage_event) can stay.
+* FORECASTING (Aaron, 2026-09-24): forecast when a batch will complete and
+  when vessels will be free, from each batch's start time, its plan's
+  durations, and every active batch's planned vessel usage.
+    * Completion forecast per batch: start (Pitch, else startdate) + the
+      plan's duration-based steps (plan_totals - point-in-time steps don't
+      count), updated with actuals as stages complete - the "expected
+      total" formula in TODO-BatchStage.txt TIMEBAR PROGRESS task 3
+      (completed stages at their actual time, the current stage at
+      max(planned, elapsed), stages ahead at their planned time).
+    * Vessel availability forecast: walk every active batch's remaining
+      plan - each step's planned vessel type (PlanStep.vessel_type, "any
+      clean <type>") and planned start/end - to project, per vessel type
+      and date, how many clean vessels are free vs. needed. Flag shortages
+      ahead of time ("3 batches need an Aging Tank around Oct 12; 2 are
+      expected free"). Exclude Out of Service vessels.
+    * Uses: on Add batch, suggest the earliest start date when the plan's
+      vessel types will be free; a dashboard calendar/Gantt of batches and
+      vessel occupancy; warn when an adjusted plan creates a shortage.
+    * Needs first: batch plans (phase 2 step 10), vessel_type on plan
+      steps, plan_totals, and the TIMEBAR PROGRESS expected-total math.
+    * Open questions: cleaning turnaround time between batches (a vessel
+      goes Needs Cleaning, then Clean/Ready - assume a configurable
+      turnaround?); how far ahead to forecast; point-in-time steps that
+      move the batch (they change vessels but add no time).
+    * Per CLAUDE.md, a forecast across all active batches is heavy/
+      recurring work - compute it in a Celery task on the 5-minute
+      schedule and cache the result, not inside a page request.
+
 7/17/23
 * Create Form page for Fermentables - DONE
   * Link page to edit recipe - DONE

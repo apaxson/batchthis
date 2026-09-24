@@ -556,6 +556,21 @@ THIS wins:
     PROGRESS task 2b).
   * TIMEBAR PROGRESS's "one interval per state" becomes: per-state totals
     DERIVED from the per-step plan.
+  * VESSEL TYPE per step (Aaron, 2026-09-24) - replaces the free-text
+    vessel_role (step 7 shipped vessel_role; needs a NEW migration):
+    every step REQUIRES a vessel type = "any clean vessel of this type";
+    the specific vessel is chosen when the batch actually reaches the step.
+    Choices: Fermenter, Aging Tank, Barrel, or "None / Current" (no change,
+    stays in its current vessel). Rules (enforced by plan_problems):
+      Pitch                                  -> always Fermenter
+      Racking, Coarse/Fine/Sterile Filtering -> Fermenter, Aging Tank or
+                                                Barrel (never None/Current:
+                                                they always move the batch)
+      Complete Batch                         -> always None/Current
+    The step editor pre-sets and locks Pitch and Complete Batch.
+    OPEN (for steps 10-11, not step 8): when the batch reaches a planned
+    step, does the stage page's destination picker ENFORCE the planned
+    type or only SUGGEST it (planned type first, others allowed)?
 
 REVISED PLAN (Aaron, 2026-09-24) - supersedes the details further down where
 they differ. Phase 2 is back ON (UI layout work is done).
@@ -590,6 +605,22 @@ Steps:
   8.  Edit the plan on a recipe: reorderable formset page (pattern of
       editFermentables/Adjuncts/Yeasts) + shared move-up/down helper in
       cellar-ledger.js; linked from recipe.html.
+      DECISIONS (Aaron, 2026-09-24):
+      - Workflow templates get their own pages (list + create/edit), in a
+        NEW sidebar group "Settings" ("Workflows") - templates define how
+        something works.
+      - Templates can be deleted, from their edit page, with a
+        confirmation step; recipes keep their copied steps and their
+        "Copied from" note clears (SET_NULL).
+      - Recipe "Edit plan": picking a template PRE-FILLS the step rows on
+        the page to adjust; nothing is saved until Save, which also records
+        "Copied from <template>". "Clear plan" allowed (plan optional).
+      - Full pages, not modals (multi-row reorderable editor; matches the
+        fermentables/adjuncts/yeast pages) - assumed, not objected to.
+      - Shared: PlanStepForm + plan formset (validated with plan_problems,
+        errors shown on their row via a structured (step, message) variant),
+        includes/_plan_step_row.html, CellarLedger.initFormsetReorder(),
+        and a save_plan(owner, rows) service.
   9.  Show the plan on recipe.html (step chain + total planned time).
   10. Batch plan: copy the recipe's steps onto the batch at creation,
       editable until the batch is pitched.
