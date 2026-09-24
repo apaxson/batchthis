@@ -134,6 +134,16 @@
   </table>
 </div>
 
+<section class="cl-plan">
+  <div class="cl-section-head">
+    <div class="cl-section-title">Plan</div>
+    <div class="cl-section-note">
+      {% if recipe.workflow_template %}Copied from {{ recipe.workflow_template.name }} &middot; {% endif %}<a href="{% url 'editRecipePlan' recipe.pk %}">Edit plan</a>
+    </div>
+  </div>
+  {% include 'batchthis/includes/plan_steps.html' with empty_message="No plan yet. Edit the plan to start from a workflow or add steps." %}
+</section>
+
 <div class="cl-cols" style="margin-top:2px;">
   <div>
     <div class="cl-panel">

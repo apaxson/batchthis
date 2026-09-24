@@ -666,6 +666,14 @@ Steps:
       + _replace_plan_steps with save_workflow_template.
       Tests: tests/test_recipe_plan_page.py.
   9.  Show the plan on recipe.html (step chain + total planned time).
+      [DONE 2026-09-24] "Plan" section on recipe.html after Yeast: shared
+      includes/plan_steps.html ledger table (Step, Stage - stage description
+      tooltip, Vessel type, Duration as redisplayed / "—" for none, Notes)
+      with a "Planned time" footer: total + per state, timed steps only
+      (views._plan_summary() over services.plan_totals). Section note shows
+      "Copied from <workflow>" and links to Edit plan; no plan -> "No plan
+      yet". Reuse the include for the batch plan (steps 10-11).
+      Tests: tests/test_recipe_plan_display.py.
   10. Batch plan: copy the recipe's steps onto the batch at creation,
       editable until the batch is pitched.
   11. Batch page: time bar future segments from the batch plan (to scale,

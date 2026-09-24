@@ -123,6 +123,26 @@ FUTURE ENHANCEMENTS:
     * Admin: new registrations view-only unless Aaron says otherwise; see
       the vessel-type admin risks discussed 2026-09-24 (duplicate/missing
       type rows) - a single FK removes most of them.
+* ADDITION STEPS IN WORKFLOWS (Aaron, 2026-09-24): let a workflow include
+  additional steps beyond stage transitions, such as adding adjuncts or
+  additional fermentables at certain times (e.g. staggered nutrient
+  additions, fruit in secondary, oak/spices during aging, backsweetening
+  before bottling).
+    * Today plan steps are stage transitions only (PlanStep: sort_order,
+      stage, planned_duration, vessel_type, notes), shared by
+      WorkflowTemplateStep and RecipePlanStep.
+    * To decide: whether an addition is its own step kind or an
+      attribute attached to a stage step (overlaps the "additions"
+      per-step attribute in FLEXIBLE WORKFLOW STEPS IN JSON above); how
+      its timing is expressed (offset from the stage start, from pitch,
+      or a trigger like a gravity reading / 1/3 sugar break); whether it
+      references the recipe's fermentables/adjuncts or its own item +
+      amount (AmountField, per CLAUDE.md measurements).
+    * On a batch: show upcoming/due additions, and let one be marked done
+      by logging it as a BatchAddition (Add addon) so plan and actuals
+      link up. Point-in-time - adds no duration to plan_totals.
+    * Reminders when an addition is due could run on the Celery 5-minute
+      schedule.
 
 7/17/23
 * Create Form page for Fermentables - DONE

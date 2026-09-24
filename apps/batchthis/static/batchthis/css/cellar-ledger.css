@@ -316,6 +316,9 @@ a.nav-link, a.sub-link, a.dropdown-item {
 .cl-ledger tbody tr:hover { background: var(--paper-raised); }
 .cl-ledger th:first-child, .cl-ledger td:first-child { padding-left: 4px; }
 .cl-row-link { font-weight: 600; }
+/* Totals row, e.g. a plan's planned time (includes/plan_steps.html). */
+.cl-ledger tfoot td { font-weight: 600; border-bottom: none; border-top: 1px solid var(--ink); }
+.cl-plan-states { margin-left: 14px; font-weight: 400; color: var(--ink-soft); }
 
 /* ---------- Model table (React: ModelTable component) ---------- */
 .cl-model-table .cl-table-toolbar {

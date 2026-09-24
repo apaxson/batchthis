@@ -207,10 +207,23 @@ def recipeListing(request):
     context = {'recipes': recipes}
     return render(request,'batchthis/recipes.html', context=context)
 
+def _plan_summary(steps) -> dict:
+    """A plan's steps + planned time for includes/plan_steps.html (only timed steps count)."""
+    steps = list(steps)
+    totals = plan_totals(steps)
+    return {
+        'steps': steps,
+        'total': _days_label(totals.total_days) if totals.total_days else None,
+        'by_state': [(state, _days_label(totals.by_state[state]))
+                     for state in BatchStage.TIMELINE_STATES if state in totals.by_state],
+    }
+
+
 def recipe(request, pk):
-    recipe = get_object_or_404(Recipe, pk=pk)
+    recipe = get_object_or_404(Recipe.objects.select_related('workflow_template'), pk=pk)
     context = {
         'recipe': recipe,
+        'plan': _plan_summary(recipe.plan_steps.select_related('stage')),
         'fermentables': recipe.fermentables.all(),
         'adjuncts': recipe.adjuncts.all(),
         'yeasts': recipe.yeasts.all(),
@@ -235,10 +248,9 @@ def addRecipe(request, pk=None):
     else:
         form = RecipeAddForm(request.POST)
         logger.debug("POST id: " + str(pk))
+        recipe = get_object_or_404(Recipe, pk=pk) if pk else None
         if form.is_valid():
-            recipe = Recipe()
-            if pk:
-                recipe = Recipe.objects.get(pk=pk)
+            recipe = recipe or Recipe()
             data = form.cleaned_data
             logger.debug(data)
             recipe.name = data['name']
@@ -252,10 +264,12 @@ def addRecipe(request, pk=None):
             category = data['category']
             recipe.category = category
             recipe.save()
-            logger.debug("recipe save() id: " + str(pk))
-            return HttpResponseRedirect(reverse('editRecipe', kwargs={'pk': recipe.pk}))
+            logger.info("addRecipe: saved recipe %s '%s'", recipe.pk, recipe.name)
+            return HttpResponseRedirect(reverse('recipe', kwargs={'pk': recipe.pk}))
         else:
-            return render(request, 'batchthis/addRecipe2.html', {'form': form})
+            logger.debug("addRecipe: recipe %s form errors: %s", pk, form.errors.as_data())
+            # Pass the recipe back so an edit with errors stays "Edit recipe" with its Back link.
+            return render(request, 'batchthis/addRecipe2.html', {'form': form, 'recipe': recipe})
 
 
 def editFermentables(request, pk=None):
