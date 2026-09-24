@@ -75,6 +75,7 @@ Server-rendered pages under `apps/batchthis/templates/batchthis/` are being migr
 - **API:** Use APIView for DRF
 - **Serializers:** ModelSerializer with explicit fields (never fields = '__all__')
 - **Units of Measurement:** Any measurement data should use batchthis.fields.DescriptiveQuantityField().  The default storage in models.py for the database should always convert to metric, but redisplay based on entered measurement.  See batchthis.models.Batch.size for an example.
+  - **Volume form inputs:** every form field that takes a volume uses `batchthis.fields.VolumeField` (e.g. `size = VolumeField(label="Batch Size", placeholder="i.e. 6 gallons")`), never a plain `CharField`. It accepts text like "6 gallons" / "20 L", returns the Quantity as entered for a `DescriptiveQuantityField`, and rejects a bare number ("Units are required."), non-volume units, and zero/negative amounts. Pass `required=False` for optional volumes. References: `BatchAddForm.size`, `VesselForm.capacity`/`fill`.
 
 
 ## Constraints & Rules

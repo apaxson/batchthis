@@ -261,3 +261,16 @@ class VolumeField(forms.CharField):
         if quantity.magnitude <= 0:
             raise ValidationError(self.error_messages['not_positive'], code='not_positive')
         return quantity
+
+    def has_changed(self, initial, data) -> bool:
+        # Compare volumes, not text: initial "6.00 gallon" and a re-submitted
+        # "6 gallons" are the same. A different unit counts as a change (it
+        # changes how the value is shown).
+        try:
+            new = self.to_python(data)
+            old = self.to_python(initial) if isinstance(initial, str) else initial
+        except ValidationError:
+            return True
+        if new is None or old is None:
+            return (new is None) != (old is None)
+        return str(new.units) != str(old.units) or abs(new.magnitude - old.magnitude) > 1e-9

@@ -74,6 +74,15 @@ def test_an_invalid_field_is_marked_for_the_red_border():
     assert 'aria-invalid="true"' in str(form["volume"])
 
 
+@pytest.mark.parametrize(
+    "initial, submitted, changed",
+    [("6.00 gallon", "6 gallons", False), ("6.00 gallon", "6gallons", False), ("6.00 gallon", "7 gallons", True),
+     ("6.00 gallon", "22.71 liters", True), ("", "", False), ("", "6 gallons", True), ("6.00 gallon", "6", True)],
+)
+def test_volume_field_has_changed_compares_volumes_not_text(initial, submitted, changed):
+    assert VolumeField().has_changed(initial, submitted) is changed
+
+
 # ---------- DescriptiveQuantityField ----------
 
 def test_a_stored_value_without_a_unit_part_is_read_as_base_units():
@@ -179,3 +188,42 @@ def test_add_batch_with_a_volume_saves_it_as_entered():
 @pytest.mark.django_db
 def test_batch_factory_still_builds_batches():
     assert BatchFactory().size.magnitude == pytest.approx(6)
+
+
+# ---------- Edit Batch size ----------
+
+def _edit_batch(size):
+    client = Client()
+    client.force_login(get_user_model().objects.create_user(username="editor", password="pw"))
+    batch = BatchFactory(recipe=RecipeFactory())
+    response = client.post(reverse("editBatch", kwargs={"pk": batch.pk}), {
+        "name": batch.name, "recipe": batch.recipe.pk, "size": size,
+        "startingGravity": "1.090", "estimatedEndGravity": "1.000",
+    })
+    return batch, response
+
+
+def test_edit_batch_size_uses_volume_field():
+    from ..forms import BatchEditForm
+
+    assert isinstance(BatchEditForm.base_fields["size"], VolumeField)
+
+
+@pytest.mark.django_db
+def test_edit_batch_without_size_units_shows_an_error_and_keeps_the_size():
+    batch, response = _edit_batch("6")
+
+    assert response.status_code == 200
+    assert response.context["form"].errors["size"] == ["Units are required."]
+    assert 'aria-invalid="true"' in str(response.context["form"]["size"])
+    batch.refresh_from_db()
+    assert batch.size.magnitude == pytest.approx(6)
+
+
+@pytest.mark.django_db
+def test_edit_batch_saves_the_size_as_entered():
+    batch, response = _edit_batch("20 liters")
+
+    assert response.status_code == 302
+    batch.refresh_from_db()
+    assert (batch.size.magnitude, str(batch.size.units)) == (pytest.approx(20), "liter")

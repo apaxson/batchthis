@@ -84,21 +84,9 @@ class BatchEditForm(forms.Form):
     """
     name = forms.CharField(max_length=50, widget=forms.TextInput(attrs={'placeholder': 'Name of Batch'}))
     recipe = forms.ModelChoiceField(queryset=Recipe.objects.all(), required=False, empty_label="No recipe")
-    size = forms.CharField(widget=forms.TextInput(attrs={'placeholder': 'i.e. 6 gallons'}), label="Batch Size")
+    size = VolumeField(label="Batch Size", placeholder="i.e. 6 gallons")
     startingGravity = forms.CharField(widget=PrecisionTextWidget(precision=3, base_units='sg'), label="Starting Gravity")
     estimatedEndGravity = forms.CharField(widget=PrecisionTextWidget(precision=3, base_units='sg'), label="Estimated End Gravity")
-
-    def clean_size(self) -> str:
-        size = self.cleaned_data['size'].strip()
-        try:
-            quantity = Quantity(size.lower())
-            is_volume = quantity.check('[volume]')
-        except Exception:
-            logger.debug("BatchEditForm: unparseable size %r", size)
-            raise ValidationError("Enter a volume, e.g. 6 gallons or 20 liters.")
-        if not is_volume or quantity.magnitude <= 0:
-            raise ValidationError("Enter a volume, e.g. 6 gallons or 20 liters.")
-        return size
 
     def _clean_gravity(self, field: str) -> float:
         try:
