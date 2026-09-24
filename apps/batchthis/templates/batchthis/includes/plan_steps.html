@@ -1,0 +1,41 @@
+{% comment %}
+A plan's steps (recipe now, batch later) as a ledger table, with the planned
+time in the footer - only steps with a duration count (services.plan_totals).
+Expects `plan` from views._plan_summary() and an `empty_message`.
+{% endcomment %}
+<div class="cl-table-scroll">
+  <table class="cl-ledger">
+    <thead>
+      <tr><th>Step</th><th>Stage</th><th>Vessel type</th><th>Duration</th><th>Notes</th></tr>
+    </thead>
+    <tbody>
+      {% if not plan.steps %}
+      <tr><td class="cl-empty" colspan="5">{{ empty_message }}</td></tr>
+      {% else %}
+      {% for step in plan.steps %}
+      <tr>
+        <td class="cl-num">{{ forloop.counter }}</td>
+        <td class="js-mouse-tooltip" data-toggle="tooltip" title="{{ step.stage.description|default:'' }}">{{ step.stage.name }}</td>
+        <td>{{ step.get_vessel_type_display }}</td>
+        <td class="cl-num">{% if step.has_duration %}{{ step.planned_duration }}{% else %}—{% endif %}</td>
+        <td>{{ step.notes|default:"—" }}</td>
+      </tr>
+      {% endfor %}
+      {% endif %}
+    </tbody>
+    {% if plan.steps %}
+    <tfoot>
+      <tr>
+        <td></td>
+        <td>Planned time</td>
+        <td colspan="3">
+          {% if plan.total %}
+          <span class="cl-num">{{ plan.total }}</span>
+          <span class="cl-plan-states">{% for state, days in plan.by_state %}{{ state }} <span class="cl-num">{{ days }}</span>{% if not forloop.last %}, {% endif %}{% endfor %}</span>
+          {% else %}No planned time{% endif %}
+        </td>
+      </tr>
+    </tfoot>
+    {% endif %}
+  </table>
+</div>
