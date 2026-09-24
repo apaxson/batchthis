@@ -51,23 +51,7 @@
   {% csrf_token %}
   {{ form.workflow_template }}
 
-  <div class="cl-section-head">
-    <div class="cl-section-title">Steps</div>
-    <div class="cl-section-note">Vessel type means any clean vessel of that type. Leave the duration blank for a step with no planned time.</div>
-  </div>
-
-  {{ formset.management_form }}
-  <div id="plan_step_set" class="cl-plan-steps" data-stage-rules='{{ stage_rules }}'>
-    {% for step_form in formset %}
-      {% include 'batchthis/includes/_plan_step_row.html' %}
-    {% endfor %}
-  </div>
-
-  <template id="plan-step-empty-form">
-    {% with formset.empty_form as step_form %}
-      {% include 'batchthis/includes/_plan_step_row.html' %}
-    {% endwith %}
-  </template>
+  {% include 'batchthis/includes/_plan_step_editor.html' with form_id='recipeplanform' %}
 
   <div class="cl-form-actions">
     <button type="button" class="cl-btn cl-btn--secondary" id="addPlanStepButton">Add step</button>
@@ -83,16 +67,4 @@
 <form method="POST" id="clearplanform" action="{% url 'clearRecipePlan' recipe.pk %}">{% csrf_token %}</form>
 {% endif %}
 
-<script>
-  document.addEventListener('DOMContentLoaded', function () {
-    CellarLedger.initFormsetAdd({
-      addButtonId: 'addPlanStepButton',
-      rowSetId: 'plan_step_set',
-      templateId: 'plan-step-empty-form',
-      totalFormsId: 'id_steps-TOTAL_FORMS',
-    });
-    CellarLedger.initFormsetReorder({ rowSetId: 'plan_step_set', formId: 'recipeplanform', prefix: 'steps' });
-    CellarLedger.initPlanSteps({ rowSetId: 'plan_step_set' });
-  });
-</script>
 {% endblock %}

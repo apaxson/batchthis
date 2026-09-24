@@ -13,6 +13,7 @@ from .models import (
     AgingTank,
     Barrel,
     Batch,
+    BatchPlanStep,
     BatchStage,
     BatchStageEvent,
     Fermenter,
@@ -661,6 +662,66 @@ def clear_recipe_plan(recipe: Recipe) -> None:
         recipe.workflow_template = None
         recipe.save(update_fields=['workflow_template'])
     logger.info(f"Recipe '{recipe}' plan cleared ({count} step(s) removed)")
+
+
+def _step_rows(steps) -> list[dict]:
+    """Saved plan steps as rows for _replace_plan_steps() - to copy a plan from one owner to another."""
+    return [{'stage': s.stage, 'planned_duration': s.planned_duration, 'vessel_type': s.vessel_type, 'notes': s.notes}
+            for s in steps]
+
+
+def copy_plan_to_batch(batch: Batch, template: WorkflowTemplate | None = None) -> list[BatchPlanStep]:
+    """
+    Give a new batch its OWN copy of a plan (Aaron, 2026-09-24): its recipe's
+    plan if the recipe has one (and the recipe's "Copied from" workflow), otherwise
+    `template`, which is then required. Later recipe/template edits don't change it.
+    """
+    recipe = batch.recipe
+    recipe_steps = list(recipe.plan_steps.select_related('stage')) if recipe else []
+    logger.debug(f"copy_plan_to_batch: batch={batch.pk} recipe={recipe.pk if recipe else None} "
+                 f"({len(recipe_steps)} steps) template={template.pk if template else None}")
+    if recipe_steps:
+        source, copied_from = recipe_steps, recipe.workflow_template
+    elif template is not None:
+        source, copied_from = list(template.steps.select_related('stage')), template
+    else:
+        logger.debug(f"copy_plan_to_batch: batch {batch.pk} rejected - no recipe plan and no workflow")
+        raise ValidationError("This recipe has no plan - choose a workflow.")
+
+    with transaction.atomic():
+        steps = _replace_plan_steps(BatchPlanStep, 'batch', batch, _step_rows(source))
+        batch.workflow_template = copied_from
+        batch.save(update_fields=['workflow_template'])
+    logger.info(f"Batch '{batch}' plan copied from {'recipe' if recipe_steps else 'workflow'} "
+                f"({len(steps)} steps)")
+    return steps
+
+
+def batch_plan_locked_reason(batch: Batch) -> str | None:
+    """Why the batch's plan can't be edited, or None. Editable until Pitch (Aaron, 2026-09-24)."""
+    if not batch.plan_steps.exists():
+        return "This batch has no plan."
+    if batch.current_state is not None:
+        return "The plan can't be changed after Pitch."
+    return None
+
+
+def save_batch_plan(batch: Batch, rows: list[dict]) -> list[BatchPlanStep]:
+    """
+    REPLACE an unpitched batch's plan with `rows` (same shape and rules as
+    save_recipe_plan). Rejected with ValidationError once the batch is pitched, or
+    if it has no plan (batches created before batch plans stay without one).
+    """
+    logger.debug(f"save_batch_plan: batch={batch.pk} '{batch}' {len(rows)} step(s)")
+    locked = batch_plan_locked_reason(batch)
+    problems = [locked] if locked else _plan_rows_problems(rows)
+    if problems:
+        logger.debug(f"save_batch_plan: rejected: {problems}")
+        raise ValidationError(problems)
+    with transaction.atomic():
+        steps = _replace_plan_steps(BatchPlanStep, 'batch', batch, rows)
+    logger.info(f"Batch '{batch}' plan saved with {len(steps)} step(s)")
+    return steps
 
 
 def delete_workflow_template(template: WorkflowTemplate) -> None:

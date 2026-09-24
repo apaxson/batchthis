@@ -28,7 +28,7 @@ def _add_batch_post(fermenter, recipe, name="status test batch"):
 def test_creating_a_batch_marks_its_vessel_active_and_logs_one_event():
     fermenter = FermenterFactory(vessel=VesselFactory(status=Vessel.STATUS_READY))
 
-    response = _add_batch_post(fermenter, RecipeFactory())
+    response = _add_batch_post(fermenter, RecipeFactory(with_plan=True))
 
     assert response.status_code == 302
     batch = Batch.objects.get(name="status test batch")
@@ -119,7 +119,7 @@ def test_batch_is_not_saved_if_the_vessel_status_cannot_be_set():
     with mock.patch(
         "apps.batchthis.views.main.set_vessel_status", side_effect=RuntimeError("db down")
     ):
-        response = _add_batch_post(fermenter, RecipeFactory())
+        response = _add_batch_post(fermenter, RecipeFactory(with_plan=True))
 
     assert response.status_code == 200
     assert response.context["form"].non_field_errors()

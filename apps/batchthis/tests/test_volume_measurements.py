@@ -162,7 +162,7 @@ def _add_batch(size):
     return client.post(reverse("addBatch"), {
         "name": "volume test batch", "startdate": "2026-09-01", "size": size,
         "fermenter": fermenter.pk, "startingGravity": "1.090", "estimatedEndGravity": "1.000",
-        "recipe": RecipeFactory().pk,
+        "recipe": RecipeFactory(with_plan=True).pk,
     })
 
 

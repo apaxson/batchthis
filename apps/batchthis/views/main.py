@@ -25,6 +25,7 @@ from apps.batchthis.services import (
     set_vessel_status, take_vessel_out_of_service, return_vessel_to_service, status_before_out_of_service,
     transition_stage_event, transfer_batch, create_vessel, update_vessel,
     plan_totals, save_workflow_template, delete_workflow_template, save_recipe_plan, clear_recipe_plan,
+    copy_plan_to_batch, save_batch_plan, batch_plan_locked_reason,
 )
 from apps.batchthis.lib.faults import get_active_flags, get_rule_for, StagedFaultRule
 from django.contrib.auth.decorators import login_required
@@ -163,6 +164,8 @@ def batch(request, pk):
                      pk, len(stage_events), len(vessel_stays), full_aging)
 
         timeline = batch.timeline_bar()
+        plan = _plan_summary(batch.plan_steps.select_related('stage'))
+        plan_locked = batch_plan_locked_reason(batch)
 
         current_gravity_value = batch.current_gravity()
         estABV = round(Utils.potentialABV(startSG=batch.startingGravity.magnitude, endSG=current_gravity_value)[0], 1)
@@ -196,6 +199,9 @@ def batch(request, pk):
             "current_stay": vessel_stays[-1] if vessel_stays and vessel_stays[-1].is_open else None,
             "full_aging": full_aging,
             "timeline": timeline,
+            # The batch's own plan (step 10): editable until Pitch.
+            "plan": plan,
+            "plan_editable": plan_locked is None,
             # One grid column per timeline segment, sized by its time; bands span their segments.
             "timeline_columns": " ".join(f"minmax(9rem, {seg.weight:.1f}fr)" for seg in timeline.segments),
         }
@@ -400,6 +406,10 @@ def editYeasts(request, pk=None):
             return render(request, template_name='batchthis/editYeasts.html', context={'yeast_set': yeast_set, 'recipe': recipe})
 
 
+def _add_batch_context(form) -> dict:
+    return {'form': form, 'recipes_with_plans': ",".join(str(pk) for pk in BatchAddForm.recipes_with_plans())}
+
+
 def addBatch(request):
     if request.method == "POST":
         form = BatchAddForm(request.POST)
@@ -419,18 +429,24 @@ def addBatch(request):
                     batch.recipe = form.cleaned_data['recipe']
                     batch.save()
                     set_vessel_status(batch.fermenter.vessel, Vessel.STATUS_ACTIVE, batch=batch, notes="Batch created")
+                    copy_plan_to_batch(batch, template=form.cleaned_data['workflow_template'])
+            except ValidationError as e:
+                # The form already checks for a plan; this covers a race (e.g. plan cleared meanwhile).
+                logger.debug("addBatch: plan copy rejected for %r: %s", batch.name, e.messages)
+                form.add_error('workflow_template', e.messages)
+                return render(request, template_name='batchthis/addBatch.html', context=_add_batch_context(form))
             except Exception:
                 logger.exception("addBatch: failed to create batch %r on fermenter %s", batch.name, batch.fermenter)
                 form.add_error(None, "Couldn't create the batch. Nothing was saved - please try again.")
-                return render(request, template_name='batchthis/addBatch.html', context={'form': form})
+                return render(request, template_name='batchthis/addBatch.html', context=_add_batch_context(form))
             logger.info("addBatch: created batch %s '%s' in vessel '%s'", batch.pk, batch.name, batch.fermenter.vessel.name)
             return HttpResponseRedirect(reverse('batch', kwargs={'pk': batch.pk}))
         else:
             logger.debug("addBatch: invalid form: %s", form.errors)
-            return render(request, template_name='batchthis/addBatch.html', context={'form': form})
+            return render(request, template_name='batchthis/addBatch.html', context=_add_batch_context(form))
     else:
         form = BatchAddForm()
-        return render(request, "batchthis/addBatch.html", {'form': form})
+        return render(request, "batchthis/addBatch.html", _add_batch_context(form))
 
 
 @login_required
@@ -821,6 +837,40 @@ def clearRecipePlan(request, pk):
         messages.error(request, "Couldn't clear the plan. Nothing was changed - please try again.")
         return HttpResponseRedirect(reverse('editRecipePlan', kwargs={'pk': pk}))
     return HttpResponseRedirect(reverse('recipe', kwargs={'pk': pk}))
+
+
+# ---------- Batch plan (Edit plan, until Pitch) ----------
+
+@login_required
+def editBatchPlan(request, pk):
+    """Edit a batch's own plan until Pitch; after that (or with no plan) it shows read-only."""
+    batch = get_object_or_404(Batch.objects.select_related('workflow_template'), pk=pk)
+    locked = batch_plan_locked_reason(batch)
+    formset = None
+    if request.method == 'POST' and not locked:
+        formset = PlanStepFormSet(request.POST, prefix='steps')
+        if formset.is_valid():
+            try:
+                save_batch_plan(batch, formset.plan_rows())
+            except ValidationError as e:
+                locked = ' '.join(e.messages)   # e.g. pitched meanwhile - show read-only with why
+            except Exception:
+                logger.exception("editBatchPlan: failed to save the plan for batch %s", pk)
+                locked = "Couldn't save the plan. Nothing was changed - please try again."
+            else:
+                return HttpResponseRedirect(reverse('batch', kwargs={'pk': pk}))
+        else:
+            logger.debug("editBatchPlan: batch %s errors steps=%s non-form=%s",
+                         pk, formset.errors, formset.non_form_errors())
+    elif request.method == 'POST':
+        logger.debug("editBatchPlan: batch %s rejected - %s", pk, locked)
+    if formset is None and not locked:
+        formset = PlanStepFormSet(initial=_plan_step_initial(batch.plan_steps), prefix='steps')
+    context = {
+        'batch': batch, 'formset': None if locked else formset, 'locked': locked,
+        'plan': _plan_summary(batch.plan_steps.select_related('stage')), 'stage_rules': _stage_rules_json(),
+    }
+    return render(request, 'batchthis/batchPlan.html', context)
 
 
 # ---------- Workflow templates (Settings > Workflows) ----------

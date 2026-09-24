@@ -16,7 +16,7 @@
 {% endif %}
 
 <div class="cl-panel">
-  <form method="POST" class="cl-form" id="batchform" recipe-gravity-url="{% url 'getDataFromRecipe' %}">
+  <form method="POST" class="cl-form" id="batchform" recipe-gravity-url="{% url 'getDataFromRecipe' %}" data-recipes-with-plans="{{ recipes_with_plans }}">
     {% csrf_token %}
 
     <div class="cl-form-grid">
@@ -24,6 +24,12 @@
         <label for="{{ form.recipe.id_for_label }}">Recipe</label>
         {{ form.recipe }}
         {% if form.recipe.errors %}<div class="cl-field-error">{{ form.recipe.errors }}</div>{% endif %}
+      </div>
+      <div class="cl-field" id="batch-plan-field">
+        <label for="{{ form.workflow_template.id_for_label }}">Plan</label>
+        <div class="cl-field-note" data-plan-from-recipe hidden>Copied from the recipe's plan. Adjust it on the batch before Pitch.</div>
+        <div data-plan-from-workflow>{{ form.workflow_template }}</div>
+        {% if form.workflow_template.errors %}<div class="cl-field-error">{{ form.workflow_template.errors }}</div>{% endif %}
       </div>
       <div class="cl-field">
         <label for="{{ form.size.id_for_label }}">Batch size</label>
@@ -78,6 +84,17 @@
       var size = document.getElementById('id_size').value;
       document.getElementById('id_name').value = recipeName + ' (' + size + ') ' + startDate;
     }
+
+    // The batch copies its recipe's plan; the Workflow picker is only needed (and
+    // required, server-side) when the recipe has no plan.
+    var recipesWithPlans = ($('#batchform').attr('data-recipes-with-plans') || '').split(',');
+    function updatePlanField() {
+      var hasPlan = recipesWithPlans.indexOf($('#id_recipe').val()) !== -1;
+      $('[data-plan-from-recipe]').prop('hidden', !hasPlan);
+      $('[data-plan-from-workflow]').prop('hidden', hasPlan);
+    }
+    updatePlanField();
+    $('#id_recipe').change(updatePlanField);
 
     $('#id_size').change(updateBatchName);
     $('#id_startdate').change(updateBatchName);

@@ -1,7 +1,7 @@
 from django.contrib import admin
 from .models import Unit, Fermenter, BatchNoteType, BatchTestType, BatchNote, BatchTest, BatchCategory, BatchStyle
 from .models import AdjunctType, Adjunct, Yeast, FermentableType, Fermentable, Recipe, AdjunctUsage, BatchStage, BatchStageEvent
-from .models import RecipePlanStep, WorkflowTemplate, WorkflowTemplateStep
+from .models import BatchPlanStep, RecipePlanStep, WorkflowTemplate, WorkflowTemplateStep
 # Register your models here.
 
 admin.site.register(Unit)
@@ -46,6 +46,12 @@ class WorkflowTemplateStepAdmin(_ViewOnlyAdmin):
 class RecipePlanStepAdmin(_ViewOnlyAdmin):
     list_display = ('recipe', 'sort_order', 'stage', 'planned_duration', 'vessel_type')
     list_filter = ('recipe',)
+
+
+@admin.register(BatchPlanStep)
+class BatchPlanStepAdmin(_ViewOnlyAdmin):
+    list_display = ('batch', 'sort_order', 'stage', 'planned_duration', 'vessel_type')
+    list_filter = ('batch',)
 
 
 @admin.register(BatchStageEvent)

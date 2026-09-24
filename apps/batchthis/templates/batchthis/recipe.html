@@ -39,113 +39,106 @@
   </div>
 </div>
 
-<div class="cl-section-head">
-  <div class="cl-section-title">Fermentables</div>
-  <div class="cl-section-note"><a href="{% url 'editFermentables' recipe.pk %}">Add/edit fermentables</a></div>
-</div>
-<div class="cl-table-scroll">
-  <table class="cl-ledger">
-    <thead>
-      <tr><th>Ingredient</th><th>Type</th><th>Amount</th><th>Use</th><th>Fermentable?</th><th>Notes</th></tr>
-    </thead>
-    <tbody>
-      {% if not fermentables %}
-      <tr><td class="cl-empty" colspan="6">No fermentables yet.</td></tr>
-      {% else %}
-      {% for item in fermentables %}
-      <tr>
-        <td class="cl-row-link js-mouse-tooltip" data-toggle="tooltip" title="{{ item.fermentable.description|default:'' }}">{{ item.display_name }}</td>
-        <td>{{ item.fermentable.type }}</td>
-        <td class="cl-num">{{ item.amount }}</td>
-        <td>{{ item.intended_use }}</td>
-        <td>{{ item.is_fermentable|yesno:"Yes,No" }}</td>
-        <td>{{ item.recipe_notes|default:"—" }}</td>
-      </tr>
-      {% endfor %}
-      {% endif %}
-    </tbody>
-  </table>
-</div>
-
-<div class="cl-section-head">
-  <div class="cl-section-title">Adjuncts</div>
-  <div class="cl-section-note"><a href="{% url 'editAdjuncts' recipe.pk %}">Add/edit adjuncts</a></div>
-</div>
-<div class="cl-table-scroll">
-  <table class="cl-ledger">
-    <thead>
-      <tr><th>Ingredient</th><th>Type</th><th>Amount</th><th>Time to add</th><th>Notes</th></tr>
-    </thead>
-    <tbody>
-      {% if not adjuncts %}
-      <tr><td class="cl-empty" colspan="5">No adjuncts yet.</td></tr>
-      {% else %}
-      {% for item in adjuncts %}
-      <tr>
-        <td class="cl-row-link js-mouse-tooltip" data-toggle="tooltip" title="{{ item.adjunct.notes|default:'' }}">{{ item.adjunct.name }}</td>
-        <td>{{ item.adjunct.type }}</td>
-        <td class="cl-num">{{ item.amount }}</td>
-        <td class="cl-num">{{ item.time_to_add }}</td>
-        <td>{{ item.recipe_notes|default:"—" }}</td>
-      </tr>
-      {% endfor %}
-      {% endif %}
-    </tbody>
-  </table>
-</div>
-
-<div class="cl-section-head">
-  <div class="cl-section-title">Yeast</div>
-  <div class="cl-section-note"><a href="{% url 'editYeasts' recipe.pk %}">Add/edit yeast</a></div>
-</div>
-<div class="cl-table-scroll">
-  <table class="cl-ledger">
-    <thead>
-      <tr>
-        <th>Strain</th><th>Type</th><th>Format</th>
-        <th class="cl-yeast-metric">Min Temp (F)</th>
-        <th class="cl-yeast-metric">Max Temp (F)</th>
-        <th class="cl-yeast-metric">Alcohol Tolerance (%)</th>
-        <th class="cl-yeast-metric">Flocculation</th>
-        <th class="cl-yeast-metric">Attenuation</th>
-        <th>Amount</th><th>Notes</th>
-      </tr>
-    </thead>
-    <tbody>
-      {% if not yeasts %}
-      <tr><td class="cl-empty" colspan="10">No yeast yet.</td></tr>
-      {% else %}
-      {% for item in yeasts %}
-      <tr>
-        <td class="cl-row-link js-mouse-tooltip" data-toggle="tooltip" title="{{ item.yeast.notes|default:'' }}">{{ item.yeast.name }}</td>
-        <td>{{ item.yeast.type }}</td>
-        <td>{{ item.yeast.get_form_display }}</td>
-        <td class="cl-num cl-yeast-metric">{{ item.yeast.min_temp_f.magnitude|floatformat:1 }}</td>
-        <td class="cl-num cl-yeast-metric">{{ item.yeast.max_temp_f.magnitude|floatformat:1 }}</td>
-        <td class="cl-num cl-yeast-metric">{{ item.yeast.alc_tolerance }}</td>
-        <td class="cl-yeast-metric">{{ item.yeast.flocculation }}</td>
-        <td class="cl-num cl-yeast-metric">{{ item.yeast.attenuation|floatformat:1 }}</td>
-        <td class="cl-num">{{ item.amount }}</td>
-        <td>{{ item.notes|default:"—" }}</td>
-      </tr>
-      {% endfor %}
-      {% endif %}
-    </tbody>
-  </table>
-</div>
-
-<section class="cl-plan">
-  <div class="cl-section-head">
-    <div class="cl-section-title">Plan</div>
-    <div class="cl-section-note">
-      {% if recipe.workflow_template %}Copied from {{ recipe.workflow_template.name }} &middot; {% endif %}<a href="{% url 'editRecipePlan' recipe.pk %}">Edit plan</a>
-    </div>
-  </div>
-  {% include 'batchthis/includes/plan_steps.html' with empty_message="No plan yet. Edit the plan to start from a workflow or add steps." %}
-</section>
-
-<div class="cl-cols" style="margin-top:2px;">
+<div class="cl-cols cl-cols--aside-right">
   <div>
+    <div class="cl-section-head">
+      <div class="cl-section-title">Fermentables</div>
+      <div class="cl-section-note"><a href="{% url 'editFermentables' recipe.pk %}">Add/edit fermentables</a></div>
+    </div>
+    <div class="cl-table-scroll">
+      <table class="cl-ledger">
+        <thead>
+          <tr><th>Ingredient</th><th>Type</th><th>Amount</th><th>Use</th><th>Fermentable?</th><th>Notes</th></tr>
+        </thead>
+        <tbody>
+          {% if not fermentables %}
+          <tr><td class="cl-empty" colspan="6">No fermentables yet.</td></tr>
+          {% else %}
+          {% for item in fermentables %}
+          <tr>
+            <td class="cl-row-link js-mouse-tooltip" data-toggle="tooltip" title="{{ item.fermentable.description|default:'' }}">{{ item.display_name }}</td>
+            <td>{{ item.fermentable.type }}</td>
+            <td class="cl-num">{{ item.amount }}</td>
+            <td>{{ item.intended_use }}</td>
+            <td>{{ item.is_fermentable|yesno:"Yes,No" }}</td>
+            <td>{{ item.recipe_notes|default:"—" }}</td>
+          </tr>
+          {% endfor %}
+          {% endif %}
+        </tbody>
+      </table>
+    </div>
+
+    <div class="cl-section-head">
+      <div class="cl-section-title">Adjuncts</div>
+      <div class="cl-section-note"><a href="{% url 'editAdjuncts' recipe.pk %}">Add/edit adjuncts</a></div>
+    </div>
+    <div class="cl-table-scroll">
+      <table class="cl-ledger">
+        <thead>
+          <tr><th>Ingredient</th><th>Type</th><th>Amount</th><th>Time to add</th><th>Notes</th></tr>
+        </thead>
+        <tbody>
+          {% if not adjuncts %}
+          <tr><td class="cl-empty" colspan="5">No adjuncts yet.</td></tr>
+          {% else %}
+          {% for item in adjuncts %}
+          <tr>
+            <td class="cl-row-link js-mouse-tooltip" data-toggle="tooltip" title="{{ item.adjunct.notes|default:'' }}">{{ item.adjunct.name }}</td>
+            <td>{{ item.adjunct.type }}</td>
+            <td class="cl-num">{{ item.amount }}</td>
+            <td class="cl-num">{{ item.time_to_add }}</td>
+            <td>{{ item.recipe_notes|default:"—" }}</td>
+          </tr>
+          {% endfor %}
+          {% endif %}
+        </tbody>
+      </table>
+    </div>
+
+    <div class="cl-section-head">
+      <div class="cl-section-title">Yeast</div>
+      <div class="cl-section-note"><a href="{% url 'editYeasts' recipe.pk %}">Add/edit yeast</a></div>
+    </div>
+    <div class="cl-table-scroll">
+      <table class="cl-ledger">
+        <thead>
+          <tr><th>Strain</th><th>Type</th><th>Temp (F)</th><th>Tolerance</th><th>Amount</th><th>Notes</th></tr>
+        </thead>
+        <tbody>
+          {% if not yeasts %}
+          <tr><td class="cl-empty" colspan="6">No yeast yet.</td></tr>
+          {% else %}
+          {% for item in yeasts %}
+          <tr>
+            <td class="js-mouse-tooltip" data-toggle="tooltip" title="{{ item.yeast.notes|default:'' }}">
+              <span class="cl-row-link">{{ item.yeast.name }}</span>
+              <span class="cl-batch-style">{{ item.yeast.flocculation }} floc &middot; {{ item.yeast.attenuation|floatformat:0 }}% atten.</span>
+            </td>
+            <td>{{ item.yeast.type }} &middot; {{ item.yeast.get_form_display }}</td>
+            <td class="cl-num">{{ item.yeast.min_temp_f.magnitude|floatformat:0 }}&ndash;{{ item.yeast.max_temp_f.magnitude|floatformat:0 }}</td>
+            <td class="cl-num">{{ item.yeast.alc_tolerance }} %</td>
+            <td class="cl-num">{{ item.amount }}</td>
+            <td>{{ item.notes|default:"—" }}</td>
+          </tr>
+          {% endfor %}
+          {% endif %}
+        </tbody>
+      </table>
+    </div>
+
+    <section class="cl-plan">
+      <div class="cl-section-head">
+        <div class="cl-section-title">Plan</div>
+        <div class="cl-section-note">
+          {% if recipe.workflow_template %}Copied from {{ recipe.workflow_template.name }} &middot; {% endif %}<a href="{% url 'editRecipePlan' recipe.pk %}">Edit plan</a>
+        </div>
+      </div>
+      {% include 'batchthis/includes/plan_steps.html' with empty_message="No plan yet. Edit the plan to start from a workflow or add steps." %}
+    </section>
+  </div>
+
+  <aside>
     <div class="cl-panel">
       <div class="cl-section-head"><div class="cl-section-title">Brewer's notes</div></div>
       {% if recipe.notes %}
@@ -160,35 +153,35 @@
       <div class="cl-recipe-notes"><p>{{ recipe.pairing }}</p></div>
     </div>
     {% endif %}
-  </div>
-
-  <div>
-    <div class="cl-section-head">
-      <div class="cl-section-title">Batches brewed</div>
-      <div class="cl-section-note">{{ batches|length }} total</div>
+    <div class="cl-panel">
+      <div class="cl-section-head">
+        <div class="cl-section-title">Batches brewed</div>
+        <div class="cl-section-note">{{ batches|length }} total</div>
+      </div>
+      <div class="cl-table-scroll">
+        <table class="cl-ledger">
+          <thead>
+            <tr><th>Batch</th><th>Status</th></tr>
+          </thead>
+          <tbody>
+            {% if not batches %}
+            <tr><td class="cl-empty" colspan="2">No batches brewed from this recipe yet.</td></tr>
+            {% else %}
+            {% for batch in batches %}
+            <tr>
+              <td>
+                <a href="{% url 'batch' batch.pk %}" class="cl-batch-name">{{ batch.name }}</a>
+                <span class="cl-batch-style">Started {{ batch.startdate|date:"M j, Y" }}</span>
+              </td>
+              <td><span class="cl-stage {% if batch.active %}cl-stage--active{% else %}cl-stage--complete{% endif %}">{% if batch.active %}Active{% else %}Complete{% endif %}</span></td>
+            </tr>
+            {% endfor %}
+            {% endif %}
+          </tbody>
+        </table>
+      </div>
     </div>
-    <div class="cl-table-scroll">
-      <table class="cl-ledger">
-        <thead>
-          <tr><th>#</th><th>Batch</th><th>Started</th><th>Status</th></tr>
-        </thead>
-        <tbody>
-          {% if not batches %}
-          <tr><td class="cl-empty" colspan="4">No batches brewed from this recipe yet.</td></tr>
-          {% else %}
-          {% for batch in batches %}
-          <tr>
-            <td><a href="{% url 'batch' batch.pk %}"><span class="cl-rack-tag">#{{ batch.pk }}</span></a></td>
-            <td><a href="{% url 'batch' batch.pk %}" class="cl-batch-name">{{ batch.name }}</a></td>
-            <td class="cl-num">{{ batch.startdate|date:"M j, Y" }}</td>
-            <td><span class="cl-stage {% if batch.active %}cl-stage--active{% else %}cl-stage--complete{% endif %}">{% if batch.active %}Active{% else %}Complete{% endif %}</span></td>
-          </tr>
-          {% endfor %}
-          {% endif %}
-        </tbody>
-      </table>
-    </div>
-  </div>
+  </aside>
 </div>
 
 {% endblock %}

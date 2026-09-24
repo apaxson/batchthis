@@ -34,6 +34,7 @@
           <li role="none"><a role="menuitem" href="{% url 'batchGraphs' batch.pk %}">All readings</a></li>
           <li role="separator"></li>
           <li role="none"><a role="menuitem" href="{% url 'editBatch' batch.pk %}">Edit batch</a></li>
+          {% if plan_editable %}<li role="none"><a role="menuitem" href="{% url 'editBatchPlan' batch.pk %}">Edit plan</a></li>{% endif %}
         </ul>
       </div>
     </div>
@@ -120,6 +121,18 @@
     {% endif %}
   </div>
 </div>
+
+{% if plan.steps %}
+<section class="cl-plan" style="margin-top:26px;">
+  <div class="cl-section-head">
+    <div class="cl-section-title">Plan</div>
+    <div class="cl-section-note">
+      {% if batch.workflow_template %}Copied from {{ batch.workflow_template.name }} &middot; {% endif %}{% if plan_editable %}<a href="{% url 'editBatchPlan' batch.pk %}">Edit plan</a>{% else %}Locked after Pitch{% endif %}
+    </div>
+  </div>
+  {% include 'batchthis/includes/plan_steps.html' with empty_message="" %}
+</section>
+{% endif %}
 
 <div class="cl-cols cl-cols--aside-left">
   <div>

@@ -393,6 +393,9 @@ a.nav-link, a.sub-link, a.dropdown-item {
 }
 /* Side column on the left third, main column on the right two-thirds. */
 .cl-cols--aside-left { grid-template-columns: 1fr 2fr; }
+/* Main column on the left two-thirds, side column on the right third (e.g. the recipe page).
+   minmax(0, ...) so a wide table scrolls inside .cl-table-scroll instead of widening its column. */
+.cl-cols--aside-right { grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); }
 /* minmax(0, ...) so a wide table scrolls inside .cl-table-scroll instead of stretching the column. */
 @media (max-width: 900px) { .cl-cols { grid-template-columns: minmax(0, 1fr); } }
 
@@ -403,6 +406,8 @@ a.nav-link, a.sub-link, a.dropdown-item {
   padding: 16px 18px 18px;
 }
 .cl-panel + .cl-panel { margin-top: 16px; }
+/* A table ending a panel (e.g. recipe page "Batches brewed") - the panel's padding is the bottom space. */
+.cl-panel > .cl-table-scroll:last-child .cl-ledger { margin-bottom: 0; }
 
 .cl-fermenter-row {
   display: flex;
@@ -789,6 +794,8 @@ a.nav-link, a.sub-link, a.dropdown-item {
 .cl-field input[type="checkbox"] { width: 16px; height: 16px; accent-color: var(--honey-line); }
 
 .cl-field-error { color: var(--brick); font-size: 0.78rem; margin-top: 2px; }
+/* Read-only text in place of a field's input (e.g. Add batch "Plan" when the recipe has one). */
+.cl-field-note { font-size: 0.85rem; color: var(--ink-soft); padding: 8px 0; }
 
 /* react-select mount point replaces the hidden fermentable_id input visually */
 .cl-field [data-react-model-select] { margin-top: 2px; }

@@ -207,6 +207,6 @@ def test_creating_a_batch_records_its_fermenter_vessel_as_the_current_vessel():
 
     fermenter = FermenterFactory(vessel=VesselFactory(status=Vessel.STATUS_READY))
 
-    _add_batch_post(fermenter, RecipeFactory())
+    _add_batch_post(fermenter, RecipeFactory(with_plan=True))
 
     assert Batch.objects.get(name="status test batch").vessel == fermenter.vessel

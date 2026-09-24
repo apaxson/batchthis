@@ -164,6 +164,7 @@ class BatchCategoryFactory(factory.django.DjangoModelFactory):
 class RecipeFactory(factory.django.DjangoModelFactory):
     class Meta:
         model = Recipe
+        skip_postgeneration_save = True  # with_plan only adds related rows
 
     name = factory.Sequence(lambda n: f"Recipe{n}")
     dateCreated = factory.Faker("date")
@@ -174,6 +175,16 @@ class RecipeFactory(factory.django.DjangoModelFactory):
     estOG = Quantity(1.09, "sg")
     estFG = Quantity(1.0, "sg")
     estABV = 12.0
+
+    @factory.post_generation
+    def with_plan(obj, create, extracted, **kwargs):
+        """
+        RecipeFactory(with_plan=True): a one-step plan (Pitch, Fermenter, 14 days).
+        Add batch needs the recipe to have a plan, or a workflow picked.
+        """
+        if create and extracted:
+            RecipePlanStep.objects.create(recipe=obj, sort_order=1, stage=BatchStage.objects.get(shortid="pitch"),
+                                          planned_duration="14 days", vessel_type=Vessel.TYPE_FERMENTER)
 
 
 class WorkflowTemplateFactory(factory.django.DjangoModelFactory):

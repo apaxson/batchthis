@@ -604,6 +604,10 @@ class Batch(models.Model):
     category = models.ForeignKey(BatchCategory, on_delete=models.RESTRICT, blank=True, null=True)
     activity = models.ManyToManyField(ActivityLog, blank=True, related_name='batch')
     recipe = models.ForeignKey(Recipe, on_delete=models.RESTRICT, null=True, blank=True)
+    # "Copied from": the workflow the batch's plan came from (via its recipe, or picked on
+    # Add batch). Reference only - the batch keeps its own steps (plan_steps).
+    workflow_template = models.ForeignKey('WorkflowTemplate', on_delete=models.SET_NULL, null=True, blank=True,
+                                          related_name='batches')
     # TODO Add additional objects
     aging_vessel = None
     packaging = None
@@ -822,6 +826,14 @@ class Batch(models.Model):
         est_fg = self.estimatedEndGravity.magnitude
         current_gravity = self.current_gravity()
         return round((self.startingGravity.magnitude - current_gravity) / (self.startingGravity.magnitude - est_fg) * 100)
+
+
+class BatchPlanStep(PlanStep):
+    """
+    One step of a batch's OWN plan, copied at creation (services.copy_plan_to_batch)
+    and editable until Pitch. Batches created before batch plans have none.
+    """
+    batch = models.ForeignKey(Batch, on_delete=models.CASCADE, related_name='plan_steps')
 
 
 class BatchStageEvent(models.Model):

@@ -1,0 +1,38 @@
+{% comment %}
+The shared plan step editor: numbered, reorderable PlanStepForm rows + the
+"Add step" clone template + its JS set-up. Used inside a page's <form> by
+workflowForm.html, recipePlan.html and batchPlan.html.
+Expects: formset (PlanStepFormSet, prefix "steps"), stage_rules
+(views._stage_rules_json()), form_id (the enclosing <form>'s id).
+The page supplies its own actions, including a button with id="addPlanStepButton".
+{% endcomment %}
+<div class="cl-section-head">
+  <div class="cl-section-title">Steps</div>
+  <div class="cl-section-note">Vessel type means any clean vessel of that type. Leave the duration blank for a step with no planned time.</div>
+</div>
+
+{{ formset.management_form }}
+<div id="plan_step_set" class="cl-plan-steps" data-stage-rules='{{ stage_rules }}'>
+  {% for step_form in formset %}
+    {% include 'batchthis/includes/_plan_step_row.html' %}
+  {% endfor %}
+</div>
+
+<template id="plan-step-empty-form">
+  {% with formset.empty_form as step_form %}
+    {% include 'batchthis/includes/_plan_step_row.html' %}
+  {% endwith %}
+</template>
+
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    CellarLedger.initFormsetAdd({
+      addButtonId: 'addPlanStepButton',
+      rowSetId: 'plan_step_set',
+      templateId: 'plan-step-empty-form',
+      totalFormsId: 'id_steps-TOTAL_FORMS',
+    });
+    CellarLedger.initFormsetReorder({ rowSetId: 'plan_step_set', formId: '{{ form_id }}', prefix: 'steps' });
+    CellarLedger.initPlanSteps({ rowSetId: 'plan_step_set' });
+  });
+</script>

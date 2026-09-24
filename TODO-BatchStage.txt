@@ -676,6 +676,21 @@ Steps:
       Tests: tests/test_recipe_plan_display.py.
   10. Batch plan: copy the recipe's steps onto the batch at creation,
       editable until the batch is pitched.
+      [DONE 2026-09-24] Decisions (Aaron): a batch ALWAYS copies its recipe's
+      plan (+ its "Copied from"); if the recipe has none, a Workflow picked
+      on Add batch is REQUIRED; editable until Pitch, then read-only (changes
+      after Pitch with a reason + log stay TIMEBAR PROGRESS 2b); batches
+      created before this stay without a plan.
+      Migration 0044_batch_plans: BatchPlanStep(PlanStep) + Batch.
+      workflow_template (SET_NULL, "Copied from"). services.copy_plan_to_batch
+      (in addBatch's transaction), batch_plan_locked_reason, save_batch_plan.
+      Add batch: "Plan" field - note when the recipe has a plan, else the
+      Workflow picker (BatchAddForm.workflow_template, required in clean()).
+      Batch page: "Plan" section under the timeline (includes/plan_steps.html)
+      + "Edit plan" in the ... menu while editable; batchPlan.html at
+      batch/<pk>/editPlan (editBatchPlan) - read-only once pitched. Step
+      editor markup shared by all three editors: includes/_plan_step_editor.html.
+      BatchPlanStep admin view-only. Tests: tests/test_batch_plan.py.
   11. Batch page: time bar future segments from the batch plan (to scale,
       "~30 days planned"); BatchStageEvent links to the planned step it
       fulfils -> expected vs actual ("Racking: planned day 14, actual 17").

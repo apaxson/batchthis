@@ -20,7 +20,7 @@ def _new_batch_with_startdate(startdate: str) -> Batch:
             "fermenter": fermenter.pk,
             "startingGravity": "1.09",
             "estimatedEndGravity": "1.005",
-            "recipe": RecipeFactory().pk,
+            "recipe": RecipeFactory(with_plan=True).pk,
         },
     )
     assert response.status_code == 302

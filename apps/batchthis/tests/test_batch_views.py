@@ -11,7 +11,7 @@ def test_add_batch_auto_creates_specific_gravity_test():
     # addGravityTest (models.py) relies on the 'specific-gravity' BatchTestType and
     # "Specific Gravity" Unit rows loaded by the 0002_default_load data migration.
     fermenter = FermenterFactory()
-    recipe = RecipeFactory()
+    recipe = RecipeFactory(with_plan=True)
 
     client = Client()
     response = client.post(

@@ -121,6 +121,24 @@ class BatchAddForm(forms.Form):
     startingGravity = forms.CharField(widget=PrecisionTextWidget(precision=3, base_units='sg'), label="Starting Gravity", required=True)
     estimatedEndGravity = forms.CharField(widget=PrecisionTextWidget(precision=3, base_units='sg'), label="Estimated End Gravity", required=True)
     recipe = forms.ModelChoiceField(queryset=Recipe.objects.all())
+    # The batch copies its recipe's plan; this workflow is only used (and then required)
+    # when the recipe has no plan - services.copy_plan_to_batch().
+    workflow_template = forms.ModelChoiceField(
+        queryset=apps.batchthis.models.WorkflowTemplate.objects.all(), required=False,
+        label="Workflow", empty_label="Choose a workflow",
+    )
+
+    @staticmethod
+    def recipes_with_plans() -> list[int]:
+        """Recipe pks that have a plan - the Add batch page hides the Workflow picker for them."""
+        return list(Recipe.objects.filter(plan_steps__isnull=False).distinct().values_list('pk', flat=True))
+
+    def clean(self):
+        cleaned = super().clean()
+        recipe = cleaned.get('recipe')
+        if recipe and not recipe.plan_steps.exists() and not cleaned.get('workflow_template'):
+            self.add_error('workflow_template', "This recipe has no plan - choose a workflow.")
+        return cleaned
 
     def clean_startdate(self) -> datetime.datetime:
         # The form only asks for a date, but Batch.startdate is a datetime used for
