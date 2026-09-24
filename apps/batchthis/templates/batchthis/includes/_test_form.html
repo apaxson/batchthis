@@ -1,0 +1,49 @@
+{% comment %}
+The Add test form. Rendered inside the full page (addTest.html) and, on its own,
+inside the shared #formModal on the batch page (`modal` is true then). No inline
+script - scripts in HTML inserted into the modal don't run - so the placeholder
+switch (data-reading-examples) and the "Use refractometer" button
+(data-cl-refractometer) are driven by cellar-ledger.js on both.
+{% endcomment %}
+{% if form.non_field_errors %}
+<div class="cl-flag" style="margin-bottom:16px;">
+  <span class="cl-flag-mark">!</span>
+  <span>{% for error in form.non_field_errors %}{{ error }}{% if not forloop.last %} {% endif %}{% endfor %}</span>
+</div>
+{% endif %}
+<form method="POST" class="cl-form" action="{{ request.get_full_path }}" data-reading-examples="{{ form.reading_examples_json }}">
+  {% csrf_token %}
+  <div class="cl-form-grid">
+    <div class="cl-field">
+      <label for="{{ form.datetime.id_for_label }}">Date/time</label>
+      {{ form.datetime }}
+      {% if form.datetime.errors %}<div class="cl-field-error">{{ form.datetime.errors }}</div>{% endif %}
+    </div>
+    <div class="cl-field">
+      <label for="{{ form.type.id_for_label }}">Test type</label>
+      {{ form.type }}
+      {% if form.type.errors %}<div class="cl-field-error">{{ form.type.errors }}</div>{% endif %}
+    </div>
+    <div class="cl-field">
+      <label for="{{ form.value.id_for_label }}" style="display:flex; justify-content:space-between; align-items:baseline; gap:8px;">
+        <span>Value</span>
+        <button type="button" id="value-refractometer-link" class="cl-link-btn" hidden data-cl-refractometer data-target-field="#{{ form.value.id_for_label }}">Use refractometer</button>
+      </label>
+      {{ form.value }}
+      {% if form.value.errors %}<div class="cl-field-error">{{ form.value.errors }}</div>{% endif %}
+    </div>
+    <div class="cl-field">
+      <label for="{{ form.description.id_for_label }}">Description</label>
+      {{ form.description }}
+      {% if form.description.errors %}<div class="cl-field-error">{{ form.description.errors }}</div>{% endif %}
+    </div>
+  </div>
+  <div class="cl-form-actions">
+    {% if modal %}
+    <button type="button" class="cl-btn cl-btn--secondary" data-dismiss="modal">Cancel</button>
+    {% else %}
+    <a href="{% url 'batch' batch.pk %}" class="cl-btn cl-btn--secondary">Cancel</a>
+    {% endif %}
+    <button type="submit" class="cl-btn cl-btn--primary">Save</button>
+  </div>
+</form>

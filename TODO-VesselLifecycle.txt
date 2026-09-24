@@ -9,11 +9,12 @@ independent of (but linked to) a vessel's detail page. Sketched
 STATUS (updated 2026-09-22)
 ---------------------------
 IN PROGRESS - steps 1-8 of SUGGESTED ORDER OF WORK are done (2026-09-23:
-Batch.transfer() + Out of Service). Remaining: the UI that calls
-Batch.transfer() / Batch.complete() is tracked in TODO-BatchStage.txt
-(MODEL CHANGES #5 and #6 - built during the batch workflow, plus an
-ad-hoc "Transfer batch" action on batch.html for emptying a vessel that
-has to go Out of Service mid-batch), and out-of-service vessel artwork.
+Batch.transfer() + Out of Service). Since then (2026-09-24): the UI that
+calls Batch.transfer() / Batch.complete() was built in the batch workflow
+(TODO-BatchStage.txt: Log stage + ad-hoc "Transfer batch"), and the
+out-of-service artwork was added (commit 51a3349) and is shown on the
+vessel page. Remaining: barrel artwork (barrels show no image in any
+state).
 
 Built so far:
 * Vessel.status `choices=` + VesselStatusEvent model (migration 0030).
@@ -357,9 +358,10 @@ To decide / watch out for before coding:
 As built: services.take_vessel_out_of_service() /
 return_vessel_to_service(); POST vessel/<pk>/out-of-service
 (takeVesselOutOfService) and vessel/<pk>/return-to-service
-(returnVesselToService); .cl-stage--out badge. Still open: out-of-service
-artwork (no image is shown in that state), and whether the index.html
-dashboard should count out-of-service vessels.
+(returnVesselToService); .cl-stage--out badge. DONE since: out-of-service
+artwork ({wine,aging,brite}-tank-out-of-service.svg, mapped in views/main.py
+VESSEL_ICON_SUFFIX); the index.html dashboard does NOT count out-of-service
+vessels (Aaron).
 
 Already safe without extra work:
 * BatchAddForm only offers Clean/Ready fermenters, so an out-of-service
@@ -372,7 +374,7 @@ Also impacted when built:
   service" actions with a reason field; Cellar Ledger styling.
 * Status badge CSS in cellar-ledger.css - new variant for this state.
 * Vessel-type status icons (img/*-tank-{active,dirty,ready}.svg) - need
-  a 4th "out of service" variant per vessel type.
+  a 4th "out of service" variant per vessel type. DONE (commit 51a3349).
 * index.html dashboard counts (active_fermenters etc.) - decide whether
   out-of-service vessels are shown/counted.
 * Tests: set/clear via the management action, excluded from BatchAddForm,

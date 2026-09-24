@@ -496,7 +496,8 @@ def _save_batch_record(request, batch: Batch, form, template: str, what: str, pa
 def batchTest(request, pk):
     batch = get_object_or_404(Batch, pk=pk)
     form = BatchTestForm(request.POST or None, initial={'datetime': _now_minute()}, batch=batch)
-    return _save_batch_record(request, batch, form, "batchthis/addTest.html", "test")
+    return _save_batch_record(request, batch, form, "batchthis/addTest.html", "test",
+                              partial="batchthis/includes/_test_form.html")
 
 
 @login_required
@@ -518,7 +519,8 @@ def batchNote(request, pk, noteType=None):
         else:
             logger.warning("batchNote: unknown note type %r in URL for batch %s; showing all types", noteType, pk)
     form = BatchNoteForm(request.POST or None, initial=initial)
-    return _save_batch_record(request, batch, form, "batchthis/addNote.html", "note")
+    return _save_batch_record(request, batch, form, "batchthis/addNote.html", "note",
+                              partial="batchthis/includes/_note_form.html")
 
 
 @login_required

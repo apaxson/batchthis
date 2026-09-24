@@ -8,73 +8,8 @@
   </div>
 </div>
 
-{% if form.non_field_errors %}
-<div class="cl-flag" style="margin-bottom:20px;">
-  <span class="cl-flag-mark">!</span>
-  <span>{% for error in form.non_field_errors %}{{ error }}{% if not forloop.last %} {% endif %}{% endfor %}</span>
-</div>
-{% endif %}
-
 <div class="cl-panel">
-  <form method="POST" class="cl-form" id="testform" data-reading-examples="{{ form.reading_examples_json }}">
-    {% csrf_token %}
-
-    <div class="cl-form-grid">
-      <div class="cl-field">
-        <label for="{{ form.datetime.id_for_label }}">Date/time</label>
-        {{ form.datetime }}
-        {% if form.datetime.errors %}<div class="cl-field-error">{{ form.datetime.errors }}</div>{% endif %}
-      </div>
-      <div class="cl-field">
-        <label for="{{ form.type.id_for_label }}">Test type</label>
-        {{ form.type }}
-        {% if form.type.errors %}<div class="cl-field-error">{{ form.type.errors }}</div>{% endif %}
-      </div>
-      <div class="cl-field">
-        <label for="{{ form.value.id_for_label }}" style="display:flex; justify-content:space-between; align-items:baseline; gap:8px;">
-          <span>Value</span>
-          <button type="button" id="value-refractometer-link" class="cl-link-btn" hidden data-toggle="modal" data-target="#refractometerModal" data-target-field="#{{ form.value.id_for_label }}">Use refractometer</button>
-        </label>
-        {{ form.value }}
-        {% if form.value.errors %}<div class="cl-field-error">{{ form.value.errors }}</div>{% endif %}
-      </div>
-
-      <div class="cl-field">
-        <label for="{{ form.description.id_for_label }}">Description</label>
-        {{ form.description }}
-        {% if form.description.errors %}<div class="cl-field-error">{{ form.description.errors }}</div>{% endif %}
-      </div>
-    </div>
-
-    <div class="cl-form-actions">
-      <a href="{% url 'batch' batch.pk %}" class="cl-btn cl-btn--secondary">Cancel</a>
-      <button type="submit" class="cl-btn cl-btn--primary">Save</button>
-    </div>
-  </form>
+  {% include 'batchthis/includes/_test_form.html' %}
 </div>
-
-<script>
-  document.addEventListener('DOMContentLoaded', function () {
-    var typeSelect = document.getElementById('{{ form.type.id_for_label }}');
-    var refractoLink = document.getElementById('value-refractometer-link');
-
-    function toggleRefractoLink() {
-      var selectedText = typeSelect.options[typeSelect.selectedIndex] ? typeSelect.options[typeSelect.selectedIndex].text : '';
-      refractoLink.hidden = (selectedText !== 'Specific Gravity');
-    }
-
-    // Placeholder shows the units the chosen test type takes, e.g. "e.g. 68 °F".
-    var valueInput = document.getElementById('{{ form.value.id_for_label }}');
-    var examples = JSON.parse(document.getElementById('testform').dataset.readingExamples || '{}');
-    function updatePlaceholder() {
-      valueInput.placeholder = examples[typeSelect.value] || 'e.g. 1.050';
-    }
-
-    typeSelect.addEventListener('change', toggleRefractoLink);
-    typeSelect.addEventListener('change', updatePlaceholder);
-    toggleRefractoLink();
-    updatePlaceholder();
-  });
-</script>
 
 {% endblock %}

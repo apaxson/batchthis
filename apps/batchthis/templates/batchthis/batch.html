@@ -26,8 +26,8 @@
           <li role="none"><a role="menuitem" href="{% url 'transferBatch' batch.pk %}">Transfer batch</a></li>
           <li role="separator"></li>
           {% endif %}
-          <li role="none"><a role="menuitem" href="{% url 'addDetailTest' batch.pk %}">Add test</a></li>
-          <li role="none"><a role="menuitem" href="{% url 'addDetailNote' batch.pk %}">Add note</a></li>
+          <li role="none"><a role="menuitem" href="{% url 'addDetailTest' batch.pk %}" data-cl-form-modal data-modal-title="Add test">Add test</a></li>
+          <li role="none"><a role="menuitem" href="{% url 'addDetailNote' batch.pk %}" data-cl-form-modal data-modal-title="Add note">Add note</a></li>
           <li role="none"><a role="menuitem" href="{% url 'addDetailAddon' batch.pk %}" data-cl-form-modal data-modal-title="Add addon">Add addon</a></li>
           <li role="separator"></li>
           <li role="none"><a role="menuitem" href="{% url 'batchActivity' batch.pk %}">Activity log</a></li>
@@ -144,7 +144,7 @@
     </div>
 
     <div class="cl-panel">
-      <div class="cl-section-head"><div class="cl-section-title">Fermentation log</div><div class="cl-section-note"><a href="{% url 'addDetailNoteType' batch.pk 'Fermentation Note' %}">Add entry</a></div></div>
+      <div class="cl-section-head"><div class="cl-section-title">Fermentation log</div><div class="cl-section-note"><a href="{% url 'addDetailNoteType' batch.pk 'Fermentation Note' %}" data-cl-form-modal data-modal-title="Add fermentation log entry">Add entry</a></div></div>
       {% if fermnotes %}
         {% for note in fermnotes %}
         <div style="margin-bottom:10px;">
@@ -158,7 +158,7 @@
     </div>
 
     <div class="cl-panel">
-      <div class="cl-section-head"><div class="cl-section-title">General notes</div><div class="cl-section-note"><a href="{% url 'addDetailNoteType' batch.pk 'General Note' %}">Add note</a></div></div>
+      <div class="cl-section-head"><div class="cl-section-title">General notes</div><div class="cl-section-note"><a href="{% url 'addDetailNoteType' batch.pk 'General Note' %}" data-cl-form-modal data-modal-title="Add general note">Add note</a></div></div>
       {% if gennotes %}
         {% for note in gennotes %}
         <div style="margin-bottom:10px;">
@@ -195,7 +195,7 @@
           </table>
         </details>
       {% else %}
-        <p class="cl-empty">No gravity readings yet. <a href="{% url 'addDetailTest' batch.pk %}">Add one</a>.</p>
+        <p class="cl-empty">No gravity readings yet. <a href="{% url 'addDetailTest' batch.pk %}" data-cl-form-modal data-modal-title="Add test">Add one</a>.</p>
       {% endif %}
     </div>
 
@@ -216,7 +216,7 @@
           </table>
         </details>
       {% else %}
-        <p class="cl-empty">No pH readings yet. <a href="{% url 'addDetailTest' batch.pk %}">Add one</a>.</p>
+        <p class="cl-empty">No pH readings yet. <a href="{% url 'addDetailTest' batch.pk %}" data-cl-form-modal data-modal-title="Add test">Add one</a>.</p>
       {% endif %}
     </div>
 
@@ -237,7 +237,7 @@
           </table>
         </details>
       {% else %}
-        <p class="cl-empty">No SO&#8322; readings yet. <a href="{% url 'addDetailTest' batch.pk %}">Add one</a>.</p>
+        <p class="cl-empty">No SO&#8322; readings yet. <a href="{% url 'addDetailTest' batch.pk %}" data-cl-form-modal data-modal-title="Add test">Add one</a>.</p>
       {% endif %}
     </div>
   </div>

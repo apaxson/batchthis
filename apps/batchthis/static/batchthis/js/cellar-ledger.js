@@ -221,6 +221,13 @@ CellarLedger.renderChart = function (svg, cfg) {
     reset();
   });
 
+  // Triggers with data-cl-refractometer (e.g. includes/_test_form.html) open it here;
+  // inside #formModal the form modal hands off to it instead (see below).
+  $(document).on('click', '[data-cl-refractometer]', function () {
+    if (this.closest('#formModal')) return;
+    $modal.modal('show', this);
+  });
+
   $('#rcm-calculate').on('click', function () {
     var params = {};
     var startUnit = $('#rcm-startUnit').val();
@@ -363,7 +370,14 @@ document.addEventListener('DOMContentLoaded', function () {
     var body = document.getElementById('formModalBody');
     var title = document.getElementById('formModalLabel');
     var opener = null;
+    var handoff = false;      // true while #refractometerModal is open on top of this form
+    var returnFocus = null;   // field to focus when the form modal comes back
     var headers = { 'X-Requested-With': 'XMLHttpRequest' };
+
+    function contentLoaded() {
+      // Scripts in inserted HTML don't run; per-form behavior listens for this instead.
+      document.dispatchEvent(new CustomEvent('cl:content-loaded', { detail: { root: body } }));
+    }
 
     function focusFirst(selector) {
       // react-select renders its input a tick after mounting.
@@ -396,6 +410,7 @@ document.addEventListener('DOMContentLoaded', function () {
           if (data && data.saved) { window.location.reload(); return; }
           body.innerHTML = data;
           bindForm(url);
+          contentLoaded();
           focusFirst('[aria-invalid="true"]');
         }).catch(function (err) {
           console.error('form modal: saving ' + url + ' failed', err);
@@ -426,6 +441,7 @@ document.addEventListener('DOMContentLoaded', function () {
       }).then(function (html) {
         body.innerHTML = html;
         bindForm(url);
+        contentLoaded();
         focusFirst();
       }).catch(function (err) {
         console.error('form modal: loading ' + url + ' failed', err);
@@ -435,7 +451,32 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // Bootstrap focuses the dialog itself once its opening animation ends - move
     // focus on to the first field then (loading the form also focuses it).
-    $modal.on('shown.bs.modal', function () { focusFirst(); });
+    $modal.on('shown.bs.modal', function () {
+      if (returnFocus) {
+        var field = returnFocus;
+        returnFocus = null;
+        setTimeout(function () { field.focus(); }, 50);
+        return;
+      }
+      focusFirst();
+    });
+
+    // "Use refractometer" inside the form: Bootstrap 4 can't stack modals (the first
+    // keeps pulling focus back), so hand off - hide this modal WITHOUT clearing the
+    // half-filled form, open the refractometer, and bring the form back (focused on
+    // the field it filled) when the refractometer closes.
+    $(body).on('click', '[data-cl-refractometer]', function () {
+      var button = this;
+      var $refractometer = $('#refractometerModal');
+      handoff = true;
+      $modal.one('hidden.bs.modal', function () { $refractometer.modal('show', button); });
+      $refractometer.one('hidden.bs.modal', function () {
+        handoff = false;
+        returnFocus = document.querySelector(button.getAttribute('data-target-field'));
+        $modal.modal('show');
+      });
+      $modal.modal('hide');
+    });
 
     // Escape with a react-select dropdown open should close just the dropdown, not
     // the whole modal (and the half-filled form). React closes the menu before the
@@ -451,9 +492,45 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 
     $modal.on('hidden.bs.modal', function () {
+      if (handoff) return;  // stepping aside for the refractometer - keep the form
       body.innerHTML = '';
       if (opener) opener.focus();
       opener = null;
     });
   });
 })(window.jQuery);
+
+
+// Test reading forms (includes/_test_form.html, on addTest.html and in #formModal):
+// the Value placeholder shows the units the chosen test type takes, and "Use
+// refractometer" only shows for Specific Gravity. Runs on page load and whenever
+// the form modal loads new content (cl:content-loaded).
+(function () {
+  function initReadingForms(root) {
+    root.querySelectorAll('form[data-reading-examples]:not([data-reading-init])').forEach(function (form) {
+      form.setAttribute('data-reading-init', '');
+      var typeSelect = form.querySelector('select[name="type"]');
+      var valueInput = form.querySelector('input[name="value"]');
+      var refractometer = form.querySelector('[data-cl-refractometer]');
+      if (!typeSelect || !valueInput) {
+        console.error('reading form: missing type select or value input', form);
+        return;
+      }
+      var examples = {};
+      try {
+        examples = JSON.parse(form.getAttribute('data-reading-examples') || '{}');
+      } catch (err) {
+        console.error('reading form: bad data-reading-examples', err);
+      }
+      function update() {
+        var option = typeSelect.options[typeSelect.selectedIndex];
+        if (refractometer) refractometer.hidden = !option || option.text !== 'Specific Gravity';
+        valueInput.placeholder = examples[typeSelect.value] || 'e.g. 1.050';
+      }
+      typeSelect.addEventListener('change', update);
+      update();
+    });
+  }
+  document.addEventListener('DOMContentLoaded', function () { initReadingForms(document); });
+  document.addEventListener('cl:content-loaded', function (e) { initReadingForms(e.detail.root); });
+})();
