@@ -572,9 +572,10 @@ class ActivityLog(models.Model):
 class BatchQuerySet(models.QuerySet):
     def in_vessel(self, vessel: Vessel) -> "BatchQuerySet":
         # Batches created before Batch.vessel existed have it unset; they're
-        # still in their starting fermenter (see Batch.current_vessel).
+        # still in their starting fermenter (see Batch.current_vessel) - unless
+        # packaged, when the batch is in no vessel at all.
         return self.filter(
-            models.Q(vessel=vessel) | models.Q(vessel__isnull=True, fermenter__vessel=vessel)
+            models.Q(vessel=vessel) | models.Q(vessel__isnull=True, packaging='', fermenter__vessel=vessel)
         )
 
 
@@ -610,11 +611,23 @@ class Batch(models.Model):
                                           related_name='batches')
     # TODO Add additional objects
     aging_vessel = None
-    packaging = None
+    # Set when Sterile Filtering packages the batch into Bottles / Kegs: it has left
+    # vessel tracking (no current vessel) until Complete Batch. Blank = not packaged.
+    packaging = models.CharField(max_length=10, choices=PlanStep.PACKAGING_CHOICES, blank=True, default='')
     # TODO Add pre_save signal to compare the two objects for fields changed.
 
     @property
-    def current_vessel(self) -> Vessel:
+    def is_packaged(self) -> bool:
+        return bool(self.packaging)
+
+    @property
+    def current_vessel(self) -> Vessel | None:
+        """
+        Where the batch is now. Older batches with no vessel recorded are still in
+        their starting fermenter; a packaged batch (Bottles / Kegs) is in no vessel.
+        """
+        if self.is_packaged:
+            return None
         return self.vessel if self.vessel_id else self.fermenter.vessel
 
     def transfer(
@@ -648,6 +661,8 @@ class Batch(models.Model):
         problem = None
         if not self.active:
             problem = f"Batch '{self.name}' is complete and can't be transferred."
+        elif current is None:
+            problem = f"Batch '{self.name}' is packaged in {self.packaging} - there's no vessel to transfer it from."
         elif src_vessel.pk != current.pk:
             problem = f"Batch '{self.name}' is in '{current.name}', not '{src_vessel.name}'."
         elif dst_vessel.pk == src_vessel.pk:
@@ -693,8 +708,49 @@ class Batch(models.Model):
             self.enddate = timestamp
             self.active = False
             self.save()
-            set_vessel_status(vessel, Vessel.STATUS_DIRTY, batch=self, notes="Batch completed", timestamp=timestamp)
-        logger.info(f"Batch '{self.name}' completed; vessel '{vessel.name}' needs cleaning")
+            # A packaged batch already left its vessel (flagged for cleaning then).
+            if vessel is not None:
+                set_vessel_status(vessel, Vessel.STATUS_DIRTY, batch=self, notes="Batch completed", timestamp=timestamp)
+        if vessel is None:
+            logger.info(f"Batch '{self.name}' completed (packaged in {self.packaging})")
+        else:
+            logger.info(f"Batch '{self.name}' completed; vessel '{vessel.name}' needs cleaning")
+
+    def package(self, src_vessel: Vessel, packaging: str, *, timestamp: datetime | None = None) -> None:
+        """
+        Sterile Filtering into Bottles / Kegs: the batch leaves src_vessel (-> Needs
+        Cleaning) and vessel tracking - batch.vessel cleared, batch.packaging set.
+        Commits together, or not at all. The stage workflow (services.
+        transition_stage_event) calls this and writes the batch's ActivityLog.
+        """
+        from django.core.exceptions import ValidationError
+        from django.db import transaction
+        from .services import set_vessel_status
+
+        timestamp = timestamp or timezone.now()
+        logger.debug(f"Batch.package: batch={self.pk} '{self.name}' src={src_vessel.pk} '{src_vessel.name}' "
+                     f"-> {packaging!r}")
+        current = self.current_vessel
+        problem = None
+        if not self.active:
+            problem = f"Batch '{self.name}' is complete and can't be packaged."
+        elif packaging not in dict(PlanStep.PACKAGING_CHOICES):
+            problem = "Choose Bottles or Kegs."
+        elif current is None:
+            problem = f"Batch '{self.name}' is already packaged in {self.packaging}."
+        elif src_vessel.pk != current.pk:
+            problem = f"Batch '{self.name}' is in '{current.name}', not '{src_vessel.name}'."
+        if problem:
+            logger.error(f"Batch.package: rejected - {problem}")
+            raise ValidationError(problem)
+
+        with transaction.atomic():
+            self.vessel = None
+            self.packaging = packaging
+            self.save(update_fields=['vessel', 'packaging'])
+            set_vessel_status(src_vessel, Vessel.STATUS_DIRTY, batch=self,
+                              notes=f"Batch packaged into {packaging}", timestamp=timestamp)
+        logger.info(f"Batch '{self.name}' packaged into {packaging} from '{src_vessel.name}'")
 
     @property
     def current_stage_event(self) -> "BatchStageEvent | None":
@@ -865,6 +921,12 @@ class BatchStageEvent(models.Model):
     # Racking/Filtering, the batch's current vessel otherwise.
     vessel = models.ForeignKey(Vessel, null=True, blank=True, on_delete=models.SET_NULL, related_name='stage_events')
     notes = models.CharField(max_length=250, blank=True)
+    # The planned step this event fulfils (services, step 11b). None = not in the plan
+    # (unplanned, a transfer, or a batch without a plan).
+    plan_step = models.ForeignKey('BatchPlanStep', null=True, blank=True, on_delete=models.SET_NULL,
+                                  related_name='events')
+    # Sterile Filtering into Bottles / Kegs: the batch was packaged (vessel is then None).
+    packaging = models.CharField(max_length=10, choices=PlanStep.PACKAGING_CHOICES, blank=True, default='')
 
 
 @dataclass(kw_only=True)

@@ -694,6 +694,77 @@ Steps:
   11. Batch page: time bar future segments from the batch plan (to scale,
       "~30 days planned"); BatchStageEvent links to the planned step it
       fulfils -> expected vs actual ("Racking: planned day 14, actual 17").
+      DECISIONS (Aaron, 2026-09-24):
+      - Planned vessel type is SUGGESTED, not enforced: Log stage lists clean
+        vessels of the planned type first (marked "Planned"); any clean vessel
+        can still be chosen; a different type shows as a plan-vs-actual difference.
+      - Sterile Filtering into Bottles/Kegs = PACKAGED: no destination vessel;
+        the source vessel goes to Needs Cleaning; the batch leaves vessel
+        tracking (its last stay shows "Bottles"/"Kegs", no vessel) until
+        Complete Batch. Offered on Log stage for Sterile Filtering alongside the
+        clean vessels (the planned choice pre-selected), with or without a plan.
+      - Plan vs actual compares BOTH: start day vs planned day (counted from
+        Pitch) and time spent vs planned (with the difference).
+      - The % complete / expected total / overrun bar (TIMEBAR PROGRESS task 3)
+        is NOT part of step 11 - its own step afterwards, on this step's data.
+      PLAN:
+      11a. Models + migration 0045 (makemigrations):
+           - BatchStageEvent.plan_step = FK(BatchPlanStep, SET_NULL, null) -
+             the planned step this event fulfils (None = unplanned).
+           - BatchStageEvent.packaging = CharField(PlanStep.PACKAGING_CHOICES,
+             blank) - set when Sterile Filtering packages the batch.
+           - Batch.packaging = CharField(same choices, blank) - replaces the
+             `packaging = None` placeholder attribute; Batch.current_vessel
+             returns None once packaged (today None vessel falls back to the
+             starting fermenter - must not after packaging).
+           [DONE 2026-09-24] migration 0045_stage_event_plan_links_packaging;
+           Batch.is_packaged; current_vessel -> Vessel | None. Tests:
+           tests/test_plan_links_packaging_models.py.
+      11b. Services:
+           - transition_stage_event(..., packaging=None): Sterile Filtering takes
+             a destination vessel OR packaging (exactly one; other stages never
+             package). Packaging: source vessel -> Needs Cleaning (vessel history
+             "Packaged into Bottles"), batch.vessel cleared, batch.packaging set,
+             ActivityLog "Stage [Sterile Filtering] :: [Tank A] -> Bottles".
+           - Complete Batch after packaging: no vessel to flag for cleaning.
+           - transfer_batch() rejects a packaged batch (nothing to transfer).
+           - Link each new event to its planned step: the next not-yet-fulfilled
+             planned step (after the last linked one) with the same stage; none
+             -> unplanned. Planned steps passed over -> Skipped.
+           - plan_progress(batch) -> rows for display: planned step and/or event,
+             status (Done / Current / Skipped / Upcoming / Unplanned), planned
+             vs actual start day, planned vs actual time (+/- difference),
+             planned vessel type vs actual vessel (or Bottles/Kegs).
+           [DONE 2026-09-24] Batch.package() (model, like transfer/complete);
+           transition_stage_event(..., packaging=) + _stage_problem rules;
+           _next_plan_step() links each new stage; complete() skips the vessel
+           once packaged; transfer()/transfer_batch() reject a packaged batch;
+           Batch.objects.in_vessel() no longer counts a packaged batch as in
+           its starting fermenter. services.plan_progress() -> PlanProgressRow
+           (status, planned/actual day, planned/actual days, difference_days,
+           planned vessel type / actual vessel or packaging). Pages that show
+           the current vessel (batch, dashboard, Edit batch, Log stage,
+           Transfer) show "Packaged in Bottles" instead; Transfer batch hidden.
+           Tests: tests/test_packaging.py, tests/test_plan_progress.py.
+      11c. Time bar: future = one segment per remaining planned step, sized by
+           its duration ("~30 days planned"); no planned time -> minimum width
+           "No planned time"; Complete Batch = the end marker. Packaged stays
+           show "Bottles"/"Kegs" with no vessel link. Batches without a plan keep
+           today's per-state placeholders.
+      11d. Log stage page: pre-select the next planned stage; the destination
+           picker puts clean vessels of that step's planned type first, marked
+           "Planned"; Sterile Filtering also offers Bottles / Kegs.
+      11e. Batch page Plan section: after Pitch it becomes plan vs actual -
+           Step, Stage, Planned type / Actual (vessel or packaging), Planned day
+           / Actual day, Planned / Actual time (+/-), Status; unplanned stages
+           appear in order where they happened.
+      Files: models.py, migration 0045, services.py, forms.py (BatchStageForm),
+      views/main.py (batchStage, batch), views/api.py + the react-select vessel
+      picker (planned-type ordering), addBatchStage.html, batch.html, a plan
+      progress include, cellar-ledger.css, tests (plan progress, packaging,
+      time bar from plan, Log stage suggestions).
+      NOTE for TIMEBAR PROGRESS 2b: plan edits today delete + recreate steps,
+      which would SET_NULL these event links - 2b must update steps in place.
 
 Per Aaron (2026-09-19): the recipe-level workflow is a chain of vessel
 occupancy, linked by the transition/action that moves the batch from one

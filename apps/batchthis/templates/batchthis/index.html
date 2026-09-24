@@ -43,7 +43,7 @@
               <a href="{% url 'batch' batch.pk %}" class="cl-batch-name">{{ batch.name }}</a>
               <span class="cl-batch-style">{% if batch.category %}{{ batch.category }}{% else %}Style not set{% endif %}</span>
             </td>
-            <td><a href="{% url 'vessel' batch.current_vessel.pk %}">{{ batch.current_vessel.name }}</a></td>
+            <td>{% if batch.current_vessel %}<a href="{% url 'vessel' batch.current_vessel.pk %}">{{ batch.current_vessel.name }}</a>{% else %}{{ batch.get_packaging_display }}{% endif %}</td>
             <td class="cl-num">{{ batch.startdate|timesince }}</td>
             <td class="cl-num" style="text-align:right;">{{ batch.size }}</td>
           </tr>

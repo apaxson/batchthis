@@ -94,6 +94,8 @@ def index(request):
     for batch in active_batches:
         total_volume += batch.size
         vessel = batch.current_vessel
+        if vessel is None:
+            continue   # packaged (Bottles / Kegs) - no longer in a vessel
         if vessel.status == Vessel.STATUS_OUT:
             # A vessel holding a batch can't be taken out of service through the
             # app, so this means the data was changed some other way.

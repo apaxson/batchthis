@@ -11,7 +11,7 @@
       <div class="cl-batch-sub">
         <span><span class="cl-rack-tag">#{{ batch.pk }}</span></span>
         <span>{% if batch.category %}{{ batch.category }}{% elif batch.recipe.category %}{{ batch.recipe.category }}{% else %}Style not set{% endif %}</span>
-        {% with v=batch.current_vessel %}<span>Vessel <b><a href="{% url 'vessel' v.pk %}">{{ v.name }}</a></b></span>{% endwith %}
+        {% with v=batch.current_vessel %}{% if v %}<span>Vessel <b><a href="{% url 'vessel' v.pk %}">{{ v.name }}</a></b></span>{% else %}<span>Packaged in <b>{{ batch.get_packaging_display }}</b></span>{% endif %}{% endwith %}
         <span>Started <b class="cl-num">{{ batch.startdate|date:"M j, Y" }}</b></span>
         {% if batch.recipe %}<span>Recipe <b><a href="{% url 'recipe' batch.recipe.pk %}">{{ batch.recipe.name }}</a></b></span>{% endif %}
         <span><span class="cl-stage {% if batch.active %}cl-stage--active{% else %}cl-stage--complete{% endif %}">{% if batch.active %}Active{% else %}Complete{% endif %}</span></span>
@@ -23,7 +23,7 @@
         <ul class="cl-menu-list" id="batch-actions-menu" role="menu" aria-labelledby="batch-actions-toggle" hidden>
           {% if batch.active %}
           <li role="none"><a role="menuitem" href="{% url 'addDetailStage' batch.pk %}">Log stage</a></li>
-          <li role="none"><a role="menuitem" href="{% url 'transferBatch' batch.pk %}">Transfer batch</a></li>
+          {% if not batch.is_packaged %}<li role="none"><a role="menuitem" href="{% url 'transferBatch' batch.pk %}">Transfer batch</a></li>{% endif %}
           <li role="separator"></li>
           {% endif %}
           <li role="none"><a role="menuitem" href="{% url 'addDetailTest' batch.pk %}" data-cl-form-modal data-modal-title="Add test">Add test</a></li>
@@ -139,7 +139,7 @@
     <div class="cl-panel">
       <div class="cl-section-head">
         <div class="cl-section-title">Current Vessel</div>
-        {% if batch.active %}<div class="cl-section-note"><a href="{% url 'transferBatch' batch.pk %}" title="Only for moves outside the normal workflow - use Log stage for racking and filtering">Transfer batch</a></div>{% endif %}
+        {% if batch.active and not batch.is_packaged %}<div class="cl-section-note"><a href="{% url 'transferBatch' batch.pk %}" title="Only for moves outside the normal workflow - use Log stage for racking and filtering">Transfer batch</a></div>{% endif %}
       </div>
       {% with v=batch.current_vessel %}
       {% if v %}
@@ -150,6 +150,9 @@
         <div class="cl-kv-row"><span class="cl-kv-label">Fill</span><span class="cl-kv-value">{{ v.fill }}</span></div>
         {% endif %}
         <div class="cl-kv-row"><span class="cl-kv-label">Intended use</span><span class="cl-kv-value">{{ v.intended_use }}</span></div>
+      {% elif batch.is_packaged %}
+        <div class="cl-kv-row"><span class="cl-kv-label">Packaged in</span><span class="cl-kv-value">{{ batch.get_packaging_display }}</span></div>
+        <div class="cl-empty">The batch has left vessel tracking.</div>
       {% else %}
         <div class="cl-empty">No vessel assigned.</div>
       {% endif %}

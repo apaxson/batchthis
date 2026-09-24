@@ -8,7 +8,7 @@
   <div class="cl-batch-sub" style="margin-top:6px;">
     <span><a href="{% url 'batch' batch.pk %}">&larr; Back to {{ batch.name }}</a></span>
     <span>Now <b>{{ batch.current_state|default:"Not pitched" }}</b></span>
-    <span>In <b>{{ batch.current_vessel.name }}</b></span>
+    <span>In <b>{{ batch.current_vessel.name|default:batch.get_packaging_display }}</b></span>
   </div>
 </div>
 

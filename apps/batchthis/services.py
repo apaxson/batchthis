@@ -155,10 +155,13 @@ def add_batch_log(
     timestamp: datetime,
     vessel: Optional[Vessel],
     notes: str = "",
+    packaging: str = "",
+    plan_step: Optional[BatchPlanStep] = None,
 ) -> BatchStageEvent:
     """Write one row of the batch's stage log. No workflow checks - see transition_stage_event()."""
     event = BatchStageEvent.objects.create(
-        batch=batch, stage=stage, timestamp=timestamp, vessel=vessel, notes=notes
+        batch=batch, stage=stage, timestamp=timestamp, vessel=vessel, notes=notes,
+        packaging=packaging, plan_step=plan_step,
     )
     logger.debug(f"add_batch_log: batch={batch.pk} stage={getattr(stage, 'shortid', None)!r} vessel={getattr(vessel, 'pk', None)} at {timestamp}")
     return event
@@ -205,7 +208,8 @@ def _timestamp_problem(batch: Batch, timestamp: datetime, what: str) -> Optional
     return None
 
 
-def _stage_problem(batch: Batch, stage: BatchStage, timestamp: datetime, dst_vessel: Optional[Vessel]) -> Optional[str]:
+def _stage_problem(batch: Batch, stage: BatchStage, timestamp: datetime, dst_vessel: Optional[Vessel],
+                   packaging: str = "") -> Optional[str]:
     """Why this stage can't be logged on this batch right now, or None if it can."""
     current = batch.current_stage_event
     problem = _workflow_problem(batch, stage, current)
@@ -216,11 +220,36 @@ def _stage_problem(batch: Batch, stage: BatchStage, timestamp: datetime, dst_ves
     if problem:
         return problem
 
+    if packaging:
+        if packaging not in dict(PlanStep.PACKAGING_CHOICES):
+            return "Choose Bottles or Kegs."
+        if stage.to_state != BatchStage.STATE_BOTTLING:
+            return f"Only Sterile Filtering can package the batch - {stage.name} can't."
+        if dst_vessel is not None:
+            return "Choose a destination vessel or Bottles / Kegs, not both."
+        return None
     if stage.transfers_batch and dst_vessel is None:
+        if stage.to_state == BatchStage.STATE_BOTTLING:
+            return f"{stage.name} transfers the batch - choose a destination vessel or Bottles / Kegs."
         return f"{stage.name} transfers the batch - choose a destination vessel."
     if not stage.transfers_batch and dst_vessel is not None:
         return f"{stage.name} doesn't transfer the batch - don't choose a destination vessel."
     return None
+
+
+def _next_plan_step(batch: Batch, stage: BatchStage) -> Optional[BatchPlanStep]:
+    """
+    The planned step a newly logged `stage` fulfils: the first planned step with
+    that stage AFTER the last step already fulfilled. Steps passed over are then
+    Skipped (plan_progress). None = unplanned (e.g. an extra racking), or no plan.
+    """
+    last = (batch.stage_events.filter(plan_step__isnull=False).select_related('plan_step')
+            .order_by('-plan_step__sort_order').first())
+    after = last.plan_step.sort_order if last else 0
+    step = batch.plan_steps.filter(stage=stage, sort_order__gt=after).order_by('sort_order').first()
+    logger.debug(f"_next_plan_step: batch={batch.pk} stage={stage.shortid!r} after step {after} -> "
+                 f"{step.sort_order if step else None}")
+    return step
 
 
 def transition_stage_event(
@@ -229,6 +258,7 @@ def transition_stage_event(
     *,
     timestamp: Optional[datetime] = None,
     dst_vessel: Optional[Vessel] = None,
+    packaging: str = "",
     notes: str = "",
 ) -> BatchStageEvent:
     """
@@ -237,35 +267,43 @@ def transition_stage_event(
     from the batch's current state, Racking also repeatable during Aging;
     nothing after Complete Batch; timestamp not in the future or before the
     latest stage), then in one transaction:
-      * transferring stages (Racking, any Filtering) -> Batch.transfer() into dst_vessel
+      * transferring stages (Racking, any Filtering) -> Batch.transfer() into dst_vessel,
+        or - Sterile Filtering only - Batch.package() into Bottles / Kegs (packaging)
       * Complete Batch -> Batch.complete()
       * add_batch_log() - the BatchStageEvent, with the vessel the batch is in afterwards
+        (None once packaged) and the planned step it fulfils (_next_plan_step)
       * add_activity_log() - one ActivityLog entry covering the stage (and any transfer)
     Raises ValidationError (user-readable) and saves nothing if the step isn't allowed.
     """
     timestamp = timestamp or timezone.now()
     notes = (notes or "").strip()[:250]
+    packaging = (packaging or "").strip()
     logger.debug(
         f"transition_stage_event: batch={batch.pk} '{batch.name}' stage={stage.shortid!r} "
-        f"at {timestamp} dst={getattr(dst_vessel, 'pk', None)} notes={notes!r}"
+        f"at {timestamp} dst={getattr(dst_vessel, 'pk', None)} packaging={packaging!r} notes={notes!r}"
     )
 
-    problem = _stage_problem(batch, stage, timestamp, dst_vessel)
+    problem = _stage_problem(batch, stage, timestamp, dst_vessel, packaging)
     if problem:
         logger.error(f"transition_stage_event: rejected for batch {batch.pk} - {problem}")
         raise ValidationError(problem)
 
     src_vessel = batch.current_vessel
+    plan_step = _next_plan_step(batch, stage)
     try:
         with transaction.atomic():
-            if stage.transfers_batch:
+            if packaging:
+                batch.package(src_vessel, packaging, timestamp=timestamp)
+            elif stage.transfers_batch:
                 batch.transfer(src_vessel, dst_vessel, timestamp=timestamp, log_activity=False)
             if stage.to_state == BatchStage.STATE_COMPLETED:
                 batch.complete(timestamp=timestamp)
             vessel = batch.current_vessel
-            event = add_batch_log(batch, stage, timestamp=timestamp, vessel=vessel, notes=notes)
+            event = add_batch_log(batch, stage, timestamp=timestamp, vessel=vessel, notes=notes,
+                                  packaging=packaging, plan_step=plan_step)
 
-            where = f"[{src_vessel.name}] -> [{vessel.name}]" if stage.transfers_batch else f"[{vessel.name}]"
+            here = f"[{vessel.name}]" if vessel else batch.packaging   # packaged: "Bottles" / "Kegs"
+            where = f"[{src_vessel.name}] -> {here}" if stage.transfers_batch else here
             text = f"Stage [{stage.name}] :: {where}" + (f" :: {notes}" if notes else "")
             add_activity_log(batch, text, timestamp=timestamp)
     except ValidationError:
@@ -277,7 +315,9 @@ def transition_stage_event(
         logger.exception(f"transition_stage_event: failed for batch {batch.pk} stage {stage.shortid!r}")
         raise
 
-    logger.info(f"Batch '{batch.name}' -> {stage.name} ({stage.to_state}) in '{vessel.name}'")
+    logger.info(f"Batch '{batch.name}' -> {stage.name} ({stage.to_state}) in "
+                f"{repr(vessel.name) if vessel else batch.packaging}"
+                + (f", planned step {plan_step.sort_order}" if plan_step else ", unplanned"))
     return event
 
 
@@ -312,6 +352,8 @@ def transfer_batch(
         problem = "A reason is required to transfer a batch outside the workflow."
     elif not batch.active or batch.current_state == BatchStage.STATE_COMPLETED:
         problem = f"Batch '{batch.name}' is complete and can't be transferred."
+    elif batch.is_packaged:
+        problem = f"Batch '{batch.name}' is packaged in {batch.packaging} - there's no vessel to transfer it from."
     elif stage is not None and not stage.transfers_batch:
         problem = f"{stage.name} doesn't transfer the batch - choose no stage change or a stage that does."
     elif dst_vessel is None:
@@ -729,3 +771,100 @@ def delete_workflow_template(template: WorkflowTemplate) -> None:
     name, recipes = template.name, template.recipes.count()
     template.delete()
     logger.info(f"Workflow template '{name}' deleted ({recipes} recipe(s) keep their copied steps)")
+
+
+# ---------- Plan vs actual (step 11) ----------
+
+@dataclass(frozen=True)
+class PlanProgressRow:
+    """
+    One row of a batch's plan vs actual. `step` is the planned step (None for an
+    unplanned stage), `event` the logged stage (None if not logged yet / skipped).
+    Days are counted from Pitch; *_days are time spent in the step.
+    """
+    status: str                 # done / current / skipped / upcoming / unplanned
+    stage: BatchStage
+    step: Optional[BatchPlanStep]
+    event: Optional[BatchStageEvent]
+    planned_day: Optional[float]
+    actual_day: Optional[float]
+    planned_days: Optional[float]
+    actual_days: Optional[float]
+    planned_vessel: str         # the planned vessel type's label, "" if unplanned
+    actual_vessel: str          # the vessel the batch went into, or Bottles / Kegs
+
+    @property
+    def difference_days(self) -> Optional[float]:
+        """Actual minus planned time in the step (+ = longer than planned)."""
+        if self.planned_days is None or self.actual_days is None:
+            return None
+        return round(self.actual_days - self.planned_days, 1)
+
+
+def _days(delta) -> float:
+    return round(delta.total_seconds() / 86400, 1)
+
+
+def plan_progress(batch: Batch) -> list[PlanProgressRow]:
+    """
+    The batch's plan vs what actually happened, in the order it happened (Aaron,
+    2026-09-24): each planned step with its planned start day and time, next to the
+    logged stage that fulfilled it (actual day, time spent, vessel or packaging).
+    Planned steps passed over are Skipped; stages not in the plan are Unplanned,
+    shown where they happened. Transfers aren't plan steps. Empty for a batch
+    without a plan.
+    """
+    steps = list(batch.plan_steps.select_related('stage'))
+    if not steps:
+        return []
+    events = [e for e in batch.stage_events.select_related('stage', 'vessel', 'plan_step').order_by('timestamp', 'pk')
+              if e.stage is not None]
+    pitched_at = events[0].timestamp if events else None
+    now = timezone.now()
+
+    planned_day, day = {}, 0.0
+    for step in steps:
+        planned_day[step.pk] = round(day, 1)
+        day += step.planned_days or 0
+
+    def actual(event, i):
+        if event.stage.to_state == BatchStage.STATE_COMPLETED:
+            spent = None                                   # Complete Batch ends the batch
+        else:
+            end = events[i + 1].timestamp if i + 1 < len(events) else (None if not batch.active else now)
+            spent = _days(end - event.timestamp) if end else None
+        where = event.vessel.name if event.vessel else event.get_packaging_display()
+        return _days(event.timestamp - pitched_at), spent, where
+
+    def planned_row(step, status, event=None, i=None):
+        actual_day, actual_days, actual_vessel = actual(event, i) if event else (None, None, "")
+        return PlanProgressRow(
+            status=status, stage=step.stage, step=step, event=event,
+            planned_day=planned_day[step.pk], actual_day=actual_day,
+            planned_days=round(step.planned_days, 1) if step.planned_days else None, actual_days=actual_days,
+            planned_vessel=step.get_vessel_type_display(), actual_vessel=actual_vessel,
+        )
+
+    rows, emitted = [], set()
+    latest = len(events) - 1
+    for i, event in enumerate(events):
+        step = event.plan_step
+        if step is None or step.pk not in planned_day:
+            actual_day, actual_days, where = actual(event, i)
+            rows.append(PlanProgressRow(
+                status='unplanned', stage=event.stage, step=None, event=event, planned_day=None,
+                actual_day=actual_day, planned_days=None, actual_days=actual_days,
+                planned_vessel="", actual_vessel=where,
+            ))
+            continue
+        for earlier in steps:                                # planned steps passed over
+            if earlier.sort_order < step.sort_order and earlier.pk not in emitted:
+                rows.append(planned_row(earlier, 'skipped'))
+                emitted.add(earlier.pk)
+        is_current = i == latest and batch.active
+        rows.append(planned_row(step, 'current' if is_current else 'done', event, i))
+        emitted.add(step.pk)
+    rows += [planned_row(step, 'upcoming') for step in steps if step.pk not in emitted]
+    logger.debug(f"plan_progress: batch={batch.pk} {len(steps)} planned steps, {len(events)} stages -> "
+                 f"{[(r.stage.shortid, r.status) for r in rows]}")
+    return rows

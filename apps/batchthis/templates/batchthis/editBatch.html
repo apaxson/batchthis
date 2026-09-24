@@ -64,7 +64,7 @@
   <div class="cl-section-head">
     <div class="cl-section-title">Not editable here</div>
   </div>
-  <div class="cl-kv-row"><span class="cl-kv-label">Current vessel</span><span class="cl-kv-value"><a href="{% url 'vessel' batch.current_vessel.pk %}">{{ batch.current_vessel.name }}</a></span></div>
+  <div class="cl-kv-row"><span class="cl-kv-label">Current vessel</span><span class="cl-kv-value">{% if batch.current_vessel %}<a href="{% url 'vessel' batch.current_vessel.pk %}">{{ batch.current_vessel.name }}</a>{% else %}Packaged in {{ batch.get_packaging_display }}{% endif %}</span></div>
   <div class="cl-kv-row"><span class="cl-kv-label">Started in</span><span class="cl-kv-value">{{ batch.fermenter.vessel.name }}</span></div>
   <div class="cl-kv-row"><span class="cl-kv-label">Start date</span><span class="cl-kv-value cl-num">{{ batch.startdate|date:"M j, Y g:i A" }}</span></div>
   <p class="cl-empty" style="margin-top:10px;">
