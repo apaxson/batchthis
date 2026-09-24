@@ -19,6 +19,15 @@ BUGS:
     * Related: set_base_units() changes self.base_units on the shared
       field instance per value (per-row state on a class-level object).
 
+* Timezone-naive timestamps from the old signals (Aaron, 2026-09-24 - fix
+  later). models.py addActivity (ActivityLog.datetime) and addGravityTest
+  (the automatic starting-gravity BatchTest.datetime) use datetime.now(),
+  which is naive, while everything newer uses timezone.now() (aware, UTC).
+  Entries can sort/display inconsistently next to each other. Use
+  timezone.now(); check existing rows. While there, decide whether to
+  keep the "Batch Modified" ActivityLog line added on every batch save
+  (transfer/complete/edit add it as noise next to the real entry).
+
 FUTURE ENHANCEMENTS:
 * Batch page: open "Add test", "Add note" and "Add addon" as MODAL forms on
   the batch page instead of separate pages (Aaron, 2026-09-24).
