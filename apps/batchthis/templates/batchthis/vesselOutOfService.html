@@ -1,0 +1,15 @@
+{% extends 'batchthis/base.html' %}
+{% block content %}
+
+<div class="cl-page-head">
+  <div class="cl-wordmark font-display">Take out of service</div>
+  <div class="cl-batch-sub" style="margin-top:6px;">
+    <span><a href="{% url 'vessel' vessel.pk %}">&larr; Back to {{ vessel.name }}</a></span>
+  </div>
+</div>
+
+<div class="cl-panel">
+  {% include 'batchthis/includes/_out_of_service_form.html' %}
+</div>
+
+{% endblock %}

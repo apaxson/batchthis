@@ -19,6 +19,7 @@ from django.forms.formsets import formset_factory
 from apps.batchthis.lib.utils import Utils
 from apps.batchthis.services import (
     set_vessel_status, take_vessel_out_of_service, return_vessel_to_service, status_before_out_of_service,
+    OUT_OF_SERVICE_FROM,
     transition_stage_event, transfer_batch, create_vessel, update_vessel,
 )
 from apps.batchthis.lib.faults import get_active_flags, get_rule_for, StagedFaultRule
@@ -679,7 +680,7 @@ def vessel(request, pk):
         'status_since': current_event.timestamp if current_event else None,
         'status_icon': _vessel_status_icon(vessel),
         'can_mark_cleaned': vessel.status == Vessel.STATUS_DIRTY,
-        'can_take_out_of_service': vessel.status in (Vessel.STATUS_READY, Vessel.STATUS_DIRTY),
+        'can_take_out_of_service': vessel.status in OUT_OF_SERVICE_FROM,
         'is_out_of_service': vessel.status == Vessel.STATUS_OUT,
         'out_of_service_reason': current_event.notes if current_event and vessel.status == Vessel.STATUS_OUT else '',
         'return_to_status': status_before_out_of_service(vessel) if vessel.status == Vessel.STATUS_OUT else '',
@@ -713,19 +714,55 @@ def markVesselCleaned(request, pk):
     return HttpResponseRedirect(reverse('vessel', kwargs={'pk': pk}))
 
 
+OUT_OF_SERVICE_FORM_PARTIAL = 'batchthis/includes/_out_of_service_form.html'
+
+
+@login_required
+def takeVesselOutOfServiceForm(request, pk):
+    """
+    The reason form for Take out of service. The vessel page's actions menu opens it
+    in the shared #formModal (just the partial); without JavaScript it's a full page.
+    It posts to takeVesselOutOfService.
+    """
+    vessel = get_object_or_404(Vessel, pk=pk)
+    modal = _is_modal_request(request)
+    logger.debug("takeVesselOutOfServiceForm: pk=%s '%s' status=%r modal=%s", pk, vessel.name, vessel.status, modal)
+    if vessel.status not in OUT_OF_SERVICE_FROM:
+        logger.error("takeVesselOutOfServiceForm: vessel %s '%s' is %r; can't go out of service",
+                     pk, vessel.name, vessel.status)
+        messages.error(request, f"'{vessel.name}' is {vessel.status} - only a {Vessel.STATUS_READY} or "
+                                f"{Vessel.STATUS_DIRTY} vessel can be taken out of service.")
+        return HttpResponseRedirect(reverse('vessel', kwargs={'pk': pk}))
+    context = {'vessel': vessel, 'modal': modal}
+    return render(request, OUT_OF_SERVICE_FORM_PARTIAL if modal else 'batchthis/vesselOutOfService.html', context)
+
+
 @login_required
 @require_POST
 def takeVesselOutOfService(request, pk):
-    """Clean/Ready or Needs Cleaning -> Out of Service, with a required reason."""
+    """
+    Clean/Ready or Needs Cleaning -> Out of Service, with a required reason.
+    From the form modal: {"saved": true} on success, or the form again with the error.
+    """
     vessel = get_object_or_404(Vessel, pk=pk)
-    logger.debug("takeVesselOutOfService: pk=%s '%s' status=%r", pk, vessel.name, vessel.status)
+    modal = _is_modal_request(request)
+    reason = request.POST.get('reason', '')
+    logger.debug("takeVesselOutOfService: pk=%s '%s' status=%r modal=%s", pk, vessel.name, vessel.status, modal)
+    error = None
     try:
-        take_vessel_out_of_service(vessel, request.POST.get('reason', ''))
+        take_vessel_out_of_service(vessel, reason)
     except ValidationError as e:
-        messages.error(request, ' '.join(e.messages))
+        error = ' '.join(e.messages)
     except Exception:
         logger.exception("takeVesselOutOfService: failed for vessel %s '%s'", pk, vessel.name)
-        messages.error(request, f"Couldn't take '{vessel.name}' out of service. Nothing was changed - please try again.")
+        error = f"Couldn't take '{vessel.name}' out of service. Nothing was changed - please try again."
+    if modal:
+        if error is None:
+            return JsonResponse({'saved': True})
+        return render(request, OUT_OF_SERVICE_FORM_PARTIAL,
+                      {'vessel': vessel, 'modal': True, 'error': error, 'reason': reason.strip()})
+    if error is not None:
+        messages.error(request, error)
     return HttpResponseRedirect(reverse('vessel', kwargs={'pk': pk}))
 
 
