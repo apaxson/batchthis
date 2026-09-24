@@ -486,6 +486,15 @@ class PlanStep(models.Model):
         return round(days, 6) or None
 
     @property
+    def vessel_type_hint(self) -> str:
+        """How the planned vessel type reads on the time bar: "Any Aging Tank", "Bottles", "Same vessel"."""
+        if self.vessel_type == self.VESSEL_CURRENT:
+            return "Same vessel"
+        if self.vessel_type in dict(self.PACKAGING_CHOICES):
+            return self.get_vessel_type_display()
+        return f"Any {self.get_vessel_type_display()}"
+
+    @property
     def has_duration(self) -> bool:
         return self.planned_days is not None
 
@@ -822,12 +831,16 @@ class Batch(models.Model):
         logger.debug(f"full_aging: batch={self.pk} {span}")
         return span
 
-    def timeline_bar(self, planned_durations: dict[str, timedelta] | None = None) -> "TimelineBar":
+    def timeline_bar(self, planned_durations: dict[str, timedelta] | None = None,
+                     planned_steps: list["BatchPlanStep"] | None = None) -> "TimelineBar":
         """
         The batch page's time bar: past and current vessel stays (widths = real
-        time), then the states still ahead as future segments. A future state's
-        width comes from planned_durations[state] when given (phase 2: the recipe
-        or pre-batch plan sets time per stage), else a fixed placeholder width.
+        time), then what's still ahead as future segments.
+        With planned_steps (the batch plan's upcoming steps - services.plan_progress):
+        one future segment per step, as wide as its planned time ("No planned time"
+        = minimum width); a planned Complete Batch is the end marker, not a segment.
+        Without a plan: one placeholder per state still ahead, sized by
+        planned_durations[state] when given, else a fixed placeholder width.
         """
         planned_durations = planned_durations or {}
         stays = self.vessel_durations()
@@ -838,13 +851,27 @@ class Batch(models.Model):
             TimelineSegment(
                 kind='current' if stay.is_open else 'past',
                 state=stay.state, label=stay.label, vessel=stay.vessel, notes=stay.event.notes,
+                packaging=stay.event.get_packaging_display(),
                 start=stay.start, end=stay.end, duration=stay.duration,
                 weight=max(stay.duration.total_seconds(), 60.0),
             )
             for stay in stays
         ]
 
-        if completed is None:
+        planned_end = False
+        if completed is None and planned_steps is not None:
+            for step in planned_steps:
+                if step.stage.to_state == BatchStage.STATE_COMPLETED:
+                    planned_end = True
+                    continue
+                planned = timedelta(days=step.planned_days) if step.has_duration else None
+                segments.append(TimelineSegment(
+                    kind='future', state=step.stage.to_state, label=step.stage.name, vessel=None, notes=step.notes,
+                    start=None, end=None, duration=planned, planned=planned is not None, from_plan=True,
+                    planned_vessel=step.vessel_type_hint,
+                    weight=planned.total_seconds() if planned else 0.0,
+                ))
+        elif completed is None:
             reached = {s.state for s in segments}
             current = segments[-1].state if segments else None
             ahead = [st for st in BatchStage.TIMELINE_STATES if st not in reached and st != current]
@@ -866,7 +893,8 @@ class Batch(models.Model):
                 bands.append(TimelineBand(state=segment.state, segments=[segment]))
 
         logger.debug(f"timeline_bar: batch={self.pk} {len(segments)} segments in {len(bands)} bands")
-        return TimelineBar(segments=segments, bands=bands, completed_at=completed.timestamp if completed else None)
+        return TimelineBar(segments=segments, bands=bands, completed_at=completed.timestamp if completed else None,
+                           planned_end=planned_end)
 
     # A future stage with no planned duration is drawn this share of the known time.
     TIMELINE_PLACEHOLDER_SHARE = 0.15
@@ -965,7 +993,10 @@ class TimelineSegment:
     end: datetime | None
     duration: timedelta | None  # actual time; planned time for a planned future stage; else None
     weight: float  # relative width
-    planned: bool = False
+    planned: bool = False          # a future segment with a planned time
+    from_plan: bool = False        # a future segment drawn from the batch plan (vs. a placeholder)
+    planned_vessel: str = ""       # a planned step's vessel type, e.g. "Any Aging Tank" / "Bottles"
+    packaging: str = ""            # a stay after Sterile Filtering into Bottles / Kegs
 
 
 @dataclass(kw_only=True)
@@ -993,8 +1024,11 @@ class TimelineBand:
 
     @property
     def duration(self) -> timedelta | None:
-        durations = [s.duration for s in self.segments]
-        return None if any(d is None for d in durations) else sum(durations, timedelta())
+        """Total time of the band's segments; a planned band totals the steps with a planned time."""
+        durations = [s.duration for s in self.segments if s.duration is not None]
+        if not durations or (len(durations) < len(self.segments) and not self.segments[0].from_plan):
+            return None
+        return sum(durations, timedelta())
 
 
 @dataclass(kw_only=True)
@@ -1002,6 +1036,7 @@ class TimelineBar:
     segments: list[TimelineSegment]
     bands: list[TimelineBand]
     completed_at: datetime | None
+    planned_end: bool = False  # the plan ends with Complete Batch still ahead - drawn as the end marker
 
     @property
     def now_index(self) -> int | None:

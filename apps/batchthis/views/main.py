@@ -26,6 +26,7 @@ from apps.batchthis.services import (
     transition_stage_event, transfer_batch, create_vessel, update_vessel,
     plan_totals, save_workflow_template, delete_workflow_template, save_recipe_plan, clear_recipe_plan,
     copy_plan_to_batch, save_batch_plan, batch_plan_locked_reason,
+    plan_progress,
 )
 from apps.batchthis.lib.faults import get_active_flags, get_rule_for, StagedFaultRule
 from django.contrib.auth.decorators import login_required
@@ -165,7 +166,10 @@ def batch(request, pk):
         logger.debug("batch: pk=%s %d stage events, %d vessel stays, full_aging=%s",
                      pk, len(stage_events), len(vessel_stays), full_aging)
 
-        timeline = batch.timeline_bar()
+        # The plan's upcoming steps draw the time bar's future (step 11c); no plan -> placeholders.
+        progress = plan_progress(batch)
+        upcoming = [row.step for row in progress if row.status == 'upcoming'] if progress else None
+        timeline = batch.timeline_bar(planned_steps=upcoming)
         plan = _plan_summary(batch.plan_steps.select_related('stage'))
         plan_locked = batch_plan_locked_reason(batch)
 

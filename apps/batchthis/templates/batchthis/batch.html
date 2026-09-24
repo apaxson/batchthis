@@ -105,8 +105,8 @@
       {% for seg in timeline.segments %}
       <li role="listitem" class="cl-timebar-seg cl-timebar-seg--{{ seg.kind }}{% if seg.notes %} js-mouse-tooltip" data-toggle="tooltip" title="{{ seg.notes }}{% endif %}">
         <span class="cl-timebar-step">{{ seg.label }}</span>
-        <span class="cl-timebar-vessel">{% if seg.vessel %}<a href="{% url 'vessel' seg.vessel.pk %}" title="{{ seg.vessel.name }}">{{ seg.vessel.name }}</a>{% elif seg.kind == 'future' %}Vessel TBD{% else %}&mdash;{% endif %}</span>
-        <span class="cl-timebar-time cl-num">{% if seg.kind == 'past' %}{{ seg.start|timesince:seg.end }}{% elif seg.kind == 'current' %}<span class="cl-stage cl-stage--active">Current</span> {{ seg.start|timesince }}{% elif seg.planned %}~{{ seg.duration.days }} days planned{% else %}Not planned{% endif %}</span>
+        <span class="cl-timebar-vessel">{% if seg.vessel %}<a href="{% url 'vessel' seg.vessel.pk %}" title="{{ seg.vessel.name }}">{{ seg.vessel.name }}</a>{% elif seg.packaging %}{{ seg.packaging }}{% elif seg.planned_vessel %}{{ seg.planned_vessel }}{% elif seg.kind == 'future' %}Vessel TBD{% else %}&mdash;{% endif %}</span>
+        <span class="cl-timebar-time cl-num">{% if seg.kind == 'past' %}{{ seg.start|timesince:seg.end }}{% elif seg.kind == 'current' %}<span class="cl-stage cl-stage--active">Current</span> {{ seg.start|timesince }}{% elif seg.planned %}~{{ seg.duration.days }} days planned{% elif seg.from_plan %}No planned time{% else %}Not planned{% endif %}</span>
       </li>
       {% endfor %}
     </ol>
@@ -117,7 +117,9 @@
     {% if timeline.completed_at %}
     <span class="cl-timebar-end cl-num">Completed {{ timeline.completed_at|date:"M j, Y" }}</span>
     {% elif timeline.now_index == timeline.segments|length %}
-    <span class="cl-timebar-end cl-timebar-tick--now cl-num">Now</span>
+    <span class="cl-timebar-end cl-timebar-tick--now cl-num">Now{% if timeline.planned_end %} &middot; then Complete Batch{% endif %}</span>
+    {% elif timeline.planned_end %}
+    <span class="cl-timebar-end cl-num">Complete Batch</span>
     {% endif %}
   </div>
 </div>

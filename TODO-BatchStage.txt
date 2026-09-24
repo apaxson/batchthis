@@ -751,6 +751,12 @@ Steps:
            "No planned time"; Complete Batch = the end marker. Packaged stays
            show "Bottles"/"Kegs" with no vessel link. Batches without a plan keep
            today's per-state placeholders.
+           [DONE 2026-09-24] Batch.timeline_bar(planned_steps=...) - the batch
+           view passes plan_progress()'s upcoming steps (keeps timeline_bar
+           query-free). TimelineSegment.from_plan / planned_vessel
+           (PlanStep.vessel_type_hint: "Any Aging Tank", "Bottles", "Same vessel")
+           / packaging; TimelineBar.planned_end; a planned band totals the steps
+           with a planned time. Tests: tests/test_timeline_plan.py.
       11d. Log stage page: pre-select the next planned stage; the destination
            picker puts clean vessels of that step's planned type first, marked
            "Planned"; Sterile Filtering also offers Bottles / Kegs.
