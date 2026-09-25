@@ -31,7 +31,7 @@ from apps.batchthis.services import (
 )
 from apps.batchthis.lib.faults import get_active_flags, get_rule_for, StagedFaultRule
 from django.contrib.auth.decorators import login_required
-from django.views.decorators.http import require_POST
+from django.views.decorators.http import require_POST, require_safe
 from django.forms.models import model_to_dict, modelformset_factory
 from pint import Quantity
 
@@ -133,87 +133,88 @@ def batchListing(request):
     return render(request, 'batchthis/batches.html', context=context)
 
 
+@require_safe
 def batch(request, pk):
-    if request.method == "GET":
-        # Prefetched stage events feed both timeline durations with one query.
-        batch = get_object_or_404(
-            Batch.objects.select_related('vessel', 'fermenter__vessel').prefetch_related(
-                Prefetch('stage_events', queryset=BatchStageEvent.objects.select_related('stage', 'vessel'))
-            ),
-            pk=pk,
-        )
-        testTypes = BatchTestType.objects.all()
-        fermenters = batch.fermenter
-        recipe = batch.recipe
-        gravity_tests = batch.tests.filter(type__shortid='specific-gravity')
-        percent_complete = batch.percent_complete()
-        thirdSugarBreak = round(batch.startingGravity - ((batch.startingGravity - batch.estimatedEndGravity) / 3), 3).magnitude
-        ferm_notes = batch.notes.filter(notetype__name='Fermentation Note')
-        gen_notes = batch.notes.filter(notetype__name='General Note')
-        taste_notes = batch.notes.filter(notetype__name='Tasting Note')
+    """The batch page. Read-only: GET/HEAD; anything else is 405 (require_safe)."""
+    # Prefetched stage events feed both timeline durations with one query.
+    batch = get_object_or_404(
+        Batch.objects.select_related('vessel', 'fermenter__vessel').prefetch_related(
+            Prefetch('stage_events', queryset=BatchStageEvent.objects.select_related('stage', 'vessel'))
+        ),
+        pk=pk,
+    )
+    testTypes = BatchTestType.objects.all()
+    fermenters = batch.fermenter
+    recipe = batch.recipe
+    gravity_tests = batch.tests.filter(type__shortid='specific-gravity')
+    percent_complete = batch.percent_complete()
+    thirdSugarBreak = round(batch.startingGravity - ((batch.startingGravity - batch.estimatedEndGravity) / 3), 3).magnitude
+    ferm_notes = batch.notes.filter(notetype__name='Fermentation Note')
+    gen_notes = batch.notes.filter(notetype__name='General Note')
+    taste_notes = batch.notes.filter(notetype__name='Tasting Note')
 
-        ph_rule = get_rule_for('ph')
-        so2_rule = get_rule_for('so2')
+    ph_rule = get_rule_for('ph')
+    so2_rule = get_rule_for('so2')
 
-        gravityChart = _build_series(batch, 'specific-gravity')
-        phChart = _build_series(batch, 'ph', rule=ph_rule)
-        so2Chart = _build_series(batch, 'so2')
+    gravityChart = _build_series(batch, 'specific-gravity')
+    phChart = _build_series(batch, 'ph', rule=ph_rule)
+    so2Chart = _build_series(batch, 'so2')
 
-        vessel_stays = batch.vessel_durations()
-        full_aging = batch.full_aging()
-        stage_events = list(batch.stage_events.all())
-        # Transfer-only events (no stage) don't change the batch's stage.
-        last_event = next((e for e in reversed(stage_events) if e.stage is not None), None)
-        logger.debug("batch: pk=%s %d stage events, %d vessel stays, full_aging=%s",
-                     pk, len(stage_events), len(vessel_stays), full_aging)
+    vessel_stays = batch.vessel_durations()
+    full_aging = batch.full_aging()
+    stage_events = list(batch.stage_events.all())
+    # Transfer-only events (no stage) don't change the batch's stage.
+    last_event = next((e for e in reversed(stage_events) if e.stage is not None), None)
+    logger.debug("batch: pk=%s %d stage events, %d vessel stays, full_aging=%s",
+                 pk, len(stage_events), len(vessel_stays), full_aging)
 
-        # The plan's upcoming steps draw the time bar's future (step 11c); no plan -> placeholders.
-        progress = plan_progress(batch)
-        upcoming = [row.step for row in progress if row.status == 'upcoming'] if progress else None
-        timeline = batch.timeline_bar(planned_steps=upcoming)
-        plan = _plan_summary(batch.plan_steps.select_related('stage'))
-        plan_locked = batch_plan_locked_reason(batch)
+    # The plan's upcoming steps draw the time bar's future (step 11c); no plan -> placeholders.
+    progress = plan_progress(batch)
+    upcoming = [row.step for row in progress if row.status == 'upcoming'] if progress else None
+    timeline = batch.timeline_bar(planned_steps=upcoming)
+    plan = _plan_summary(batch.plan_steps.select_related('stage'))
+    plan_locked = batch_plan_locked_reason(batch)
 
-        current_gravity_value = batch.current_gravity()
-        estABV = round(Utils.potentialABV(startSG=batch.startingGravity.magnitude, endSG=current_gravity_value)[0], 1)
+    current_gravity_value = batch.current_gravity()
+    estABV = round(Utils.potentialABV(startSG=batch.startingGravity.magnitude, endSG=current_gravity_value)[0], 1)
 
-        context = {
-            "batch": batch,
-            "percentComplete": percent_complete,
-            "gravityChart": gravityChart,
-            "phChart": phChart,
-            "so2Chart": so2Chart,
-            "currentGravity": current_gravity_value,
-            "currentPh": phChart["values"][-1] if phChart["values"] else None,
-            "currentSo2": so2Chart["values"][-1] if so2Chart["values"] else None,
-            "estABV": estABV,
-            "so2Threshold": so2_rule.minimum if so2_rule else None,
-            "gravityTests": gravity_tests,
-            "testTypes": testTypes,
-            "fermenters": fermenters,
-            "thirdSugarBreak": thirdSugarBreak,
-            "startingGravity": batch.startingGravity,
-            "endingGravity": batch.estimatedEndGravity,
-            "gennotes": gen_notes,
-            "fermnotes": ferm_notes,
-            "tastenotes": taste_notes,
-            "recipe": recipe,
-            "flags": get_active_flags([batch]),
-            # Stage timeline (TODO-BatchStage.txt step 6)
-            "current_state": last_event.stage.to_state if last_event else None,
-            "completed_event": last_event if last_event and last_event.stage.to_state == BatchStage.STATE_COMPLETED else None,
-            "vessel_stays": vessel_stays,
-            "current_stay": vessel_stays[-1] if vessel_stays and vessel_stays[-1].is_open else None,
-            "full_aging": full_aging,
-            "timeline": timeline,
-            # The batch's own plan (step 10): editable until Pitch; plan vs actual after (11e).
-            "plan": plan,
-            "plan_vs_actual": _plan_vs_actual(batch, progress) if progress and batch.current_state else None,
-            "plan_editable": plan_locked is None,
-            # One grid column per timeline segment, sized by its time; bands span their segments.
-            "timeline_columns": " ".join(f"minmax(9rem, {seg.weight:.1f}fr)" for seg in timeline.segments),
-        }
-        return render(request, 'batchthis/batch.html', context=context)
+    context = {
+        "batch": batch,
+        "percentComplete": percent_complete,
+        "gravityChart": gravityChart,
+        "phChart": phChart,
+        "so2Chart": so2Chart,
+        "currentGravity": current_gravity_value,
+        "currentPh": phChart["values"][-1] if phChart["values"] else None,
+        "currentSo2": so2Chart["values"][-1] if so2Chart["values"] else None,
+        "estABV": estABV,
+        "so2Threshold": so2_rule.minimum if so2_rule else None,
+        "gravityTests": gravity_tests,
+        "testTypes": testTypes,
+        "fermenters": fermenters,
+        "thirdSugarBreak": thirdSugarBreak,
+        "startingGravity": batch.startingGravity,
+        "endingGravity": batch.estimatedEndGravity,
+        "gennotes": gen_notes,
+        "fermnotes": ferm_notes,
+        "tastenotes": taste_notes,
+        "recipe": recipe,
+        "flags": get_active_flags([batch]),
+        # Stage timeline (TODO-BatchStage.txt step 6)
+        "current_state": last_event.stage.to_state if last_event else None,
+        "completed_event": last_event if last_event and last_event.stage.to_state == BatchStage.STATE_COMPLETED else None,
+        "vessel_stays": vessel_stays,
+        "current_stay": vessel_stays[-1] if vessel_stays and vessel_stays[-1].is_open else None,
+        "full_aging": full_aging,
+        "timeline": timeline,
+        # The batch's own plan (step 10): editable until Pitch; plan vs actual after (11e).
+        "plan": plan,
+        "plan_vs_actual": _plan_vs_actual(batch, progress) if progress and batch.current_state else None,
+        "plan_editable": plan_locked is None,
+        # One grid column per timeline segment, sized by its time; bands span their segments.
+        "timeline_columns": " ".join(f"minmax(9rem, {seg.weight:.1f}fr)" for seg in timeline.segments),
+    }
+    return render(request, 'batchthis/batch.html', context=context)
 
 
 def recipeListing(request):
