@@ -1,4 +1,5 @@
 from django.urls import path, include
+from django.views.generic import RedirectView
 from . import views
 
 
@@ -46,7 +47,8 @@ urlpatterns = [
     path('rpc/categoryFilterByStyle', views.categoryFilterByStyle, name="categoryFilterByStyle"),
     path('rpc/getDataFromRecipe', views.getDataFromRecipe, name="getDataFromRecipe"),
     path('rpc/utils/<str:action>/', views.utilities, name="utils"),
-    path('admin/import', views.admin_import, name="admin_import"),
+    path('import', views.importData, name='importData'),
+    path('admin/import', RedirectView.as_view(pattern_name='importData')),  # moved; keep old bookmarks working
     path('api/fermentables/', views.FermentableListAPIView.as_view(), name="fermentable-list"),
     path('api/adjuncts/', views.AdjunctListAPIView.as_view(), name="adjunct-list"),
     path('api/yeasts/', views.YeastListAPIView.as_view(), name="yeast-list"),

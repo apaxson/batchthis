@@ -203,6 +203,15 @@ button.nav-link { width: 100%; background: none; border: 0; border-left: 2px sol
   background: var(--honey-line);
   border-color: var(--honey-line);
 }
+/* A nav item that only heads a sub-list (Tools): not a link itself. */
+.nav-link.nav-parent { cursor: default; }
+.nav-link.nav-parent:hover { background: none; color: var(--ink-soft); }
+.sub-link svg { width: 15px; height: 15px; stroke: currentColor; flex: 0 0 auto; }
+/* Collapsed rail: the parent has nothing to open, so its sub-links stand in as icons. */
+[data-collapsed="true"] .nav-parent { display: none; }
+[data-collapsed="true"] .cl-sub-list--rail { display: flex; margin: 0; }
+[data-collapsed="true"] .cl-sub-list--rail .sub-link { justify-content: center; padding: 9px 0; }
+[data-collapsed="true"] .cl-sub-list--rail .sub-link svg { width: 18px; height: 18px; }
 
 .cl-sidebar-foot {
   border-top: 1px solid var(--line);
@@ -236,6 +245,10 @@ button.nav-link { width: 100%; background: none; border: 0; border-left: 2px sol
   .cl-nav-heading, .nav-label, .nav-badge, .cl-sub-list, .cl-brand-text { display: none; }
   .nav-link { justify-content: center; padding: 9px 0; border-left: none; }
   .nav-link[aria-current="page"] { box-shadow: inset 2px 0 0 var(--honey-line); }
+  .nav-parent { display: none; }
+  .cl-sub-list.cl-sub-list--rail { display: flex; margin: 0; }
+  .cl-sub-list--rail .sub-link { justify-content: center; padding: 9px 0; }
+  .cl-sub-list--rail .sub-link svg { width: 18px; height: 18px; }
 }
 
 /* ---------- Content ---------- */
@@ -402,6 +415,8 @@ button.nav-link { width: 100%; background: none; border: 0; border-left: 2px sol
 }
 /* Side column on the left third, main column on the right two-thirds. */
 .cl-cols--aside-left { grid-template-columns: 1fr 2fr; }
+/* Two equal columns (e.g. the Import page's two upload panels). */
+.cl-cols--even { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 /* Main column on the left two-thirds, side column on the right third (e.g. the recipe page).
    minmax(0, ...) so a wide table scrolls inside .cl-table-scroll instead of widening its column. */
 .cl-cols--aside-right { grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); }
@@ -817,6 +832,12 @@ button.nav-link { width: 100%; background: none; border: 0; border-left: 2px sol
   outline: 2px solid var(--focus);
   outline-offset: 1px;
   border-color: var(--focus);
+}
+.cl-field input[type="file"] { font-family: 'IBM Plex Sans', sans-serif; font-size: 0.85rem; color: var(--ink-soft); padding: 4px 0; }
+.cl-field input[type="file"]::file-selector-button {
+  font: inherit; font-weight: 600; color: var(--ink);
+  background: var(--paper-raised); border: 1px solid var(--line); border-radius: 3px;
+  padding: 6px 12px; margin-right: 10px; cursor: pointer;
 }
 .cl-field input[type="checkbox"] { width: 16px; height: 16px; accent-color: var(--honey-line); }
 

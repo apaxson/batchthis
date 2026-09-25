@@ -1,0 +1,57 @@
+{% extends 'batchthis/base.html' %}
+{% block content %}
+
+<div class="cl-page-head">
+  <div class="cl-wordmark font-display">Import</div>
+  <div class="cl-batch-sub" style="margin-top:6px;">
+    <span>Bring BeerSmith .xml exports into the cellar. Items that already exist by name are skipped.</span>
+  </div>
+</div>
+
+{% for message in messages %}
+<div class="cl-flag{% if message.level == DEFAULT_MESSAGE_LEVELS.SUCCESS %} cl-flag--ok{% endif %}" style="margin-bottom:20px;">
+  {% if message.level != DEFAULT_MESSAGE_LEVELS.SUCCESS %}<span class="cl-flag-mark">!</span>{% endif %}
+  <span>{{ message }}</span>
+</div>
+{% endfor %}
+
+<div class="cl-cols cl-cols--even">
+  <div><div class="cl-panel">
+    <div class="cl-section-head">
+      <div class="cl-section-title">Recipe</div>
+      <div class="cl-section-note">One BeerSmith recipe (.xml)</div>
+    </div>
+    <form method="post" class="cl-form" enctype="multipart/form-data" action="{% url 'importData' %}">
+      {% csrf_token %}
+      <div class="cl-field">
+        <label for="id_recipe_upload">Recipe file</label>
+        <input type="file" id="id_recipe_upload" name="recipe_upload" accept=".xml,text/xml" required>
+      </div>
+      <div class="cl-form-actions">
+        <button type="submit" class="cl-btn cl-btn--primary">Import recipe</button>
+      </div>
+    </form>
+    {% if uploaded_file_url %}
+    <div class="cl-kv-row"><span class="cl-kv-label">Uploaded file</span><span class="cl-kv-value"><a href="{{ uploaded_file_url }}">{{ uploaded_file_url }}</a></span></div>
+    {% endif %}
+  </div></div>
+
+  <div><div class="cl-panel">
+    <div class="cl-section-head">
+      <div class="cl-section-title">Ingredients</div>
+      <div class="cl-section-note">Bulk misc, fermentables or yeasts (.xml)</div>
+    </div>
+    <form method="post" class="cl-form" enctype="multipart/form-data" action="{% url 'importData' %}">
+      {% csrf_token %}
+      <div class="cl-field">
+        <label for="id_misc_upload">Export file</label>
+        <input type="file" id="id_misc_upload" name="misc_upload" accept=".xml,text/xml" required>
+      </div>
+      <div class="cl-form-actions">
+        <button type="submit" class="cl-btn cl-btn--primary">Import ingredients</button>
+      </div>
+    </form>
+  </div></div>
+</div>
+
+{% endblock %}
