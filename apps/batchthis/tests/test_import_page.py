@@ -107,3 +107,101 @@ def test_sidebar_tools_is_a_heading_with_utils_and_import_links(client):
     tools = page.index(">Tools<")
     # "Tools" is no longer itself a link.
     assert page.rfind("<a ", 0, tools) < page.rfind("nav-parent", 0, tools)
+
+
+# ---------- Recipe import: small amounts come in in a smaller unit ----------
+
+from pathlib import Path
+
+from pint import Quantity
+
+from ..factories import AdjunctUsageFactory
+from ..models import Recipe
+from ..views.admin import import_quantity
+
+TART_CIDER = Path(__file__).resolve().parents[1] / "examples" / "tartcider.xml"
+
+
+@pytest.mark.parametrize("amount, units, expected", [
+    (0.001355, "liter", Quantity(1.355, "milliliter")),       # 0.00 L -> 1.36 mL
+    (0.00142, "kilogram", Quantity(1.42, "gram")),            # 0.00 kg -> 1.42 g
+    (0.000002, "kilogram", Quantity(2, "milligram")),         # steps down twice
+    (0.007393, "liter", Quantity(0.007393, "liter")),         # shows as 0.01 L - not zero, stays
+    (19.8166808, "liter", Quantity(19.8166808, "liter")),
+    (0, "kilogram", Quantity(0, "kilogram")),                 # a real zero stays zero
+    ("0.00142", "kilogram", Quantity(1.42, "gram")),          # BeerSmith gives strings
+])
+def test_import_quantity_steps_down_only_when_it_would_show_as_zero(amount, units, expected):
+    result = import_quantity(amount, units)
+
+    assert result.units == expected.units
+    assert result.magnitude == pytest.approx(expected.magnitude)
+
+
+def _import_tart_cider(client, with_primary=True, **replace):
+    xml = TART_CIDER.read_text()
+    for old, new in replace.items():
+        xml = xml.replace(old, new)
+    if with_primary:
+        AdjunctUsageFactory(name="Primary")
+    return client.post(reverse("importData"), {"recipe_upload": SimpleUploadedFile("tartcider.xml", xml.encode())})
+
+
+@pytest.mark.django_db
+def test_recipe_import_stores_a_tiny_adjunct_amount_in_a_smaller_unit(client):
+    _import_tart_cider(client, **{"<AMOUNT>0.007393</AMOUNT>": "<AMOUNT>0.001355</AMOUNT>"})
+
+    adjunct = Recipe.objects.get().adjuncts.get()
+    assert str(adjunct.amount.units) == "milliliter"
+    assert adjunct.amount.magnitude == pytest.approx(1.355)
+
+
+@pytest.mark.django_db
+def test_recipe_import_saves_the_fermentable_amount(client):
+    _import_tart_cider(client)
+
+    fermentable = Recipe.objects.get().fermentables.get()
+    assert str(fermentable.amount.units) == "liter"
+    assert fermentable.amount.magnitude == pytest.approx(19.8166808)
+
+
+@pytest.mark.django_db
+def test_recipe_import_reads_the_yeast_amount_is_weight_flag(client):
+    _import_tart_cider(client, **{"<AMOUNT>0.0000000</AMOUNT>": "<AMOUNT>0.0236588</AMOUNT>"})
+
+    yeast = Recipe.objects.get().yeasts.get()
+    # Cider House Select is AMOUNT_IS_WEIGHT FALSE: a volume, not "FALSE" read as truthy.
+    assert yeast.amount.dimensionality == Quantity(1, "liter").dimensionality
+
+
+@pytest.mark.django_db
+def test_recipe_import_creates_the_primary_use_when_the_database_has_none(client):
+    from ..models import AdjunctUsage
+
+    _import_tart_cider(client, with_primary=False)
+
+    fermentable = Recipe.objects.get().fermentables.get()
+    assert fermentable.intended_use == AdjunctUsage.objects.get(name__iexact="Primary")
+
+
+@pytest.mark.django_db
+def test_a_failed_recipe_import_saves_nothing_so_it_can_be_retried(client, monkeypatch):
+    from ..models import Fermentable, RecipeYeasts
+
+    def broken_save(self, *args, **kwargs):
+        raise RuntimeError("disk full")
+
+    # Fail on the last thing the import saves - after the recipe, fermentable and adjunct.
+    monkeypatch.setattr(RecipeYeasts, "save", broken_save)
+    response = _import_tart_cider(client)
+
+    assert any("couldn't import" in str(m).lower() for m in response.context["messages"])
+    assert not Recipe.objects.exists()
+    assert not Fermentable.objects.exists()
+
+    monkeypatch.undo()
+    response = client.post(reverse("importData"),
+                           {"recipe_upload": SimpleUploadedFile("tartcider.xml", TART_CIDER.read_bytes())})
+
+    assert Recipe.objects.get().yeasts.count() == 1
+    assert any("successfully imported" in str(m).lower() for m in response.context["messages"])

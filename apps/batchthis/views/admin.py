@@ -9,6 +9,7 @@ from apps.batchthis.lib.bslib import Adjunct as A
 from apps.batchthis.lib.bslib import Yeast as Y
 from django.contrib.auth.models import Group
 from django.core.files.storage import FileSystemStorage
+from django.db import transaction
 from django.shortcuts import render
 from django.contrib import messages
 import xmltodict
@@ -71,6 +72,25 @@ def _as_list(items) -> list:
     return items if isinstance(items, list) else [items]
 
 
+# An imported amount that would show as 0 at DISPLAY_PLACES decimals steps down to the
+# next smaller unit of the same kind (0.00142 kg -> 1.42 g). Imports aren't an entered
+# measurement, so there's no user's unit to keep.
+DISPLAY_PLACES = 2
+IMPORT_STEP_DOWN = {'kilogram': 'gram', 'gram': 'milligram', 'liter': 'milliliter'}
+
+
+def import_quantity(amount, units: str, places: int = DISPLAY_PLACES) -> Quantity:
+    """Quantity(amount, units), in a smaller unit if it would otherwise display as 0."""
+    quantity = Quantity(float(amount), units)
+    start = quantity
+    while (quantity.magnitude and round(abs(quantity.magnitude), places) == 0
+           and str(quantity.units) in IMPORT_STEP_DOWN):
+        quantity = quantity.to(IMPORT_STEP_DOWN[str(quantity.units)])
+    if quantity is not start:
+        log.debug("import_quantity: %s would show as 0 at %s places; importing as %s", start, places, quantity)
+    return quantity
+
+
 def _summarize_counts(counts: dict) -> str:
     """{'adjunct_types': {'created': 1, 'skipped': 2}} -> 'Adjunct types: 1 created, 2 skipped'."""
     return " · ".join(f"{name.replace('_', ' ').capitalize()}: {c['created']} created, {c['skipped']} skipped"
@@ -90,12 +110,15 @@ def importData(request):
         messages.error(request, "No file found - choose a BeerSmith .xml file to upload.")
         return render(request, IMPORT_TEMPLATE)
     try:
-        return _run_import(request)
+        # All or nothing: a failure partway through leaves no half-built recipe behind
+        # (which would make a retry skip it as "Recipe exists").
+        with transaction.atomic():
+            return _run_import(request)
     except Exception:
         log.exception("importData: import failed for %s", list(request.FILES.keys()))
         name = next(iter(request.FILES.values())).name
-        messages.error(request, f"Couldn't import '{name}'. Check that it's a BeerSmith .xml export - "
-                                f"it may have been partly imported.")
+        messages.error(request, f"Couldn't import '{name}'. Nothing was imported - check that it's a "
+                                f"BeerSmith .xml export and try again.")
         return render(request, IMPORT_TEMPLATE)
 
 
@@ -145,6 +168,11 @@ def _run_import(request):
             rec_creates = {}
             rec_creates['fermentables'] = 0
             rec_creates['fermentable_types'] = 0
+            # Every imported fermentable is "Primary" (see below); create that use on a fresh database.
+            primary_use = AdjunctUsage.objects.filter(name__iexact="Primary").first()
+            if primary_use is None:
+                primary_use, _ = get_adjunct_use("Primary")
+                log.info("importData: created the 'Primary' adjunct use for imported fermentables")
             for fermentable in recipe.fermentables:
                 # Check if Fermentable Exists
                 obj_fermentable = Fermentable()
@@ -167,16 +195,18 @@ def _run_import(request):
                 recipe_fermentable = RecipeFermentable()
                 recipe_fermentable.fermentable = obj_fermentable
                 # Make sure amounts are a Quantity()
-                dimensionality = ''
-                if fermentable.type in BEERSMITH_VOLUME_FERMENTABLE_TYPES:
-                    dimensionality = 'liters'
-                if fermentable.type in BEERSMITH_MASS_FERMENTABLE_TYPES:
-                    dimensionality = 'kilograms'
-                recipe_fermentable.amount_metric = Quantity(fermentable.amount, dimensionality)
+                fermentable_type = (fermentable.type or '').lower()
+                if fermentable_type in BEERSMITH_VOLUME_FERMENTABLE_TYPES:
+                    recipe_fermentable.amount = import_quantity(fermentable.amount, 'liter')
+                elif fermentable_type in BEERSMITH_MASS_FERMENTABLE_TYPES:
+                    recipe_fermentable.amount = import_quantity(fermentable.amount, 'kilogram')
+                else:
+                    log.error("importData: fermentable '%s' has unknown type %r; amount %s not imported",
+                              fermentable.name, fermentable.type, fermentable.amount)
                 # The XML file does not include when to use the fermentable.  But, we MUST
                 # have "intended_use" in order to save.  Assume "Primary", though this may
                 # get us into trouble later, if we don't pay attention
-                recipe_fermentable.intended_use = AdjunctUsage.objects.get(name__iexact="Primary")
+                recipe_fermentable.intended_use = primary_use
                 recipe_fermentable.save()
                 obj_recipe.fermentables.add(recipe_fermentable)
                 #TODO send user to addRecipe to modify recipe after saving.
@@ -201,20 +231,17 @@ def _run_import(request):
                     obj_adjunct.name = adjunct.name
                     obj_adjunct.use_for = adjunct.use_for
                     obj_adjunct.notes = adjunct.notes
-                    obj_adjunct.ratio_amount = adjunct.ratio_amount
-                    obj_adjunct.ratio_batch_size = adjunct.ratio_batch_size
+                    # Same as the ingredients (misc) import: the ratio is this recipe's amount per its batch size.
+                    obj_adjunct.ratio_amount = adjunct.amount
+                    obj_adjunct.ratio_batch_size = adjunct.batchsize
                     obj_adjunct.save()
                     rec_creates['adjuncts'] += 1
                 else:
                     obj_adjunct = Adjunct.objects.get(name__iexact=adjunct.name)
                 recipe_adjunct = RecipeAdjunct()
                 recipe_adjunct.adjunct = obj_adjunct
-                dimensionality = ''
-                if adjunct.amount_is_weight:
-                    dimensionality = 'kilograms'
-                else:
-                    dimensionality = 'liters'
-                recipe_adjunct.amount = Quantity(adjunct.amount, dimensionality)
+                recipe_adjunct.amount = import_quantity(adjunct.amount,
+                                                        'kilogram' if adjunct.amount_is_weight else 'liter')
                 recipe_adjunct.time_to_add = Quantity(adjunct.display_time)
                 recipe_adjunct.amount_is_weight = adjunct.amount_is_weight
                 recipe_adjunct.recipe_notes = adjunct.notes
@@ -241,14 +268,10 @@ def _run_import(request):
                     rec_creates["yeasts"] += 1
                 else:
                     obj_yeast = Yeast.objects.get(name__iexact=yeast.name)
-                dimensionality = ''
-                if yeast.amount_is_weight:
-                    dimensionality = "kilograms"
-                else:
-                    dimensionality = "liters"
+                is_weight = str(yeast.amount_is_weight).strip().lower() == 'true'
                 rec_yeast = RecipeYeasts()
                 rec_yeast.yeast = obj_yeast
-                rec_yeast.amount = Quantity(yeast.amount, dimensionality)
+                rec_yeast.amount = import_quantity(yeast.amount, 'kilogram' if is_weight else 'liter')
                 rec_yeast.save()
                 obj_recipe.yeasts.add(rec_yeast)
 
