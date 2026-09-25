@@ -1186,6 +1186,9 @@ class BatchTest(models.Model):
 # If a batch is saved with a Starting Gravity, add that test
 @receiver(post_save,sender=Batch)
 def addGravityTest(sender,instance,created=False,**kwargs):
+    # A raw save is loaddata restoring rows - the fixture already has this test.
+    if kwargs.get('raw'):
+        return
     # Only need to do it if Batch is created.
     if created:
         if instance.startingGravity:
@@ -1194,7 +1197,7 @@ def addGravityTest(sender,instance,created=False,**kwargs):
             gravTest.type = testType
             gravTest.value = f"{instance.startingGravity.magnitude} sg"
             gravTest.description = "Auto created from new batch."
-            gravTest.datetime = datetime.now()
+            gravTest.datetime = timezone.now()
             gravTest.batch = instance
             gravTest.save()
             logger.debug(f"Added Gravity Test: {gravTest.value} automatically to newly created batch_id: {instance.id}")
@@ -1244,9 +1247,12 @@ class BatchNote(models.Model):
 @receiver(post_save,sender=BatchTest)
 @receiver(post_save,sender=Batch)
 def addActivity(sender,instance,created=False,**kwargs):
+    # A raw save is loaddata restoring rows - their activity is already in the fixture.
+    if kwargs.get('raw'):
+        return
     text = None
     batch = None
-    date = datetime.now()
+    date = timezone.now()
     if sender.__name__ == "Batch":
         batch = instance
         if created:

@@ -20,10 +20,11 @@ BUGS:
       fields, so text comparison changes nothing. Tests:
       tests/test_quantity_field_storage.py.
     * Moving data off SQLite = migrate a fresh DB, then dumpdata/loaddata
-      (checked 2026-09-25: all values read back equal). BLOCKER for that:
-      addActivity (models.py) doesn't skip raw fixture saves, so loaddata
-      writes bogus ActivityLog rows (7 -> 13 on the dev data). Guard the old
-      signals with `if kwargs.get('raw'): return` before a move.
+      (checked 2026-09-25: all values read back equal; the JSON dump keeps
+      times to the millisecond). FIXED (2026-09-25): addActivity and
+      addGravityTest skip raw saves, so loaddata no longer writes bogus
+      ActivityLog rows / auto gravity tests - every table's row count now
+      matches after a move. Tests: tests/test_activity_signals.py.
     * Related: set_base_units() changes self.base_units on the shared
       field instance per value (per-row state on a class-level object).
 
@@ -32,7 +33,13 @@ BUGS:
   (the automatic starting-gravity BatchTest.datetime) use datetime.now(),
   which is naive, while everything newer uses timezone.now() (aware, UTC).
   Entries can sort/display inconsistently next to each other. Use
-  timezone.now(); check existing rows. While there, decide whether to
+  timezone.now(); check existing rows.
+    * FIXED for new rows (2026-09-25): both signals use timezone.now().
+      It was a real offset, not just a warning: TIME_ZONE = 'UTC', so the
+      naive local time (CDT) was stored as UTC - 5 hours early. EXISTING
+      rows written by these signals before the fix are still 5 hours early
+      (dev DB: ActivityLog 1-6 and the 2 auto gravity tests) - not corrected.
+    * STILL OPEN: decide whether to
   keep the "Batch Modified" ActivityLog line added on every batch save
   (transfer/complete/edit add it as noise next to the real entry).
 
