@@ -118,11 +118,15 @@
       {% if batch.workflow_template %}Copied from {{ batch.workflow_template.name }} &middot; {% endif %}{% if plan_editable %}<a href="{% url 'editBatchPlan' batch.pk %}">Edit plan</a>{% else %}Locked after Pitch{% endif %}
     </div>
   </div>
-  {% if plan_vs_actual %}
-  {% include 'batchthis/includes/plan_progress.html' with progress=plan_vs_actual %}
-  {% else %}
-  {% include 'batchthis/includes/plan_steps.html' with empty_message="" %}
-  {% endif %}
+  {# Collapsed to one line (the current step); open for the full table. #}
+  <details class="cl-table-toggle cl-plan-toggle">
+    <summary>{% if plan_vs_actual %}{{ plan_vs_actual.summary|join:" · " }}{% else %}Not started{% endif %}</summary>
+    {% if plan_vs_actual %}
+    {% include 'batchthis/includes/plan_progress.html' with progress=plan_vs_actual %}
+    {% else %}
+    {% include 'batchthis/includes/plan_steps.html' with empty_message="" %}
+    {% endif %}
+  </details>
 </section>
 {% endif %}
 

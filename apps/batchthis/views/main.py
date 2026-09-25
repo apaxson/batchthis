@@ -274,13 +274,24 @@ def _plan_vs_actual(batch, progress) -> dict:
                            else _difference_label(row.difference_days)),
             'notes': row.event.notes if row.event else (row.step.notes if row.step else ""),
         })
+    # The collapsed Plan's summary line: the Current step, else the last step that happened
+    # (latest stage unplanned, or batch completed) - "Step 3 · Racking · Current · Tank A · ...".
+    happened = [r for r in rows if r['status'] not in ("Upcoming", "Skipped")]
+    summary_row = next((r for r in rows if r['status'] == "Current"), happened[-1] if happened else None)
+    summary = []
+    if summary_row:
+        parts = [f"Step {summary_row['number']}" if summary_row['number'] != "—" else "",
+                 summary_row['stage'].name, summary_row['status'], summary_row['actual_vessel'],
+                 summary_row['actual_time'], summary_row['difference']]
+        summary = [part for part in parts if part and part != "—"]
     planned_total = plan_totals(batch.plan_steps.all()).total_days
     pitched = next((row.event.timestamp for row in progress if row.event is not None), None)
     end = batch.enddate if not batch.active and batch.enddate else timezone.now()
     actual = None
     if pitched:
         actual = _days_label(round((end - pitched).total_seconds() / 86400, 1)) + ("" if not batch.active else " so far")
-    return {'rows': rows, 'planned_total': _days_label(planned_total) if planned_total else None, 'actual': actual}
+    return {'rows': rows, 'summary': summary,
+            'planned_total': _days_label(planned_total) if planned_total else None, 'actual': actual}
 
 
 def recipe(request, pk):
