@@ -156,8 +156,15 @@ def test_vessels_api_reports_capacity_as_entered(db):
 
 # ---------- Add Batch size ----------
 
-def _add_batch(size):
+def _logged_in_client() -> Client:
+    # Login is required site-wide (LoginRequiredMiddleware).
     client = Client()
+    client.force_login(get_user_model().objects.get_or_create(username="cellarhand")[0])
+    return client
+
+
+def _add_batch(size):
+    client = _logged_in_client()
     fermenter = FermenterFactory(vessel=VesselFactory(status=Vessel.STATUS_READY))
     return client.post(reverse("addBatch"), {
         "name": "volume test batch", "startdate": "2026-09-01", "size": size,

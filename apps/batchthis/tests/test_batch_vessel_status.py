@@ -1,6 +1,7 @@
 from unittest import mock
 
 import pytest
+from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
 from django.test import Client
 from django.urls import reverse
@@ -9,8 +10,15 @@ from ..factories import BatchFactory, FermenterFactory, RecipeFactory, VesselFac
 from ..models import Batch, Vessel
 
 
+def _logged_in_client() -> Client:
+    # Login is required site-wide (LoginRequiredMiddleware).
+    client = Client()
+    client.force_login(get_user_model().objects.get_or_create(username="cellarhand")[0])
+    return client
+
+
 def _add_batch_post(fermenter, recipe, name="status test batch"):
-    return Client().post(
+    return _logged_in_client().post(
         reverse("addBatch"),
         data={
             "name": name,
@@ -63,7 +71,7 @@ def test_add_batch_form_only_offers_ready_fermenters():
     FermenterFactory(vessel=VesselFactory(status=Vessel.STATUS_ACTIVE))
     FermenterFactory(vessel=VesselFactory(status=Vessel.STATUS_DIRTY))
 
-    response = Client().get(reverse("addBatch"))
+    response = _logged_in_client().get(reverse("addBatch"))
 
     offered = list(response.context["form"].fields["fermenter"].queryset)
     assert offered == [ready]

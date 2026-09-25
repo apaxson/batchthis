@@ -1,6 +1,7 @@
 import datetime
 
 import pytest
+from django.contrib.auth import get_user_model
 from django.test import Client
 from django.urls import reverse
 from django.utils import timezone
@@ -9,9 +10,16 @@ from ..factories import BatchFactory, FermenterFactory, RecipeFactory, VesselFac
 from ..models import Batch, Vessel
 
 
+def _logged_in_client() -> Client:
+    # Login is required site-wide (LoginRequiredMiddleware).
+    client = Client()
+    client.force_login(get_user_model().objects.get_or_create(username="cellarhand")[0])
+    return client
+
+
 def _new_batch_with_startdate(startdate: str) -> Batch:
     fermenter = FermenterFactory(vessel=VesselFactory(status=Vessel.STATUS_READY))
-    response = Client().post(
+    response = _logged_in_client().post(
         reverse("addBatch"),
         data={
             "name": "startdate test batch",

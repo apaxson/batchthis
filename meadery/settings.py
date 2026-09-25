@@ -71,6 +71,9 @@ MIDDLEWARE = [
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
+    # Every view needs a logged-in user unless marked @login_not_required (the auth
+    # login/logout/password-reset views already are). Sends others to LOGIN_URL.
+    'django.contrib.auth.middleware.LoginRequiredMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
@@ -189,6 +192,7 @@ USE_TZ = True
 
 STATIC_URL = '/static/'
 CRISPY_TEMPLATE_PACK = 'bootstrap4'
+LOGIN_URL = "login"   # /user/login/ (django.contrib.auth.urls); the default /accounts/login/ doesn't exist
 LOGIN_REDIRECT_URL = "/batchthis"
 LOGOUT_REDIRECT_URL = "/user/login/"
 MEDIA_URL = "/media/"

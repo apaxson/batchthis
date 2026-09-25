@@ -1,9 +1,17 @@
 import pytest
+from django.contrib.auth import get_user_model
 from django.test import Client
 from django.urls import reverse
 
 from ..factories import FermenterFactory, RecipeFactory
 from ..models import Batch
+
+
+def _logged_in_client() -> Client:
+    # Login is required site-wide (LoginRequiredMiddleware).
+    client = Client()
+    client.force_login(get_user_model().objects.get_or_create(username="cellarhand")[0])
+    return client
 
 
 @pytest.mark.django_db
@@ -13,7 +21,7 @@ def test_add_batch_auto_creates_specific_gravity_test():
     fermenter = FermenterFactory()
     recipe = RecipeFactory(with_plan=True)
 
-    client = Client()
+    client = _logged_in_client()
     response = client.post(
         reverse("addBatch"),
         data={
