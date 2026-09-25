@@ -147,12 +147,14 @@
         <div class="cl-empty">No notes yet.</div>
       {% endif %}
     </div>
-    {% if recipe.pairing %}
     <div class="cl-panel">
       <div class="cl-section-head"><div class="cl-section-title">Food pairing</div></div>
-      <div class="cl-recipe-notes"><p>{{ recipe.pairing }}</p></div>
+      {% if pairings %}
+      <div class="cl-tag-list">{% for tag in pairings %}<span class="cl-tag">{{ tag.name }}</span>{% endfor %}</div>
+      {% else %}
+      <div class="cl-empty">No pairings yet.</div>
+      {% endif %}
     </div>
-    {% endif %}
     <div class="cl-panel">
       <div class="cl-section-head">
         <div class="cl-section-title">Batches brewed</div>

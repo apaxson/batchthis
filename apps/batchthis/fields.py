@@ -390,3 +390,47 @@ class ReadingField(MeasurementField):
         if not isinstance(quantity, ureg.Quantity):
             quantity = ureg.Quantity(float(quantity))
         return quantity
+
+
+class PairingTagsField(forms.CharField):
+    """
+    Food pairings typed as a comma-separated list ("Roast chicken, Aged cheddar") -
+    what the tag picker (frontend TagSelect.jsx) writes, and what works without
+    JavaScript. Cleans to a list of names: trimmed, blanks dropped, duplicates
+    dropped ignoring case (first spelling kept). Shows saved tags (PairingTag rows
+    or names) back as the same comma list. services.set_recipe_pairings() saves them.
+    """
+    def __init__(self, **kwargs):
+        kwargs.setdefault('label', "Food pairing")
+        kwargs.setdefault('widget', TextInput(attrs={'placeholder': "e.g. Roast chicken, Aged cheddar"}))
+        super().__init__(**kwargs)
+
+    def prepare_value(self, value):
+        if value is None or isinstance(value, str):   # empty, or the text as posted
+            return value
+        return ", ".join(str(item) for item in value)  # saved tags or cleaned names
+
+    def to_python(self, value) -> list[str]:
+        text = super().to_python(value) or ""
+        names, seen = [], set()
+        for part in text.split(","):
+            name = " ".join(part.split())   # trim and collapse inner whitespace
+            if name and name.lower() not in seen:
+                seen.add(name.lower())
+                names.append(name)
+        return names
+
+    def validate(self, value: list[str]) -> None:
+        from .models import PairingTag   # local: models imports this module
+        if self.required and not value:
+            raise ValidationError(self.error_messages['required'], code='required')
+        for name in value:
+            if len(name) > PairingTag.NAME_MAX_LENGTH:
+                logger.debug(f"PairingTagsField: {name!r} is longer than {PairingTag.NAME_MAX_LENGTH}")
+                raise ValidationError(
+                    f"Keep each pairing to {PairingTag.NAME_MAX_LENGTH} characters or fewer: '{name}'.",
+                    code='too_long')
+
+    def run_validators(self, value) -> None:
+        # CharField's length validators expect a string; each name is checked in validate().
+        return None

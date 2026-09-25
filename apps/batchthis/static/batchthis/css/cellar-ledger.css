@@ -684,6 +684,18 @@ button.nav-link { width: 100%; background: none; border: 0; border-left: 2px sol
 .cl-table-scroll { overflow-x: auto; }
 .cl-recipe-notes p { margin: 0 0 10px; font-size: 0.9rem; line-height: 1.55; }
 .cl-recipe-notes p:last-child { margin-bottom: 0; }
+/* Tags, e.g. a recipe's food pairings. The tag picker's chips (TagSelect.jsx) match. */
+.cl-tag-list { display: flex; flex-wrap: wrap; gap: 6px; }
+.cl-tag {
+  display: inline-block;
+  padding: 3px 10px;
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  background: var(--paper);
+  color: var(--ink);
+  font-size: 0.82rem;
+  font-weight: 500;
+}
 
 .cl-table-toggle { margin: 6px 0 8px; font-size: 0.8rem; }
 .cl-table-toggle summary { cursor: pointer; color: var(--ink-soft); font-weight: 500; user-select: none; }

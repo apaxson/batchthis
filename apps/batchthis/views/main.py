@@ -27,7 +27,7 @@ from apps.batchthis.services import (
     transition_stage_event, transfer_batch, create_vessel, update_vessel,
     plan_totals, save_workflow_template, delete_workflow_template, save_recipe_plan, clear_recipe_plan,
     copy_plan_to_batch, save_batch_plan, batch_plan_locked_reason,
-    plan_progress, allowed_next_stages, save_batch_edit,
+    plan_progress, allowed_next_stages, save_batch_edit, set_recipe_pairings,
 )
 from apps.batchthis.lib.faults import get_active_flags, get_rule_for, StagedFaultRule
 from django.contrib.auth.decorators import login_required
@@ -302,6 +302,7 @@ def recipe(request, pk):
         'fermentables': recipe.fermentables.all(),
         'adjuncts': recipe.adjuncts.all(),
         'yeasts': recipe.yeasts.all(),
+        'pairings': recipe.pairings.all(),
         'batches': recipe.batch_set.order_by('-startdate'),
     }
     return render(request, 'batchthis/recipe.html', context=context)
@@ -338,7 +339,10 @@ def addRecipe(request, pk=None):
             recipe.estABV = data['estABV']
             category = data['category']
             recipe.category = category
-            recipe.save()
+            # The recipe and its pairings commit together, or neither does.
+            with transaction.atomic():
+                recipe.save()
+                set_recipe_pairings(recipe, data['pairings'])
             logger.info("addRecipe: saved recipe %s '%s'", recipe.pk, recipe.name)
             return HttpResponseRedirect(reverse('recipe', kwargs={'pk': recipe.pk}))
         else:

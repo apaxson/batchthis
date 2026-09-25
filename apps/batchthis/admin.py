@@ -1,7 +1,7 @@
 from django.contrib import admin
 from .models import Unit, Fermenter, BatchNoteType, BatchTestType, BatchNote, BatchTest, BatchCategory, BatchStyle
 from .models import AdjunctType, Adjunct, Yeast, FermentableType, Fermentable, Recipe, AdjunctUsage, BatchStage, BatchStageEvent
-from .models import BatchPlanStep, RecipePlanStep, WorkflowTemplate, WorkflowTemplateStep
+from .models import BatchPlanStep, PairingTag, RecipePlanStep, WorkflowTemplate, WorkflowTemplateStep
 # Register your models here.
 
 admin.site.register(Unit)
@@ -29,6 +29,12 @@ class _ViewOnlyAdmin(admin.ModelAdmin):
 
     def has_delete_permission(self, request, obj=None):
         return False
+
+
+@admin.register(PairingTag)
+class PairingTagAdmin(_ViewOnlyAdmin):
+    list_display = ('name',)
+    search_fields = ('name',)
 
 
 @admin.register(WorkflowTemplate)

@@ -11,6 +11,7 @@ export default defineConfig({
       input: {
         'model-select': path.resolve(__dirname, 'src/entries/model-select.jsx'),
         'model-table': path.resolve(__dirname, 'src/entries/model-table.jsx'),
+        'tag-select': path.resolve(__dirname, 'src/entries/tag-select.jsx'),
       },
       output: {
         entryFileNames: '[name].js',

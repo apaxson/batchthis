@@ -53,4 +53,5 @@ urlpatterns = [
     path('api/recipes/', views.RecipeListAPIView.as_view(), name="recipe-list"),
     path('api/batches/', views.BatchListAPIView.as_view(), name="batch-list"),
     path('api/vessels/', views.VesselListAPIView.as_view(), name="vessel-list"),
+    path('api/pairings/', views.PairingTagListAPIView.as_view(), name="pairing-list"),
 ]

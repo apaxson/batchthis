@@ -5,9 +5,10 @@ from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from ..models import Adjunct, Batch, Fermentable, Recipe, Vessel, Yeast
+from ..models import Adjunct, Batch, Fermentable, PairingTag, Recipe, Vessel, Yeast
 from ..serializers import (
-    AdjunctSerializer, BatchSerializer, FermentableSerializer, RecipeSerializer, VesselSerializer, YeastSerializer,
+    AdjunctSerializer, BatchSerializer, FermentableSerializer, PairingTagSerializer, RecipeSerializer,
+    VesselSerializer, YeastSerializer,
 )
 
 logger = logging.getLogger(__name__)
@@ -80,4 +81,12 @@ class VesselListAPIView(APIView):
         }
         serializer = VesselSerializer(vessels, many=True, context={'current_batches': current_batches})
         logger.debug("Listed %d vessels for %s", len(serializer.data), request.user)
+        return Response(serializer.data)
+
+
+class PairingTagListAPIView(APIView):
+    """Every food pairing tag, alphabetically - the recipe form's tag picker suggests from these."""
+    def get(self, request: Request) -> Response:
+        serializer = PairingTagSerializer(PairingTag.objects.all(), many=True)
+        logger.debug("Listed %d pairing tags for %s", len(serializer.data), request.user)
         return Response(serializer.data)

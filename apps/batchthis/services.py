@@ -17,6 +17,7 @@ from .models import (
     BatchStage,
     BatchStageEvent,
     Fermenter,
+    PairingTag,
     PlanStep,
     Recipe,
     RecipePlanStep,
@@ -764,6 +765,26 @@ def clear_recipe_plan(recipe: Recipe) -> None:
         recipe.workflow_template = None
         recipe.save(update_fields=['workflow_template'])
     logger.info(f"Recipe '{recipe}' plan cleared ({count} step(s) removed)")
+
+
+def set_recipe_pairings(recipe: Recipe, names: list[str]) -> list[PairingTag]:
+    """
+    Make `names` (already cleaned - forms.PairingTagsField) the recipe's food pairings.
+    An existing tag is reused whatever its case ("aged cheddar" -> "Aged Cheddar");
+    a new name becomes a new tag. Tags a recipe stops using are kept (Aaron, 2026-09-25).
+    """
+    logger.debug(f"set_recipe_pairings: recipe={recipe.pk} names={names}")
+    with transaction.atomic():
+        tags = []
+        for name in names:
+            tag = PairingTag.objects.filter(name__iexact=name).first()
+            if tag is None:
+                tag = PairingTag.objects.create(name=name)
+                logger.info(f"New pairing tag '{tag}'")
+            tags.append(tag)
+        recipe.pairings.set(tags)
+    logger.info(f"Recipe '{recipe}' pairings: {', '.join(t.name for t in tags) or 'none'}")
+    return tags
 
 
 def _step_rows(steps) -> list[dict]:

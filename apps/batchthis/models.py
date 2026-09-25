@@ -20,6 +20,7 @@ from django.db import models
 from datetime import datetime, timedelta
 from django.dispatch import receiver
 from django.db.models.signals import post_save, m2m_changed
+from django.db.models.functions import Lower
 from django.utils.text import slugify
 from django.core.files.storage import FileSystemStorage
 from django.utils import timezone
@@ -406,6 +407,24 @@ class BatchCategory(models.Model):
     bjcp_code = models.CharField(max_length=3)
 
 
+class PairingTag(models.Model):
+    """
+    A food to serve a recipe with, e.g. "Roast chicken" - one shared list for every
+    recipe (Recipe.pairings). Unique ignoring case; kept even when no recipe uses it
+    (Aaron, 2026-09-25). Recipes set theirs through services.set_recipe_pairings().
+    """
+    NAME_MAX_LENGTH = 50
+
+    class Meta:
+        ordering = [Lower('name')]
+        constraints = [models.UniqueConstraint(Lower('name'), name='unique_pairing_tag_name_ignoring_case')]
+
+    def __str__(self):
+        return self.name
+
+    name = models.CharField(max_length=NAME_MAX_LENGTH)
+
+
 class Recipe(models.Model):
     def __str__(self):
         return self.name
@@ -422,7 +441,7 @@ class Recipe(models.Model):
     brewer = models.CharField(max_length=30, null=True)
     batchSize = DescriptiveQuantityField(base_units='liters', unit_choices=['liters','gallons'])
     source = models.CharField(max_length=50, null=True) #Where did the recipe come from
-    pairing = models.CharField(max_length=250, null=True) # Textfield listing various foods.  TODO: Refactor
+    pairings = models.ManyToManyField(PairingTag, blank=True, related_name='recipes')  # foods to serve it with
     notes = models.TextField()
     estOG = PrecisionQuantityField(base_units='sg', unit_choices=['sg'])
     estFG = DescriptiveQuantityField(base_units='sg', unit_choices=['sg'])

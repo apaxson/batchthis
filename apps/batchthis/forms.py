@@ -18,8 +18,8 @@ from django.forms.widgets import NumberInput, DateInput
 from django.utils import timezone
 from pint import Quantity
 from quantityfield.fields import QuantityFormField, QuantityWidget
-from .fields import AmountField, DescriptiveQuantityFormField, PrecisionQuantityWidget, PrecisionTextWidget, ReadingField, \
-    TimeSpanField, VolumeField
+from .fields import AmountField, DescriptiveQuantityFormField, PairingTagsField, PrecisionQuantityWidget, \
+    PrecisionTextWidget, ReadingField, TimeSpanField, VolumeField
 import logging
 
 logger = logging.getLogger(__name__)
@@ -422,6 +422,7 @@ class RecipeAddForm(forms.Form):
     estFG = forms.CharField(widget=PrecisionTextWidget(precision=3, base_units='sg'), required=True,
                               label="Estimated Final Gravity")
     estABV = forms.FloatField(widget=forms.TextInput(attrs={'placeholder':'i.e. 11.4'}),label="Estimated ABV in %", required=True)
+    pairings = PairingTagsField(required=False)
 
 class RefractometerCorrectionForm(forms.Form):
     unitChoices = (

@@ -2,7 +2,7 @@ from django.urls import reverse
 from django.utils import timezone
 from rest_framework import serializers
 
-from .models import Adjunct, Batch, Fermentable, Recipe, Vessel, Yeast
+from .models import Adjunct, Batch, Fermentable, PairingTag, Recipe, Vessel, Yeast
 
 
 class FermentableSerializer(serializers.ModelSerializer):
@@ -144,3 +144,9 @@ class VesselSerializer(serializers.ModelSerializer):
     def get_display_name(self, obj: Vessel) -> str:
         details = ", ".join(part for part in (obj.vessel_type, self.get_capacity(obj)) if part)
         return f"{obj.name} ({details})"
+
+
+class PairingTagSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = PairingTag
+        fields = ['id', 'name']
