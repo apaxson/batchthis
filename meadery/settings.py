@@ -43,10 +43,9 @@ def _env_list(name: str, default: list[str]) -> list[str]:
 
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = os.getenv('DJANGO_SECRET_KEY', '#(dur3)ld=2_xsi^gu+yyiy&=b&mn)vo&^xx3_d9h4u&u*q-co')
-
+SECRET_KEY = env('SECRET_KEY')
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = os.getenv('DJANGO_DEBUG', 'true').lower() in ('1', 'true', 'yes')
+DEBUG = env('DEBUG')
 
 ALLOWED_HOSTS = _env_list('DJANGO_ALLOWED_HOSTS', ['192.168.1.35', '0.0.0.0', '127.0.0.1'])
 # Needed when the site is reached through a different scheme/host than Django sees, e.g. https://cellar.example.com
