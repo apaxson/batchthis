@@ -48,20 +48,19 @@
     <div class="cl-table-scroll">
       <table class="cl-ledger">
         <thead>
-          <tr><th>Ingredient</th><th>Type</th><th>Amount</th><th>Use</th><th>Fermentable?</th><th>Notes</th></tr>
+          <tr><th>Ingredient</th><th>Type</th><th>Amount</th><th>Use</th><th>Fermentable?</th></tr>
         </thead>
         <tbody>
           {% if not fermentables %}
-          <tr><td class="cl-empty" colspan="6">No fermentables yet.</td></tr>
+          <tr><td class="cl-empty" colspan="5">No fermentables yet.</td></tr>
           {% else %}
           {% for item in fermentables %}
           <tr>
-            <td class="cl-row-link js-mouse-tooltip" data-toggle="tooltip" title="{{ item.fermentable.description|default:'' }}">{{ item.display_name }}</td>
+            <td class="cl-row-link js-mouse-tooltip" data-toggle="tooltip" title="{% if item.recipe_notes %}{{ item.recipe_notes }}{% if item.fermentable.description %}&#10;{% endif %}{% endif %}{{ item.fermentable.description|default:'' }}">{{ item.display_name }}</td>
             <td>{{ item.fermentable.type }}</td>
             <td class="cl-num">{{ item.amount }}</td>
             <td>{{ item.intended_use }}</td>
             <td>{{ item.is_fermentable|yesno:"Yes,No" }}</td>
-            <td>{{ item.recipe_notes|default:"—" }}</td>
           </tr>
           {% endfor %}
           {% endif %}
@@ -76,19 +75,18 @@
     <div class="cl-table-scroll">
       <table class="cl-ledger">
         <thead>
-          <tr><th>Ingredient</th><th>Type</th><th>Amount</th><th>Time to add</th><th>Notes</th></tr>
+          <tr><th>Ingredient</th><th>Type</th><th>Amount</th><th>Time to add</th></tr>
         </thead>
         <tbody>
           {% if not adjuncts %}
-          <tr><td class="cl-empty" colspan="5">No adjuncts yet.</td></tr>
+          <tr><td class="cl-empty" colspan="4">No adjuncts yet.</td></tr>
           {% else %}
           {% for item in adjuncts %}
           <tr>
-            <td class="cl-row-link js-mouse-tooltip" data-toggle="tooltip" title="{{ item.adjunct.notes|default:'' }}">{{ item.adjunct.name }}</td>
+            <td class="cl-row-link js-mouse-tooltip" data-toggle="tooltip" title="{% if item.recipe_notes %}{{ item.recipe_notes }}{% if item.adjunct.notes %}&#10;{% endif %}{% endif %}{{ item.adjunct.notes|default:'' }}">{{ item.adjunct.name }}</td>
             <td>{{ item.adjunct.type }}</td>
             <td class="cl-num">{{ item.amount }}</td>
             <td class="cl-num">{{ item.time_to_add }}</td>
-            <td>{{ item.recipe_notes|default:"—" }}</td>
           </tr>
           {% endfor %}
           {% endif %}
@@ -103,15 +101,15 @@
     <div class="cl-table-scroll">
       <table class="cl-ledger">
         <thead>
-          <tr><th>Strain</th><th>Type</th><th>Temp (F)</th><th>Tolerance</th><th>Amount</th><th>Notes</th></tr>
+          <tr><th>Strain</th><th>Type</th><th>Temp (F)</th><th>Tolerance</th><th>Amount</th></tr>
         </thead>
         <tbody>
           {% if not yeasts %}
-          <tr><td class="cl-empty" colspan="6">No yeast yet.</td></tr>
+          <tr><td class="cl-empty" colspan="5">No yeast yet.</td></tr>
           {% else %}
           {% for item in yeasts %}
           <tr>
-            <td class="js-mouse-tooltip" data-toggle="tooltip" title="{{ item.yeast.notes|default:'' }}">
+            <td class="js-mouse-tooltip" data-toggle="tooltip" title="{% if item.notes %}{{ item.notes }}{% if item.yeast.notes %}&#10;{% endif %}{% endif %}{{ item.yeast.notes|default:'' }}">
               <span class="cl-row-link">{{ item.yeast.name }}</span>
               <span class="cl-batch-style">{{ item.yeast.flocculation }} floc &middot; {{ item.yeast.attenuation|floatformat:0 }}% atten.</span>
             </td>
@@ -119,7 +117,6 @@
             <td class="cl-num">{{ item.yeast.min_temp_f.magnitude|floatformat:0 }}&ndash;{{ item.yeast.max_temp_f.magnitude|floatformat:0 }}</td>
             <td class="cl-num">{{ item.yeast.alc_tolerance }} %</td>
             <td class="cl-num">{{ item.amount }}</td>
-            <td>{{ item.notes|default:"—" }}</td>
           </tr>
           {% endfor %}
           {% endif %}

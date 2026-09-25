@@ -367,10 +367,18 @@ CellarLedger.renderChart = function (svg, cfg) {
         // Popper (used internally by the tooltip) positions the tooltip with its own
         // "transform: translate3d(...)" — it must be cleared, or it stacks on top of
         // the top/left below and throws the tooltip off the intended position.
-        $('#' + tipId).css({
+        var $tip = $('#' + tipId);
+        var offset = 16, edge = 8;
+        var width = $tip.outerWidth(), height = $tip.outerHeight();
+        var left = e.clientX + offset, top = e.clientY + offset;
+        // Keep it on screen: flip to the cursor's left/above when it would run off the
+        // right/bottom edge, and never past the top/left edge.
+        if (left + width > window.innerWidth - edge) left = e.clientX - offset - width;
+        if (top + height > window.innerHeight - edge) top = e.clientY - offset - height;
+        $tip.css({
           position: 'fixed',
-          top: (e.clientY + 16) + 'px',
-          left: (e.clientX + 16) + 'px',
+          top: Math.max(edge, top) + 'px',
+          left: Math.max(edge, left) + 'px',
           margin: 0,
           transform: 'none'
         });

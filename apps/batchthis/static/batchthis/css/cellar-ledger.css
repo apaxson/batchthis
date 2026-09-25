@@ -896,6 +896,12 @@ a.cl-btn { display: inline-block; text-decoration: none; }
 .cl-mouse-tooltip .arrow {
   display: none;
 }
+/* A recipe line's tooltip is its own note, then the ingredient's notes, one per line.
+   Twice Bootstrap's 200px so long notes aren't a tall narrow column. */
+.cl-mouse-tooltip .tooltip-inner {
+  white-space: pre-line;
+  max-width: 400px;
+}
 
 /* ---------- Cellar Ledger modal chrome (e.g. #refractometerModal) ---------- */
 .cl-modal .modal-content {
