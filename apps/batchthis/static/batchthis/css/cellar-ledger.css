@@ -149,6 +149,8 @@ a.nav-link, a.sub-link, a.dropdown-item {
   font-weight: 500;
   cursor: pointer;
 }
+/* A nav item that's an action, not a page (e.g. Log out): look like the links. */
+button.nav-link { width: 100%; background: none; border: 0; border-left: 2px solid transparent; font-family: inherit; text-align: left; }
 .nav-link svg, .sub-link .tag-dot { flex: 0 0 auto; }
 .nav-link svg { width: 18px; height: 18px; stroke: currentColor; }
 .nav-link:hover, .sub-link:hover { background: var(--paper); color: var(--ink); }
