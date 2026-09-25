@@ -175,6 +175,64 @@ def add_activity_log(batch: Batch, text: str, *, timestamp: Optional[datetime] =
     return entry
 
 
+# Edit batch's fields as they're labelled on the form, in form order.
+BATCH_EDIT_LABELS = (
+    ('name', "Name"),
+    ('recipe', "Recipe"),
+    ('size', "Batch Size"),
+    ('startingGravity', "Starting Gravity"),
+    ('estimatedEndGravity', "Estimated End Gravity"),
+)
+
+
+def _batch_edit_display(batch: Batch) -> dict[str, str]:
+    """The edited fields as shown in the log - also what decides whether a value really changed."""
+    return {
+        'name': batch.name,
+        'recipe': str(batch.recipe) if batch.recipe else "No recipe",
+        'size': f"{batch.size.magnitude:.2f} {batch.size.units}",
+        'startingGravity': f"{batch.startingGravity.magnitude:.3f}",
+        'estimatedEndGravity': f"{batch.estimatedEndGravity.magnitude:.3f}",
+    }
+
+
+def save_batch_edit(
+    batch: Batch,
+    *,
+    name: str,
+    recipe: Optional[Recipe],
+    size,
+    starting_gravity: float,
+    estimated_end_gravity: float,
+) -> list[str]:
+    """
+    Save Edit batch's fields and log ONE "Batch edited" entry listing what actually
+    changed ("Name [Old] -> [New]"; a value re-entered differently, e.g. "6 gallons"
+    for 6.00 gallon, isn't a change). Save and log commit together, or neither does.
+    Returns the changes (empty = nothing logged). Only these fields are written -
+    never vessel/fermenter/startdate/active.
+    """
+    from pint import Quantity
+
+    before = _batch_edit_display(batch)
+    batch.name = name
+    batch.recipe = recipe
+    batch.size = size
+    batch.startingGravity = Quantity(starting_gravity, 'sg')
+    batch.estimatedEndGravity = Quantity(estimated_end_gravity, 'sg')
+    after = _batch_edit_display(batch)
+    changes = [f"{label} [{before[field]}] -> [{after[field]}]"
+               for field, label in BATCH_EDIT_LABELS if before[field] != after[field]]
+    logger.debug(f"save_batch_edit: batch={batch.pk} changes={changes}")
+
+    with transaction.atomic():
+        batch.save(update_fields=[field for field, _label in BATCH_EDIT_LABELS])
+        if changes:
+            add_activity_log(batch, "Batch edited :: " + "; ".join(changes))
+    logger.info(f"Batch '{batch.name}' edited: {'; '.join(changes) or 'no changes'}")
+    return changes
+
+
 def _workflow_problem(batch: Batch, stage: BatchStage, current: Optional[BatchStageEvent]) -> Optional[str]:
     """Why the workflow doesn't allow this stage next (ignoring timestamp/vessel), or None."""
     state = current.stage.to_state if current else None

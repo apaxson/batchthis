@@ -123,14 +123,15 @@ def test_invalid_edit_shows_errors_and_changes_nothing(client):
 
 
 @pytest.mark.django_db
-def test_an_edit_logs_one_batch_modified_activity_entry(client):
+def test_an_edit_logs_one_batch_edited_activity_entry(client):
     batch = _in_use_batch()
+    old_name = batch.name
     before = batch.activity.count()
 
     client.post(_url(batch), _data(batch, name="Renamed"))
 
     assert batch.activity.count() == before + 1
-    assert batch.activity.order_by("-pk").first().text == "Batch Modified"
+    assert batch.activity.order_by("-pk").first().text == f"Batch edited :: Name [{old_name}] -> [Renamed]"
 
 
 @pytest.mark.django_db

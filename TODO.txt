@@ -38,10 +38,16 @@ BUGS:
       It was a real offset, not just a warning: TIME_ZONE = 'UTC', so the
       naive local time (CDT) was stored as UTC - 5 hours early. EXISTING
       rows written by these signals before the fix are still 5 hours early
-      (dev DB: ActivityLog 1-6 and the 2 auto gravity tests) - not corrected.
-    * STILL OPEN: decide whether to
-  keep the "Batch Modified" ActivityLog line added on every batch save
-  (transfer/complete/edit add it as noise next to the real entry).
+      (dev DB: ActivityLog 1-6 and the 2 auto gravity tests) - not corrected;
+      NOTHING TO DO (Aaron, 2026-09-25): test data only.
+    * "Batch Modified" (added on every batch save as noise next to the real
+      entry) - REMOVED (Aaron, 2026-09-25). addActivity logs only "Batch
+      Created" for a Batch; each action writes its own entry. Edit batch now
+      logs "Batch edited :: Name [Old] -> [New]; ..." listing only real
+      changes (services.save_batch_edit, same transaction as the save).
+      Tests: tests/test_batch_edit_activity.py.
+    * Still unlogged: note edits, deleting a note/test/addition, and batch
+      plan edits before Pitch.
 
 FUTURE ENHANCEMENTS:
 * Batch page: open "Add test", "Add note" and "Add addon" as MODAL forms on

@@ -1254,11 +1254,11 @@ def addActivity(sender,instance,created=False,**kwargs):
     batch = None
     date = timezone.now()
     if sender.__name__ == "Batch":
+        # Only creation. A later save logs nothing here - the action that changed the
+        # batch writes its own entry (stage, transfer, services.save_batch_edit, ...).
         batch = instance
         if created:
             text = "Batch Created"
-        else:
-            text = "Batch Modified"
     if sender.__name__ == "BatchNote":
         batch = instance.batch
         if created:

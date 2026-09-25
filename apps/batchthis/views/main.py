@@ -27,7 +27,7 @@ from apps.batchthis.services import (
     transition_stage_event, transfer_batch, create_vessel, update_vessel,
     plan_totals, save_workflow_template, delete_workflow_template, save_recipe_plan, clear_recipe_plan,
     copy_plan_to_batch, save_batch_plan, batch_plan_locked_reason,
-    plan_progress, allowed_next_stages,
+    plan_progress, allowed_next_stages, save_batch_edit,
 )
 from apps.batchthis.lib.faults import get_active_flags, get_rule_for, StagedFaultRule
 from django.contrib.auth.decorators import login_required
@@ -527,16 +527,19 @@ def editBatch(request, pk):
             if not form.has_changed():
                 logger.debug("editBatch: batch %s '%s' submitted with no changes", pk, batch.name)
                 return HttpResponseRedirect(reverse('batch', kwargs={'pk': pk}))
-            batch.name = form.cleaned_data['name']
-            batch.recipe = form.cleaned_data['recipe']
-            batch.size = form.cleaned_data['size']
-            batch.startingGravity = Quantity(form.cleaned_data['startingGravity'], 'sg')
-            batch.estimatedEndGravity = Quantity(form.cleaned_data['estimatedEndGravity'], 'sg')
             try:
-                # Only the edited fields: never rewrites vessel/fermenter/startdate/active.
-                batch.save(update_fields=['name', 'recipe', 'size', 'startingGravity', 'estimatedEndGravity'])
+                # Saves only the edited fields, and logs what changed in the same transaction.
+                save_batch_edit(
+                    batch,
+                    name=form.cleaned_data['name'],
+                    recipe=form.cleaned_data['recipe'],
+                    size=form.cleaned_data['size'],
+                    starting_gravity=form.cleaned_data['startingGravity'],
+                    estimated_end_gravity=form.cleaned_data['estimatedEndGravity'],
+                )
             except Exception:
                 logger.exception("editBatch: failed to save batch %s '%s'", pk, batch.name)
+                batch.refresh_from_db()   # drop the unsaved values so the page shows what's stored
                 form.add_error(None, "Couldn't save the batch. Nothing was changed - please try again.")
                 return render(request, 'batchthis/editBatch.html', {'form': form, 'batch': batch})
             logger.info("editBatch: updated batch %s '%s' (%s)", pk, batch.name, ", ".join(form.changed_data))

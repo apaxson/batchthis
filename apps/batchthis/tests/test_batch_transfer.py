@@ -83,7 +83,6 @@ def test_transfer_writes_a_transfer_entry_in_the_batch_activity_log():
 
     batch.transfer(src, dst)
 
-    # Other entries (e.g. "Batch Modified") come from the existing addActivity signal.
     entry = batch.activity.get(text__startswith="Transferred")
     assert src.name in entry.text and dst.name in entry.text
 
