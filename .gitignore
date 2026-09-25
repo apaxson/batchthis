@@ -12,3 +12,8 @@ frontend/node_modules/
 /apps/batchthis/examples/adjuncts_all.xml
 /apps/batchthis/examples/fermentables_all.xml
 /apps/batchthis/examples/yeasts_all.xml
+/staticfiles/
+/examples/*
+app_design.txt
+notes.md
+TODO*

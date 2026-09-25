@@ -1,0 +1,17 @@
+# Keep the build context small and free of local state.
+.git
+.idea
+.claude
+.venv
+.pytest_cache
+.ruff_cache
+**/__pycache__
+**/*.pyc
+**/.DS_Store
+db.sqlite3
+media
+log
+staticfiles
+screenshots
+frontend/node_modules
+node_modules

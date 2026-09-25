@@ -11,9 +11,13 @@ https://docs.djangoproject.com/en/3.0/ref/settings/
 """
 
 import os
+import environ
 from django.contrib.messages import constants as messages
 from pint import UnitRegistry
-import logging
+
+env = environ.Env(
+    DEBUG=(bool, False)
+)
 
 MESSAGE_TAGS = {
         messages.DEBUG: 'alert-secondary',
@@ -25,19 +29,28 @@ MESSAGE_TAGS = {
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
+# Load env files, if exists
+environ.Env.read_env(os.path.join(BASE_DIR, '.env'), overwrite=True)  # new, this needs to be after the BASE_DIR variable
 
-# Quick-start development settings - unsuitable for production
-# See https://docs.djangoproject.com/en/3.0/howto/deployment/checklist/
+# Development defaults below; the Docker image (docker/app) overrides them with
+# environment variables. See https://docs.djangoproject.com/en/stable/howto/deployment/checklist/
+
+
+def _env_list(name: str, default: list[str]) -> list[str]:
+    """Comma-separated environment variable -> list; the default when unset."""
+    value = os.getenv(name)
+    return [item.strip() for item in value.split(',') if item.strip()] if value else default
+
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = '#(dur3)ld=2_xsi^gu+yyiy&=b&mn)vo&^xx3_d9h4u&u*q-co'
+SECRET_KEY = os.getenv('DJANGO_SECRET_KEY', '#(dur3)ld=2_xsi^gu+yyiy&=b&mn)vo&^xx3_d9h4u&u*q-co')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = os.getenv('DJANGO_DEBUG', 'true').lower() in ('1', 'true', 'yes')
 
-ALLOWED_HOSTS = ['192.168.1.35',
-                 '0.0.0.0',
-                 '127.0.0.1']
+ALLOWED_HOSTS = _env_list('DJANGO_ALLOWED_HOSTS', ['192.168.1.35', '0.0.0.0', '127.0.0.1'])
+# Needed when the site is reached through a different scheme/host than Django sees, e.g. https://cellar.example.com
+CSRF_TRUSTED_ORIGINS = _env_list('DJANGO_CSRF_TRUSTED_ORIGINS', [])
 
 
 # Application definition
@@ -146,12 +159,26 @@ LOGGING = {
 # Database
 # https://docs.djangoproject.com/en/3.0/ref/settings/#databases
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
+# PostgreSQL when POSTGRES_HOST is set (the Docker setup - docker/postgres), else the local SQLite file.
+if os.getenv('POSTGRES_HOST'):
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.postgresql',
+            'HOST': os.environ['POSTGRES_HOST'],
+            'PORT': os.getenv('POSTGRES_PORT', '5432'),
+            'NAME': os.getenv('POSTGRES_DB', 'batchthis'),
+            'USER': os.getenv('POSTGRES_USER', 'batchthis'),
+            'PASSWORD': os.getenv('POSTGRES_PASSWORD', ''),
+            'CONN_MAX_AGE': 60,
+        }
     }
-}
+else:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
+        }
+    }
 
 
 # Password validation
@@ -191,6 +218,8 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/3.0/howto/static-files/
 
 STATIC_URL = '/static/'
+# `collectstatic` gathers every app's static files here for nginx to serve (DEBUG off).
+STATIC_ROOT = os.getenv('DJANGO_STATIC_ROOT', os.path.join(BASE_DIR, 'staticfiles'))
 CRISPY_TEMPLATE_PACK = 'bootstrap4'
 LOGIN_URL = "login"   # /user/login/ (django.contrib.auth.urls); the default /accounts/login/ doesn't exist
 LOGIN_REDIRECT_URL = "/batchthis"
