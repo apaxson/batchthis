@@ -24,9 +24,10 @@ class DescriptiveQuantityField(QuantityField):
 
     if no markup, assume base_units
 
+    The column is text (see get_internal_type): QuantityField is a FloatField,
+    whose REAL column PostgreSQL/MySQL won't accept markup in.
     """
     def __init__(self, base_units=None, unit_choices=None, *args, **kwargs):
-        kwargs['max_length'] = 30
         self.selected_unit = None
         if not base_units:
             base_units = 'kilogram' #assume 'mass' dimensionality, but we'll override on save
@@ -38,9 +39,12 @@ class DescriptiveQuantityField(QuantityField):
     def deconstruct(self):
         # Used for migrations.  Undo what you added in __init__()
         name, path, args, kwargs = super().deconstruct()
-        del kwargs['max_length']
         #del kwargs['verbose_name']
         return name, path, args, kwargs
+
+    def get_internal_type(self) -> str:
+        # Markup like "20.000000000000004:degree_Fahrenheit" is text of no fixed length.
+        return "TextField"
 
     def set_base_units(self, value):
         # The project's registry (settings.DJANGO_PINT_UNIT_REGISTER), which defines sg/bx.

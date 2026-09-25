@@ -11,11 +11,19 @@ BUGS:
   accepts text there; PostgreSQL/MySQL would reject it. Affects Batch.size,
   Vessel.capacity/fill, BatchAddition.amount, BatchTest.value, Recipe
   batchSize/estFG, Yeast min/max temp, RecipeFermentable amount.
-    * Fix before any move off SQLite: make the field a real text column
-      (get_internal_type() -> "CharField" with max_length), then
-      makemigrations - SQLite keeps the same text values, so existing
-      rows survive. Also check the markup fits max_length (long float
-      reprs like "20.000000000000004:degree_Fahrenheit" are 36 chars).
+    * FIXED (2026-09-25): get_internal_type() -> "TextField" (no length
+      limit, so long float reprs fit; max_length=30 removed). No migration:
+      migrations reference the field class, so column types come from it -
+      a NEW database (PostgreSQL included) gets text columns from 0001 on;
+      the existing db.sqlite3 keeps its REAL declarations, harmless since
+      SQLite already holds the text. No query filters/sorts on these
+      fields, so text comparison changes nothing. Tests:
+      tests/test_quantity_field_storage.py.
+    * Moving data off SQLite = migrate a fresh DB, then dumpdata/loaddata
+      (checked 2026-09-25: all values read back equal). BLOCKER for that:
+      addActivity (models.py) doesn't skip raw fixture saves, so loaddata
+      writes bogus ActivityLog rows (7 -> 13 on the dev data). Guard the old
+      signals with `if kwargs.get('raw'): return` before a move.
     * Related: set_base_units() changes self.base_units on the shared
       field instance per value (per-row state on a class-level object).
 
