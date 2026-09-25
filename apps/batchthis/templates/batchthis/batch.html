@@ -71,7 +71,8 @@
   </div>
 </div>
 
-<!-- Specific Gravity -->
+<!-- Stage timeline -->
+<div class="cl-panel cl-panel--stacked">
 <div class="cl-section-head">
   <div class="cl-section-title">Stage timeline</div>
   {% if batch.active %}<div class="cl-section-note"><a href="{% url 'addDetailStage' batch.pk %}">Stage transition</a></div>{% endif %}
@@ -109,9 +110,11 @@
     {% endif %}
   </div>
 </div>
+</div>
 
 {% if plan.steps %}
-<section class="cl-plan" style="margin-top:26px;">
+<div class="cl-panel cl-panel--stacked">
+<section class="cl-plan">
   <div class="cl-section-head">
     <div class="cl-section-title">Plan</div>
     <div class="cl-section-note">
@@ -128,6 +131,7 @@
     {% endif %}
   </details>
 </section>
+</div>
 {% endif %}
 
 <div class="cl-cols cl-cols--aside-left">

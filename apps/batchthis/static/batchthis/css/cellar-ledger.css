@@ -415,6 +415,8 @@ button.nav-link { width: 100%; background: none; border: 0; border-left: 2px sol
   padding: 16px 18px 18px;
 }
 .cl-panel + .cl-panel { margin-top: 16px; }
+/* A full-width panel stacked above more content, e.g. the batch page's Stage timeline and Plan. */
+.cl-panel--stacked { margin-bottom: 16px; }
 /* A table ending a panel (e.g. recipe page "Batches brewed") - the panel's padding is the bottom space. */
 .cl-panel > .cl-table-scroll:last-child .cl-ledger { margin-bottom: 0; }
 
@@ -557,6 +559,8 @@ button.nav-link { width: 100%; background: none; border: 0; border-left: 2px sol
    inline from the view); each state band spans its stays' columns.
    Past = settled ink, current = honey, future = dashed/faint placeholders. */
 .cl-timebar-scroll { overflow-x: auto; margin-bottom: 28px; }
+/* Ending a panel: the panel's padding is the bottom space. */
+.cl-panel > .cl-timebar-scroll:last-child { margin-bottom: 0; }
 .cl-timebar { display: grid; column-gap: 3px; row-gap: 8px; min-width: min-content; }
 
 .cl-timebar-band {
