@@ -906,10 +906,14 @@ class Batch(models.Model):
         return gravity_tests[0].chart_value
 
 
-    def percent_complete(self):
-        est_fg = self.estimatedEndGravity.magnitude
-        current_gravity = self.current_gravity()
-        return round((self.startingGravity.magnitude - current_gravity) / (self.startingGravity.magnitude - est_fg) * 100)
+    def percent_complete(self) -> int | None:
+        """Gravity drop so far as % of the expected drop; None when the end gravity isn't below the start."""
+        expected_drop = self.startingGravity.magnitude - self.estimatedEndGravity.magnitude
+        if expected_drop <= 0:
+            # The forms require FG < SG; this covers batches saved before that check.
+            logger.debug(f"percent_complete: batch={self.pk} has no expected gravity drop ({expected_drop})")
+            return None
+        return round((self.startingGravity.magnitude - self.current_gravity()) / expected_drop * 100)
 
 
 class BatchPlanStep(PlanStep):

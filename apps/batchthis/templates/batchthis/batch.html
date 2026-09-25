@@ -184,7 +184,7 @@
     <div class="cl-instrument">
       <div class="cl-instrument-head">
         <span class="cl-instrument-title">Specific gravity</span>
-        <span class="cl-instrument-current">{{ percentComplete }}% to estimated FG</span>
+        <span class="cl-instrument-current">{% if percentComplete is not None %}{{ percentComplete }}%{% else %}&mdash;{% endif %} to estimated FG</span>
       </div>
       {% if gravityChart.values %}
         <p class="cl-instrument-note">1/3 sugar break (time for a nutrient addition) at {{ thirdSugarBreak }} SG.</p>

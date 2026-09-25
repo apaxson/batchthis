@@ -108,7 +108,37 @@ class BatchAdditionForm(ModelForm):
         if 'adjunct' in self.errors:
             self.fields['adjunct'].widget.attrs['aria-invalid'] = 'true'
 
-class BatchAddForm(forms.Form):
+class GravityPairMixin:
+    """
+    A batch form's startingGravity / estimatedEndGravity: each a positive number
+    (cleaned to a float), and the end gravity lower than the start - equal ones
+    made Batch.percent_complete() divide by zero (Aaron, 2026-09-25).
+    """
+    def _clean_gravity(self, field: str) -> float:
+        try:
+            value = float(self.cleaned_data[field])
+        except (TypeError, ValueError):
+            raise ValidationError("Enter a specific gravity, e.g. 1.090.")
+        if value <= 0:
+            raise ValidationError("Enter a specific gravity, e.g. 1.090.")
+        return value
+
+    def clean_startingGravity(self) -> float:
+        return self._clean_gravity('startingGravity')
+
+    def clean_estimatedEndGravity(self) -> float:
+        return self._clean_gravity('estimatedEndGravity')
+
+    def clean(self):
+        cleaned = super().clean()
+        start, end = cleaned.get('startingGravity'), cleaned.get('estimatedEndGravity')
+        if start is not None and end is not None and end >= start:
+            self.add_error('estimatedEndGravity',
+                           f"Estimated end gravity must be lower than the starting gravity ({start:.3f}).")
+        return cleaned
+
+
+class BatchAddForm(GravityPairMixin, forms.Form):
     name = forms.CharField(widget=forms.TextInput(attrs={'placeholder':'Name of Batch'}),required=True)
     startdate = forms.DateField(label="Start Date",widget=DateInput(attrs={'type':'date'}),required=True)
     size = VolumeField(label="Batch Size", placeholder="i.e. 6 gallons")
@@ -149,7 +179,7 @@ class BatchAddForm(forms.Form):
             return timezone.now()
         return timezone.make_aware(datetime.datetime.combine(start, datetime.time.min))
 
-class BatchEditForm(forms.Form):
+class BatchEditForm(GravityPairMixin, forms.Form):
     """
     Correct an existing batch's details. Deliberately has no fermenter/vessel
     or start date: vessel moves go through Stage transition / Ad-hoc transfer (so
@@ -161,21 +191,6 @@ class BatchEditForm(forms.Form):
     size = VolumeField(label="Batch Size", placeholder="i.e. 6 gallons")
     startingGravity = forms.CharField(widget=PrecisionTextWidget(precision=3, base_units='sg'), label="Starting Gravity")
     estimatedEndGravity = forms.CharField(widget=PrecisionTextWidget(precision=3, base_units='sg'), label="Estimated End Gravity")
-
-    def _clean_gravity(self, field: str) -> float:
-        try:
-            value = float(self.cleaned_data[field])
-        except (TypeError, ValueError):
-            raise ValidationError("Enter a specific gravity, e.g. 1.090.")
-        if value <= 0:
-            raise ValidationError("Enter a specific gravity, e.g. 1.090.")
-        return value
-
-    def clean_startingGravity(self) -> float:
-        return self._clean_gravity('startingGravity')
-
-    def clean_estimatedEndGravity(self) -> float:
-        return self._clean_gravity('estimatedEndGravity')
 
 
 class BatchStageForm(forms.Form):
