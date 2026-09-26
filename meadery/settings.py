@@ -47,7 +47,7 @@ SECRET_KEY = env('SECRET_KEY')
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = env('DEBUG')
 
-ALLOWED_HOSTS = _env_list('DJANGO_ALLOWED_HOSTS', ['192.168.1.35', '0.0.0.0', '127.0.0.1'])
+ALLOWED_HOSTS = _env_list('DJANGO_ALLOWED_HOSTS', ['0.0.0.0', '127.0.0.1'])
 # Needed when the site is reached through a different scheme/host than Django sees, e.g. https://cellar.example.com
 CSRF_TRUSTED_ORIGINS = _env_list('DJANGO_CSRF_TRUSTED_ORIGINS', [])
 
