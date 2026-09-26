@@ -113,7 +113,7 @@
               <span class="cl-row-link">{{ item.yeast.name }}</span>
               <span class="cl-batch-style">{{ item.yeast.flocculation }} floc &middot; {{ item.yeast.attenuation|floatformat:0 }}% atten.</span>
             </td>
-            <td>{{ item.yeast.type }} &middot; {{ item.yeast.get_form_display }}</td>
+            <td>{{ item.yeast.type }} &middot; {{ item.yeast.get_form_display|default:"—" }}</td>
             <td class="cl-num">{{ item.yeast.min_temp_f.magnitude|floatformat:0 }}&ndash;{{ item.yeast.max_temp_f.magnitude|floatformat:0 }}</td>
             <td class="cl-num">{{ item.yeast.alc_tolerance }} %</td>
             <td class="cl-num">{{ item.amount }}</td>

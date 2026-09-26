@@ -142,7 +142,8 @@ class Unit(models.Model):
         (TIME, ("Timing")),
         (VOLUME, ("Volume"))
     )
-    identifier = models.CharField(max_length=10, help_text="Enter the unit identifier, i.e. 'mgL' or 'ph'")
+    # 30, not 10: migration 0002 seeds "specific-gravity" (0001_initial was edited to match - see TODO.txt).
+    identifier = models.CharField(max_length=30, help_text="Enter the unit identifier, i.e. 'mgL' or 'ph'")
     label = models.CharField(max_length=25, null=True, help_text="Enter abbreviation label of the measured unit, i.e. 'mg/L'")
     name = models.CharField(max_length=25, null=True, help_text="Descriptive Name of the measuring unit.")
     category = models.SmallIntegerField(choices = CATEGORIES, null=False)
@@ -259,7 +260,7 @@ class InventoryItem(models.Model):
 
     name = models.CharField(max_length=75)
     supplier = models.CharField(max_length=75, null=True, blank=True)
-    description = models.CharField(max_length=200, null=True, blank=True)
+    description = models.TextField(null=True, blank=True)  # BeerSmith descriptions run to ~1000 characters
     version = models.IntegerField(null=True, blank=True)
 
 
@@ -299,7 +300,7 @@ class FermentableType(models.Model):
     def __str__(self):
         return self.name
 
-    name = models.CharField(max_length=10)
+    name = models.CharField(max_length=50)
 
 
 class Fermentable(InventoryItem):
@@ -321,13 +322,14 @@ class Fermentable(InventoryItem):
 
 class Yeast(InventoryItem):
     type = models.CharField(max_length=20) # Ale, Champagne, Wine, Lager, etc
-    form = models.CharField(max_length=20, choices=(('dry','Dry'),('liquid','Liquid')), verbose_name="Format")
+    # Blank = unknown (464 yeasts from an old import bug had no real value).
+    form = models.CharField(max_length=20, choices=(('dry','Dry'),('liquid','Liquid')), blank=True, verbose_name="Format")
     #min_temp = models.FloatField()
     min_temp = DescriptiveQuantityField(base_units='degC', unit_choices=['degC', 'degF'])
     #max_temp = models.FloatField()
     max_temp = DescriptiveQuantityField(base_units='degC', unit_choices=['degC', 'degF'])
     alc_tolerance = models.IntegerField(verbose_name="Alcohol Tolerance %", default=0)
-    flocculation = models.CharField(max_length=7)
+    flocculation = models.CharField(max_length=20)  # BeerSmith uses "Very High"
     attenuation = models.FloatField()
     notes = models.TextField(null=True, blank=True)
 
@@ -460,7 +462,7 @@ class RecipeItem(models.Model):
     intended_use = models.ForeignKey(AdjunctUsage, on_delete=models.RESTRICT)
     _amount_weight = DescriptiveQuantityField('kilograms', null=True, blank=True, unit_choices=['lb', 'gram', 'oz', 'milligram', 'kilogram'])
     _amount_volume = DescriptiveQuantityField('liters', null=True, blank=True, unit_choices=['floz', 'ml', 'gallon', 'liter'])
-    recipe_notes = models.CharField(max_length=200, null=True, blank=True)
+    recipe_notes = models.TextField(null=True, blank=True)
     amount = DescriptiveQuantityField(null=True, blank=True)
 
 

@@ -147,7 +147,7 @@ class Migration(migrations.Migration):
             name='Unit',
             fields=[
                 ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('identifier', models.CharField(help_text="Enter the unit identifier, i.e. 'mgL' or 'ph'", max_length=10)),
+                ('identifier', models.CharField(help_text="Enter the unit identifier, i.e. 'mgL' or 'ph'", max_length=30)),
                 ('label', models.CharField(help_text="Enter abbreviation label of the measured unit, i.e. 'mg/L'", max_length=25, null=True)),
                 ('name', models.CharField(help_text='Descriptive Name of the measuring unit.', max_length=25, null=True)),
                 ('category', models.SmallIntegerField(choices=[(0, 'Temperature'), (1, 'Concentration/Density'), (2, 'Weight/Mass'), (3, 'pH'), (4, 'Timing'), (5, 'Volume')])),

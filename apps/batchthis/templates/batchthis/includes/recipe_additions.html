@@ -78,7 +78,7 @@
       <tr>
         <td class="cl-row-link js-mouse-tooltip" data-toggle="tooltip" title="{{ yeast.yeast.notes|default:'' }}">{{ yeast.yeast.name }}</td>
         <td>{{ yeast.yeast.type }}</td>
-        <td>{{ yeast.yeast.get_form_display }}</td>
+        <td>{{ yeast.yeast.get_form_display|default:"—" }}</td>
         <td class="cl-num cl-yeast-metric">{{ yeast.yeast.min_temp_f.magnitude|floatformat:1 }}</td>
         <td class="cl-num cl-yeast-metric">{{ yeast.yeast.max_temp_f.magnitude|floatformat:1 }}</td>
         <td class="cl-num cl-yeast-metric">{{ yeast.yeast.alc_tolerance }}</td>
