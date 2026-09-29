@@ -41,17 +41,14 @@ Lots of features and possibilities.
 - After pulling new code: `docker compose up -d --build`
 
 Main Dashboard:
-![](screenshots/batch_dashbboard_preAlpha.png)
+![batchthis_screen_overview.png](screenshots/batchthis_screen_overview.png)
 
 Batch Details Page
-![](screenshots/batch_detail_preAlpha.png)
+![batchthis_screen_currentBatch.png](screenshots/batchthis_screen_currentBatch.png)
 
 Batch Test Report
-![](screenshots/batch_graph_preAlpha.png)
+![batchthis_screen_allTests.png](screenshots/batchthis_screen_allTests.png)
 
 Example Login Screen
 ![](screenshots/batchthis_login_screen.png)
 
-Mobile Ready:
-![](screenshots/batch_detail_mobile.jpeg)
-![](screenshots/batch_test_add_mobile.jpeg)
