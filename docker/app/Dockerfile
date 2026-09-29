@@ -5,17 +5,19 @@
 # Build (from the repo root - the build context is the whole project):
 #   docker build -f docker/app/Dockerfile -t batchthis-app .
 #
+# Or run both containers with compose.yaml at the repo root: docker compose up -d
+#
 # Run (with the database from docker/postgres on the same network):
 #   docker run -d --name batchthis-app --network batchthis -p 8080:80 \
 #     -e POSTGRES_HOST=batchthis-db -e POSTGRES_PASSWORD=... \
-#     -e DJANGO_SECRET_KEY=... -e DJANGO_ALLOWED_HOSTS=localhost,127.0.0.1 \
+#     -e SECRET_KEY=... -e DJANGO_ALLOWED_HOSTS=localhost,127.0.0.1 \
 #     -v batchthis-media:/app/media batchthis-app
 #
 # Environment (all read by meadery/settings.py):
-#   DJANGO_SECRET_KEY            required in production
+#   SECRET_KEY                   required - Django won't start without it
 #   DJANGO_ALLOWED_HOSTS         comma-separated host names the site is reached by
 #   DJANGO_CSRF_TRUSTED_ORIGINS  e.g. https://cellar.example.com, when behind HTTPS/another proxy
-#   DJANGO_DEBUG                 false by default in this image
+#   DEBUG                        false by default in this image
 #   POSTGRES_HOST/PORT/DB/USER/PASSWORD   PostgreSQL; without POSTGRES_HOST it falls back to SQLite
 #   GUNICORN_WORKERS             default 3
 
@@ -28,7 +30,7 @@ ENV DEBIAN_FRONTEND=noninteractive \
     VIRTUAL_ENV=/opt/venv \
     PATH=/opt/venv/bin:$PATH \
     DJANGO_SETTINGS_MODULE=meadery.settings \
-    DJANGO_DEBUG=false \
+    DEBUG=false \
     DJANGO_STATIC_ROOT=/app/staticfiles
 
 RUN apt-get update \
@@ -52,7 +54,7 @@ COPY docker/app/entrypoint.sh /usr/local/bin/entrypoint.sh
 # before settings load. collectstatic needs no database; the key is a throwaway.
 RUN chmod +x /usr/local/bin/entrypoint.sh \
  && mkdir -p log/batchthis media staticfiles \
- && DJANGO_SECRET_KEY=collectstatic-only python manage.py collectstatic --noinput \
+ && SECRET_KEY=collectstatic-only python manage.py collectstatic --noinput \
  && chown -R www-data:www-data log media
 
 EXPOSE 80

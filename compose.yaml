@@ -1,0 +1,73 @@
+# Batch This - the app (Django + gunicorn behind nginx) and its PostgreSQL database.
+#
+#   docker compose up -d --build     build and start both (the app migrates on start)
+#   docker compose logs -f app       follow the app's logs
+#   docker compose down              stop and remove the containers (data volumes are kept)
+#
+#   docker compose exec app python manage.py createsuperuser        Create the admin user
+#
+#
+# Settings come from .env next to this file (Compose reads it automatically for the
+# ${...} values below). Needed there, besides what Django already uses:
+#   SECRET_KEY=...            required (the same key Django reads locally)
+#   POSTGRES_PASSWORD=...     required - the database password, used by both services
+# Optional:
+#   APP_PORT=8080                                    host port for the site
+#   DJANGO_ALLOWED_HOSTS=localhost,127.0.0.1         host names the site is reached by
+#   DJANGO_CSRF_TRUSTED_ORIGINS=https://cellar.example.com   when behind HTTPS/another proxy
+#   GUNICORN_WORKERS=3
+#   DJANGO_LOG_LEVEL=INFO
+#
+# .env itself is never copied into the image (.dockerignore); the app container gets
+# only the variables listed under `environment:`.
+#
+# The volumes are named batchthis-pgdata and batchthis-media - the same ones the
+# `docker run` instructions in docker/*/Dockerfile use - so switching to Compose keeps
+# existing data. Stop and remove the hand-started containers first:
+#   docker stop batchthis-app batchthis-db && docker rm batchthis-app batchthis-db
+
+name: batchthis
+
+services:
+  db:
+    build: docker/postgres
+    environment:
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+    volumes:
+      - pgdata:/var/lib/postgresql
+    # Not published to the host. To reach it with psql or for dumpdata/loaddata, add:
+    # ports:
+    #   - "5432:5432"
+    restart: unless-stopped
+
+  app:
+    build:
+      context: .
+      dockerfile: docker/app/Dockerfile
+    depends_on:
+      db:
+        condition: service_healthy   # docker/postgres's pg_isready healthcheck
+    environment:
+      SECRET_KEY: ${SECRET_KEY:?Set SECRET_KEY in .env}
+      DEBUG: "false"
+      DJANGO_ALLOWED_HOSTS: ${DJANGO_ALLOWED_HOSTS:-localhost,127.0.0.1}
+      DJANGO_CSRF_TRUSTED_ORIGINS: ${DJANGO_CSRF_TRUSTED_ORIGINS:-}
+      DJANGO_LOG_LEVEL: ${DJANGO_LOG_LEVEL:-INFO}
+      GUNICORN_WORKERS: ${GUNICORN_WORKERS:-3}
+      POSTGRES_HOST: db
+      POSTGRES_USER: ${POSTGRES_USER:?Set POSTGRES_USER in .env}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+    ports:
+      - "${APP_PORT:-8080}:80"
+    volumes:
+      - media:/app/media
+    restart: unless-stopped
+
+  # Celery worker + beat and Redis go here once Celery is set up
+  # (TODO.txt, DYNAMIC WORKFLOWS ROADMAP phase 0a) - it isn't installed yet.
+
+volumes:
+  pgdata:
+    name: batchthis-pgdata
+  media:
+    name: batchthis-media

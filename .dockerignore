@@ -9,6 +9,10 @@
 **/*.pyc
 **/.DS_Store
 db.sqlite3
+# Secrets stay out of the image; the container gets its settings from the environment.
+.env
+.env.*
+!.env.example
 media
 log
 staticfiles
