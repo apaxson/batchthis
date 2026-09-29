@@ -49,6 +49,12 @@ Batch Details Page
 Batch Test Report
 ![batchthis_screen_allTests.png](screenshots/batchthis_screen_allTests.png)
 
+VesselStatus:
+![batchthis_screen_vesselStatus.png](screenshots/batchthis_screen_vesselStatus.png)
+
+Vessel Listing:
+![batchthis_screen_vesselListing.png](screenshots/batchthis_screen_vesselListing.png)
+
 Example Login Screen
 ![](screenshots/batchthis_login_screen.png)
 
