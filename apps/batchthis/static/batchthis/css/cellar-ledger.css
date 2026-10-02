@@ -1,5 +1,7 @@
 /*
   Cellar Ledger — visual redesign tokens + components for Batch This.
+  Same warm palette and Fraunces headings, drawn as rounded cards with soft
+  shadows (--radius*, --shadow*) and Inter tabular figures for numbers.
   Loaded after sb-admin-2.min.css in base.html so it can override the stock
   SB Admin 2 theme. Currently styles: the app shell/sidebar (all pages) and
   the dashboard (index.html). See docs/flagged-notifications.md for the
@@ -7,22 +9,34 @@
 */
 
 :root {
-  --paper: #E9ECE0;
-  --paper-raised: #F5F6EF;
-  --ink: #23291F;
-  --ink-soft: #5B6154;
+  --paper: #EEF0E8;
+  --paper-raised: #FBFBF7;
+  --ink: #1F2419;
+  --ink-soft: #5D6356;
   --ink-faint: #8B9080;
   --honey: #A66A19;
-  --honey-line: #B87A1F;
+  --honey-line: #B5741A;
+  --honey-soft: #F6E7CD;
+  --honey-ink: #7A4A0C;
   --must: #3F5038;
   --slate: #4C6C7E;
   --brick: #96382B;
   --moss: #5C6B3F;
   --plum: #6B4664;
   --rust: #8C4A2F;
-  --line: #D3CFBC;
-  --line-soft: #DEDBCA;
+  --must-soft: #E2E8DA;
+  --brick-soft: #F7E3DE;
+  --line: #DFE0D4;
+  --line-soft: #E9EAE1;
   --focus: #2E5AAC;
+
+  --radius-sm: 8px;
+  --radius: 12px;
+  --radius-lg: 18px;
+  --shadow: 0 1px 2px rgba(31, 36, 25, 0.04), 0 8px 24px -12px rgba(31, 36, 25, 0.14);
+  --shadow-pop: 0 12px 32px -8px rgba(31, 36, 25, 0.22), 0 0 0 1px rgba(31, 36, 25, 0.05);
+  --font-sans: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-num: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
 }
 
 .font-display {
@@ -33,8 +47,14 @@
 body {
   background: var(--paper);
   color: var(--ink);
+  font-family: var(--font-sans);
+  font-feature-settings: "tnum" 1, "cv11" 1;
+  -webkit-font-smoothing: antialiased;
+  border-top: none;
 }
 
+a { color: var(--slate); }
+a:hover { color: var(--ink); }
 a.nav-link, a.sub-link, a.dropdown-item {
   color: inherit;
 }
@@ -51,6 +71,7 @@ a.nav-link, a.sub-link, a.dropdown-item {
   display: flex;
   align-items: stretch;
   min-height: 100vh;
+  padding: 14px 0 0 14px;
 }
 
 /* ---------- Sidebar ---------- */
@@ -59,12 +80,13 @@ a.nav-link, a.sub-link, a.dropdown-item {
   flex: 0 0 var(--w);
   width: var(--w);
   position: sticky;
-  top: 0;
-  height: 100vh;
+  top: 14px;
+  height: calc(100vh - 28px);
   overflow-y: auto;
   overflow-x: hidden;
   background: var(--paper-raised);
-  border-right: 1px solid var(--line);
+  border-radius: 20px;
+  box-shadow: var(--shadow);
   display: flex;
   flex-direction: column;
   transition: width 0.16s ease;
@@ -76,8 +98,7 @@ a.nav-link, a.sub-link, a.dropdown-item {
   align-items: center;
   justify-content: space-between;
   gap: 8px;
-  padding: 16px 14px;
-  border-bottom: 1px solid var(--line);
+  padding: 18px 14px 12px 16px;
   min-height: 28px;
 }
 .cl-brand {
@@ -90,24 +111,29 @@ a.nav-link, a.sub-link, a.dropdown-item {
 }
 .cl-brand-mark {
   flex: 0 0 auto;
-  width: 26px;
-  height: 26px;
-  border: 1px solid var(--ink);
-  border-radius: 3px;
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #C98A2B, #8E5512);
+  color: #fff;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-family: 'IBM Plex Mono', monospace;
-  font-size: 0.72rem;
-  font-weight: 600;
+  font-family: var(--font-num);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
 }
 .cl-brand-text {
-  font-size: 1.15rem;
+  font-size: 1.2rem;
   font-weight: 600;
   letter-spacing: -0.01em;
   white-space: nowrap;
 }
 .cl-brand-text span { color: var(--honey); }
+/* Collapsed rail: logo mark above the expand button, both centered. */
+[data-collapsed="true"] .cl-brand-row { flex-direction: column; padding: 16px 0 10px; }
+[data-collapsed="true"] .cl-brand-text { display: none; }
 .cl-rail-btn {
   flex: 0 0 auto;
   width: 26px;
@@ -115,34 +141,35 @@ a.nav-link, a.sub-link, a.dropdown-item {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: transparent;
-  border: 1px solid var(--line);
-  border-radius: 3px;
+  background: var(--paper);
+  border: none;
+  border-radius: var(--radius-sm);
   color: var(--ink-soft);
   cursor: pointer;
 }
-.cl-rail-btn:hover { color: var(--ink); border-color: var(--ink-soft); }
+.cl-rail-btn:hover { color: var(--ink); background: var(--line-soft); }
 .cl-rail-btn svg { width: 13px; height: 13px; transition: transform 0.16s ease; }
 [data-collapsed="true"] .cl-rail-btn svg { transform: rotate(180deg); }
 
 .cl-nav-scroll { flex: 1 1 auto; padding: 10px 10px 14px; }
 
-.cl-nav-group + .cl-nav-group { margin-top: 16px; }
+.cl-nav-group + .cl-nav-group { margin-top: 18px; }
 .cl-nav-heading {
-  font-size: 0.7rem;
+  font-size: 0.68rem;
   font-weight: 600;
   color: var(--ink-faint);
-  padding: 0 8px 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  padding: 0 12px 6px;
 }
 [data-collapsed="true"] .cl-nav-heading { display: none; }
 
 .nav-link, .sub-link {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 8px 9px;
-  border-radius: 3px;
-  border-left: 2px solid transparent;
+  gap: 11px;
+  padding: 9px 12px;
+  border-radius: 10px;
   color: var(--ink-soft);
   text-decoration: none;
   font-size: 0.87rem;
@@ -150,33 +177,30 @@ a.nav-link, a.sub-link, a.dropdown-item {
   cursor: pointer;
 }
 /* A nav item that's an action, not a page (e.g. Log out): look like the links. */
-button.nav-link { width: 100%; background: none; border: 0; border-left: 2px solid transparent; font-family: inherit; text-align: left; }
+button.nav-link { width: 100%; background: none; border: 0; font-family: inherit; text-align: left; }
 .nav-link svg, .sub-link .tag-dot { flex: 0 0 auto; }
 .nav-link svg { width: 18px; height: 18px; stroke: currentColor; }
 .nav-link:hover, .sub-link:hover { background: var(--paper); color: var(--ink); }
 .nav-link[aria-current="page"] {
-  color: var(--ink);
-  background: var(--paper);
-  border-left-color: var(--honey-line);
+  color: var(--honey-ink);
+  background: var(--honey-soft);
   font-weight: 600;
 }
 .nav-link.is-soon { opacity: 0.55; cursor: default; pointer-events: none; }
 .nav-link .nav-label { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .nav-badge {
   margin-left: auto;
-  font-family: 'IBM Plex Mono', monospace;
-  font-size: 0.7rem;
+  font-family: var(--font-num);
+  font-size: 0.66rem;
   font-weight: 600;
   color: var(--ink-faint);
+  background: var(--paper);
+  padding: 2px 7px;
+  border-radius: 99px;
 }
 [data-collapsed="true"] .nav-link {
   justify-content: center;
   padding: 9px 0;
-  border-left: none;
-}
-[data-collapsed="true"] .nav-link[aria-current="page"] {
-  background: var(--paper);
-  box-shadow: inset 2px 0 0 var(--honey-line);
 }
 [data-collapsed="true"] .nav-label,
 [data-collapsed="true"] .nav-badge,
@@ -186,7 +210,8 @@ button.nav-link { width: 100%; background: none; border: 0; border-left: 2px sol
 
 .cl-sub-list { margin: 2px 0 0 30px; display: flex; flex-direction: column; gap: 1px; }
 .sub-link {
-  padding: 5px 9px;
+  padding: 7px 10px;
+  border-radius: 9px;
   font-size: 0.82rem;
   gap: 8px;
 }
@@ -202,6 +227,7 @@ button.nav-link { width: 100%; background: none; border: 0; border-left: 2px sol
 .sub-link[aria-current="page"] .tag-dot {
   background: var(--honey-line);
   border-color: var(--honey-line);
+  box-shadow: 0 0 0 3px var(--honey-soft);
 }
 /* A nav item that only heads a sub-list (Tools): not a link itself. */
 .nav-link.nav-parent { cursor: default; }
@@ -214,8 +240,7 @@ button.nav-link { width: 100%; background: none; border: 0; border-left: 2px sol
 [data-collapsed="true"] .cl-sub-list--rail .sub-link svg { width: 18px; height: 18px; }
 
 .cl-sidebar-foot {
-  border-top: 1px solid var(--line);
-  padding: 8px;
+  padding: 10px;
 }
 .cl-collapse-toggle {
   width: 100%;
@@ -226,7 +251,7 @@ button.nav-link { width: 100%; background: none; border: 0; border-left: 2px sol
   padding: 8px 9px;
   background: transparent;
   border: none;
-  border-radius: 3px;
+  border-radius: 10px;
   color: var(--ink-soft);
   font: inherit;
   font-size: 0.82rem;
@@ -243,8 +268,9 @@ button.nav-link { width: 100%; background: none; border: 0; border-left: 2px sol
   .cl-sidebar { --w: 64px !important; }
   .cl-rail-btn, .cl-collapse-toggle { display: none; }
   .cl-nav-heading, .nav-label, .nav-badge, .cl-sub-list, .cl-brand-text { display: none; }
-  .nav-link { justify-content: center; padding: 9px 0; border-left: none; }
-  .nav-link[aria-current="page"] { box-shadow: inset 2px 0 0 var(--honey-line); }
+  #wrapper.shell { padding: 8px 0 0 8px; }
+  .cl-sidebar { top: 8px; height: calc(100vh - 16px); border-radius: 16px; }
+  .nav-link { justify-content: center; padding: 9px 0; }
   .nav-parent { display: none; }
   .cl-sub-list.cl-sub-list--rail { display: flex; margin: 0; }
   .cl-sub-list--rail .sub-link { justify-content: center; padding: 9px 0; }
@@ -252,50 +278,49 @@ button.nav-link { width: 100%; background: none; border: 0; border-left: 2px sol
 }
 
 /* ---------- Content ---------- */
-#content-wrapper.cl-content-area {
+#wrapper #content-wrapper.cl-content-area {
+  background: transparent;
   padding-inline: clamp(16px, 2.5vw, 32px);
+  padding-top: 18px;
 }
 .cl-page-head {
-  padding-bottom: 14px;
   margin-bottom: 22px;
-  border-bottom: 1.5px solid var(--ink);
 }
 .cl-page-head .cl-wordmark {
-  font-size: 1.5rem;
+  font-size: 2rem;
   font-weight: 600;
-  letter-spacing: -0.01em;
+  letter-spacing: -0.02em;
+  line-height: 1.15;
 }
 
 /* ---------- Ledger strip (dashboard stat row) ---------- */
 .cl-strip {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  border: 1px solid var(--line);
-  border-radius: 3px;
-  overflow: hidden;
+  gap: 14px;
   margin-bottom: 28px;
-  background: var(--paper-raised);
 }
 .cl-strip-cell {
-  padding: 14px 16px;
-  border-left: 1px solid var(--line);
+  padding: 20px 22px;
+  background: var(--paper-raised);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow);
 }
-.cl-strip-cell:first-child { border-left: none; }
 .cl-strip-label {
-  font-size: 0.72rem;
-  font-weight: 600;
+  font-size: 0.8rem;
+  font-weight: 500;
   color: var(--ink-soft);
-  letter-spacing: 0.02em;
 }
 .cl-strip-value {
-  font-family: 'IBM Plex Mono', monospace;
+  font-family: var(--font-num);
   font-variant-numeric: tabular-nums;
-  font-size: 1.6rem;
+  font-size: 2rem;
   font-weight: 600;
-  margin-top: 2px;
+  letter-spacing: -0.03em;
+  margin-top: 6px;
 }
-.cl-strip-unit { font-size: 0.9rem; color: var(--ink-soft); font-weight: 500; }
-@media (max-width: 640px) { .cl-strip { grid-template-columns: repeat(1, 1fr); } .cl-strip-cell { border-left: none; border-top: 1px solid var(--line); } .cl-strip-cell:first-child { border-top: none; } }
+.cl-strip-unit { font-size: 0.9rem; color: var(--ink-faint); font-weight: 500; letter-spacing: 0; }
+@media (max-width: 640px) { .cl-strip { grid-template-columns: repeat(1, 1fr); } }
 
 /* ---------- Section heading ---------- */
 .cl-section-head {
@@ -305,7 +330,7 @@ button.nav-link { width: 100%; background: none; border: 0; border-left: 2px sol
   gap: 12px;
   margin-bottom: 10px;
 }
-.cl-section-title { font-size: 1.05rem; font-weight: 600; }
+.cl-section-title { font-size: 1.05rem; font-weight: 600; letter-spacing: -0.01em; }
 .cl-section-note { font-size: 0.82rem; color: var(--ink-soft); }
 
 /* ---------- Ledger table ---------- */
@@ -316,23 +341,26 @@ button.nav-link { width: 100%; background: none; border: 0; border-left: 2px sol
 }
 .cl-ledger th {
   text-align: left;
-  font-size: 0.72rem;
+  font-size: 0.68rem;
   font-weight: 600;
-  color: var(--ink-soft);
-  letter-spacing: 0.02em;
-  padding: 0 12px 8px;
-  border-bottom: 1px solid var(--ink);
+  color: var(--ink-faint);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 0 12px 10px;
+  border-bottom: 1px solid var(--line);
 }
 .cl-ledger td {
   padding: 12px 12px;
   border-bottom: 1px solid var(--line-soft);
   vertical-align: middle;
 }
-.cl-ledger tbody tr:hover { background: var(--paper-raised); }
+.cl-ledger tbody tr:hover td { background: var(--paper); }
+.cl-ledger tbody tr:hover td:first-child { border-radius: 10px 0 0 10px; }
+.cl-ledger tbody tr:hover td:last-child { border-radius: 0 10px 10px 0; }
 .cl-ledger th:first-child, .cl-ledger td:first-child { padding-left: 4px; }
 .cl-row-link { font-weight: 600; }
 /* Totals row, e.g. a plan's planned time (includes/plan_steps.html). */
-.cl-ledger tfoot td { font-weight: 600; border-bottom: none; border-top: 1px solid var(--ink); }
+.cl-ledger tfoot td { font-weight: 600; border-bottom: none; border-top: 1px solid var(--line); }
 .cl-plan-states { margin-left: 14px; font-weight: 400; color: var(--ink-soft); }
 .cl-plan-progress th, .cl-plan-progress td { white-space: nowrap; padding-left: 8px; padding-right: 8px; }
 .cl-plan-progress td { font-size: 0.86rem; }
@@ -347,15 +375,15 @@ button.nav-link { width: 100%; background: none; border: 0; border-left: 2px sol
 .cl-table-search {
   width: 240px;
   max-width: 100%;
-  padding: 7px 10px;
-  border: 1px solid var(--line);
-  border-radius: 3px;
-  background: var(--paper-raised);
+  padding: 9px 12px;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  background: var(--paper);
   color: var(--ink);
-  font-family: 'IBM Plex Sans', sans-serif;
+  font-family: var(--font-sans);
   font-size: 0.85rem;
 }
-.cl-table-search:focus { border-color: var(--focus); }
+.cl-table-search:focus { border-color: var(--focus); background: var(--paper-raised); }
 .cl-model-table .cl-ledger th.cl-th-sortable {
   cursor: pointer;
   user-select: none;
@@ -368,14 +396,15 @@ button.nav-link { width: 100%; background: none; border: 0; border-left: 2px sol
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-width: 26px;
-  height: 26px;
-  padding: 0 6px;
-  border: 1px solid var(--ink);
-  border-radius: 3px;
-  font-family: 'IBM Plex Mono', monospace;
+  min-width: 28px;
+  height: 28px;
+  padding: 0 7px;
+  border-radius: var(--radius-sm);
+  background: var(--honey-soft);
+  color: var(--honey-ink);
+  font-family: var(--font-num);
   font-size: 0.78rem;
-  font-weight: 600;
+  font-weight: 700;
 }
 .cl-batch-name { font-weight: 600; }
 .cl-batch-style { display: block; font-size: 0.8rem; color: var(--ink-soft); margin-top: 1px; }
@@ -386,9 +415,9 @@ button.nav-link { width: 100%; background: none; border: 0; border-left: 2px sol
   gap: 5px;
   font-size: 0.78rem;
   font-weight: 600;
-  padding: 3px 9px 3px 7px;
-  border-radius: 20px;
-  border: 1px solid currentColor;
+  padding: 4px 10px 4px 8px;
+  border-radius: 99px;
+  background: color-mix(in srgb, currentColor 12%, transparent);
   white-space: nowrap;
 }
 .cl-stage::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
@@ -403,14 +432,14 @@ button.nav-link { width: 100%; background: none; border: 0; border-left: 2px sol
 .cl-stage--upcoming { color: var(--ink-faint); }
 .cl-stage--unplanned { color: var(--plum); }
 
-.cl-num { font-family: 'IBM Plex Mono', monospace; font-variant-numeric: tabular-nums; }
+.cl-num { font-family: var(--font-num); font-variant-numeric: tabular-nums; }
 .cl-yeast-metric { font-size: 0.78rem; white-space: nowrap; }
 
 /* ---------- Two-column layout ---------- */
 .cl-cols {
   display: grid;
   grid-template-columns: 1.3fr 1fr;
-  gap: 24px;
+  gap: 18px;
   align-items: start;
 }
 /* Side column on the left third, main column on the right two-thirds. */
@@ -424,12 +453,12 @@ button.nav-link { width: 100%; background: none; border: 0; border-left: 2px sol
 @media (max-width: 900px) { .cl-cols { grid-template-columns: minmax(0, 1fr); } }
 
 .cl-panel {
-  border: 1px solid var(--line);
-  border-radius: 3px;
+  border-radius: var(--radius-lg);
   background: var(--paper-raised);
-  padding: 16px 18px 18px;
+  box-shadow: var(--shadow);
+  padding: 20px 22px 22px;
 }
-.cl-panel + .cl-panel { margin-top: 16px; }
+.cl-panel + .cl-panel { margin-top: 14px; }
 /* A full-width panel stacked above more content, e.g. the batch page's Stage timeline and Plan. */
 .cl-panel--stacked { margin-bottom: 16px; }
 /* A table ending a panel (e.g. recipe page "Batches brewed") - the panel's padding is the bottom space. */
@@ -452,7 +481,7 @@ button.nav-link { width: 100%; background: none; border: 0; border-left: 2px sol
   display: flex;
   justify-content: space-between;
   align-items: baseline;
-  padding: 8px 0;
+  padding: 11px 0;
   border-bottom: 1px solid var(--line-soft);
   font-size: 0.9rem;
 }
@@ -466,18 +495,29 @@ button.nav-link { width: 100%; background: none; border: 0; border-left: 2px sol
 /* ---------- Flagged notifications ---------- */
 .cl-flag {
   display: flex;
-  gap: 10px;
-  padding: 12px 14px;
-  border: 1px solid var(--brick);
-  border-left-width: 3px;
-  border-radius: 3px;
-  background: color-mix(in srgb, var(--brick) 9%, var(--paper-raised));
+  align-items: flex-start;
+  gap: 14px;
+  padding: 14px 18px;
+  border-radius: 16px;
+  background: var(--brick-soft);
+  color: #6E2A1F;
   font-size: 0.86rem;
+  line-height: 1.5;
 }
 .cl-flag + .cl-flag { margin-top: 10px; }
 /* A confirmation (Django success message), not a problem. */
-.cl-flag--ok { border-color: var(--moss); background: color-mix(in srgb, var(--moss) 9%, var(--paper-raised)); }
-.cl-flag-mark { color: var(--brick); font-weight: 700; font-family: 'IBM Plex Mono', monospace; flex-shrink: 0; }
+.cl-flag--ok { background: var(--must-soft); color: var(--must); }
+.cl-flag-mark {
+  flex: 0 0 26px;
+  width: 26px; height: 26px;
+  display: inline-flex; align-items: center; justify-content: center;
+  border-radius: var(--radius-sm);
+  background: var(--brick);
+  color: #fff;
+  font-weight: 700;
+  font-family: var(--font-num);
+}
+.cl-flag--ok .cl-flag-mark { background: var(--moss); }
 .cl-flag b { color: var(--brick); }
 
 /* ---------- Batch detail masthead ---------- */
@@ -489,7 +529,7 @@ button.nav-link { width: 100%; background: none; border: 0; border-left: 2px sol
   flex-wrap: wrap;
   margin-bottom: 20px;
 }
-.cl-batch-title { font-size: 2.2rem; font-weight: 600; line-height: 1.05; }
+.cl-batch-title { font-size: 2.25rem; font-weight: 600; line-height: 1.1; letter-spacing: -0.02em; }
 .cl-batch-sub {
   margin-top: 6px;
   color: var(--ink-soft);
@@ -514,54 +554,59 @@ button.nav-link { width: 100%; background: none; border: 0; border-left: 2px sol
 /* ---------- Actions menu (ellipsis button + dropdown; behavior in cellar-ledger.js) ---------- */
 .cl-menu { position: relative; flex: 0 0 auto; }
 .cl-menu-toggle {
-  width: 34px; height: 34px; padding: 0;
+  width: 38px; height: 38px; padding: 0;
   display: inline-flex; align-items: center; justify-content: center;
   background: var(--paper-raised);
-  border: 1px solid var(--line);
-  border-radius: 3px;
+  border: none;
+  border-radius: 11px;
+  box-shadow: 0 0 0 1px var(--line);
   color: var(--ink-soft);
   cursor: pointer;
 }
 .cl-menu-toggle:hover,
-.cl-menu-toggle[aria-expanded="true"] { color: var(--ink); border-color: var(--ink-soft); }
+.cl-menu-toggle[aria-expanded="true"] { color: var(--ink); box-shadow: 0 0 0 1px var(--ink-faint); }
 .cl-menu-toggle svg { width: 18px; height: 18px; fill: currentColor; }
 .cl-menu-list {
   position: absolute; right: 0; top: calc(100% + 6px); z-index: 40;
-  min-width: 13rem; margin: 0; padding: 6px 0; list-style: none;
+  min-width: 13rem; margin: 0; padding: 6px; list-style: none;
   background: var(--paper-raised);
-  border: 1px solid var(--line);
-  border-radius: 3px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+  border: none;
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-pop);
 }
 .cl-menu-list [role="menuitem"] {
-  display: block; padding: 7px 14px;
+  display: block; padding: 8px 12px; border-radius: var(--radius-sm);
   font-size: 0.87rem; color: var(--ink); text-decoration: none; white-space: nowrap;
 }
 .cl-menu-list [role="menuitem"]:hover,
 .cl-menu-list [role="menuitem"]:focus { background: var(--paper); outline-offset: -2px; }
-.cl-menu-list [role="separator"] { height: 1px; margin: 6px 0; background: var(--line-soft); }
+.cl-menu-list [role="separator"] { height: 1px; margin: 6px 4px; background: var(--line-soft); }
 
 /* ---------- Readout chips ---------- */
 .cl-readouts {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 1px;
-  background: var(--line);
-  border: 1px solid var(--line);
-  border-radius: 3px;
-  overflow: hidden;
-  margin-bottom: 26px;
+  gap: 14px;
+  margin-bottom: 22px;
 }
-.cl-readout { background: var(--paper-raised); padding: 12px 14px 14px; }
-.cl-readout-label { font-size: 0.72rem; font-weight: 600; color: var(--ink-soft); letter-spacing: 0.02em; }
+.cl-readout {
+  background: var(--paper-raised);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow);
+  padding: 18px 20px 20px;
+}
+/* Readouts nested in a panel (batch.html stage timeline) sit on the panel, not above it. */
+.cl-panel .cl-readout { background: var(--paper); box-shadow: none; border-radius: 14px; }
+.cl-readout-label { font-size: 0.8rem; font-weight: 500; color: var(--ink-soft); }
 .cl-readout-value {
-  font-family: 'IBM Plex Mono', monospace;
+  font-family: var(--font-num);
   font-variant-numeric: tabular-nums;
-  font-size: 1.5rem;
+  font-size: 1.9rem;
   font-weight: 600;
-  margin-top: 3px;
+  letter-spacing: -0.03em;
+  margin-top: 6px;
 }
-.cl-readout-value small { font-size: 0.85rem; font-weight: 500; color: var(--ink-soft); }
+.cl-readout-value small { font-size: 0.85rem; font-weight: 500; color: var(--ink-faint); letter-spacing: 0; margin-left: 2px; }
 .cl-readout-value.cl-readout--fault { color: var(--brick); }
 @media (max-width: 640px) { .cl-readouts { grid-template-columns: repeat(2, 1fr); } }
 /* Three readouts in a row (batch.html stage timeline); stacked on phones. */
@@ -572,16 +617,16 @@ button.nav-link { width: 100%; background: none; border: 0; border-left: 2px sol
    One grid shared by all three rows so state bands, vessel stays and dates stay
    aligned: a column per stay, sized by its time (grid-template-columns is set
    inline from the view); each state band spans its stays' columns.
-   Past = settled ink, current = honey, future = dashed/faint placeholders. */
+   Past = settled must green, current = honey, future = faint outlined placeholders. */
 .cl-timebar-scroll { overflow-x: auto; margin-bottom: 28px; }
 /* Ending a panel: the panel's padding is the bottom space. */
 .cl-panel > .cl-timebar-scroll:last-child { margin-bottom: 0; }
-.cl-timebar { display: grid; column-gap: 3px; row-gap: 8px; min-width: min-content; }
+.cl-timebar { display: grid; column-gap: 8px; row-gap: 10px; min-width: min-content; }
 
 .cl-timebar-band {
   grid-row: 1;
-  padding: 0 2px 6px;
-  border-bottom: 2px solid var(--ink);
+  position: relative;
+  padding: 0 2px 14px;
   display: flex; flex-wrap: wrap; align-items: baseline; align-content: flex-end; column-gap: 8px;
   font-size: 0.8rem; font-weight: 600;
 }
@@ -590,8 +635,15 @@ button.nav-link { width: 100%; background: none; border: 0; border-left: 2px sol
 .cl-timebar-band-time { font-size: 0.75rem; font-weight: 500; color: var(--ink-soft); }
 /* Extra figure on a band heading, e.g. the Aging band's "Full aging" (first Racking to first Filtering). */
 .cl-timebar-band-extra { color: var(--ink-soft); font-weight: 400; }
-.cl-timebar-band--current { border-bottom-color: var(--honey-line); }
-.cl-timebar-band--future { border-bottom: 2px dashed var(--line); color: var(--ink-faint); }
+.cl-timebar-band::after {
+  content: '';
+  position: absolute; left: 0; right: 0; bottom: 0;
+  height: 6px; border-radius: 99px;
+  background: var(--must);
+}
+.cl-timebar-band--current::after { background: var(--honey-line); }
+.cl-timebar-band--future { color: var(--ink-faint); }
+.cl-timebar-band--future::after { background: var(--line-soft); }
 .cl-timebar-band--future .cl-timebar-band-time { color: var(--ink-faint); }
 
 /* The list's items sit directly in the grid (row 2). */
@@ -600,25 +652,24 @@ button.nav-link { width: 100%; background: none; border: 0; border-left: 2px sol
   grid-row: 2;
   display: flex; flex-direction: column; gap: 2px;
   min-width: 0;
-  padding: 8px 10px;
-  background: var(--paper-raised);
-  border: 1px solid var(--line);
-  border-radius: 3px;
+  padding: 12px 14px;
+  background: var(--must-soft);
+  border-radius: 14px;
 }
 .cl-timebar-seg > * { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.cl-timebar-step { font-size: 0.72rem; color: var(--ink-soft); }
+.cl-timebar-step { font-size: 0.7rem; font-weight: 600; color: var(--must); text-transform: uppercase; letter-spacing: 0.06em; }
 .cl-timebar-vessel { font-size: 0.88rem; font-weight: 600; }
-.cl-timebar-vessel a { color: inherit; text-decoration: none; border-bottom: 1px solid var(--line); }
+.cl-timebar-vessel a { color: inherit; text-decoration: none; border-bottom: 1px solid color-mix(in srgb, currentColor 25%, transparent); }
 .cl-timebar-vessel a:hover { border-bottom-color: var(--ink-soft); }
 .cl-timebar-seg > .cl-timebar-time { font-size: 0.8rem; white-space: normal; }
 .cl-timebar-seg--current {
-  border: 1.5px solid var(--honey-line);
-  box-shadow: inset 0 3px 0 var(--honey-line);
+  background: #fff;
+  box-shadow: 0 0 0 2px var(--honey-line), 0 10px 24px -12px rgba(181, 116, 26, 0.5);
 }
 .cl-timebar-seg--current .cl-timebar-step { color: var(--honey); }
 .cl-timebar-seg--future {
   background: transparent;
-  border: 1px dashed var(--ink-faint);
+  box-shadow: inset 0 0 0 1.5px var(--line);
   color: var(--ink-faint);
 }
 .cl-timebar-seg--future .cl-timebar-step,
@@ -647,11 +698,11 @@ button.nav-link { width: 100%; background: none; border: 0; border-left: 2px sol
   align-items: start;
 }
 .cl-instrument {
-  border: 1px solid var(--line);
-  border-radius: 3px;
+  border-radius: var(--radius-lg);
   background: var(--paper-raised);
-  padding: 16px 18px 10px;
-  margin-bottom: 16px;
+  box-shadow: var(--shadow);
+  padding: 20px 22px 14px;
+  margin-bottom: 14px;
 }
 .cl-instrument-grid .cl-instrument { margin-bottom: 0; }
 .cl-instrument-head {
@@ -660,25 +711,26 @@ button.nav-link { width: 100%; background: none; border: 0; border-left: 2px sol
   align-items: baseline;
   margin-bottom: 6px;
 }
-.cl-instrument-title { font-weight: 600; font-size: 0.95rem; }
+.cl-instrument-title { font-weight: 600; font-size: 1rem; letter-spacing: -0.01em; }
 .cl-instrument-current {
-  font-family: 'IBM Plex Mono', monospace;
+  font-family: var(--font-num);
   font-variant-numeric: tabular-nums;
-  font-size: 1.05rem;
+  font-size: 1.15rem;
   font-weight: 600;
+  letter-spacing: -0.02em;
 }
 .cl-instrument-note { font-size: 0.8rem; color: var(--ink-soft); margin: 0 0 8px; }
 .cl-chart-wrap { position: relative; }
 .cl-chart-wrap svg { width: 100%; height: auto; display: block; }
 
-.cl-grid-line { stroke: var(--line); stroke-width: 1; }
-.cl-grid-label, .cl-x-label { fill: var(--ink-faint); font-size: 9.5px; font-family: 'IBM Plex Sans', sans-serif; }
+.cl-grid-line { stroke: var(--line-soft); stroke-width: 1; }
+.cl-grid-label, .cl-x-label { fill: var(--ink-faint); font-size: 9.5px; font-family: var(--font-sans); }
 .cl-threshold-line { stroke: var(--brick); stroke-width: 1; stroke-dasharray: 3 3; opacity: 0.6; }
-.cl-threshold-label { fill: var(--brick); font-size: 9px; font-weight: 600; font-family: 'IBM Plex Sans', sans-serif; }
+.cl-threshold-label { fill: var(--brick); font-size: 9px; font-weight: 600; font-family: var(--font-sans); }
 .cl-band-fill { fill: var(--ink-faint); opacity: 0.08; stroke: none; }
 .cl-band-line { fill: none; stroke: var(--ink-faint); stroke-width: 1; stroke-dasharray: 3 3; opacity: 0.7; }
-.cl-area-fill { opacity: 0.1; }
-.cl-line-path { fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.cl-area-fill { opacity: 0.14; }
+.cl-line-path { fill: none; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; }
 .cl-pt { fill: var(--paper-raised); stroke-width: 2; }
 .cl-pt-end { stroke: var(--paper-raised); stroke-width: 2; }
 .cl-pt-fault { fill: var(--brick); stroke: var(--paper-raised); stroke-width: 2; }
@@ -691,14 +743,16 @@ button.nav-link { width: 100%; background: none; border: 0; border-left: 2px sol
   transform: translateX(-50%);
   background: var(--ink);
   color: var(--paper-raised);
-  font-size: 0.74rem;
-  padding: 5px 8px;
-  border-radius: 3px;
+  font-size: 0.76rem;
+  font-weight: 600;
+  padding: 6px 10px;
+  border-radius: 9px;
+  box-shadow: 0 6px 16px -6px rgba(31, 36, 25, 0.4);
   pointer-events: none;
   white-space: nowrap;
-  font-family: 'IBM Plex Mono', monospace;
+  font-family: var(--font-num);
 }
-.cl-chart-tooltip .tt-date { color: var(--ink-faint); margin-right: 6px; }
+.cl-chart-tooltip .tt-date { color: var(--ink-faint); font-weight: 500; margin-right: 6px; }
 
 .cl-table-scroll { overflow-x: auto; }
 .cl-recipe-notes p { margin: 0 0 10px; font-size: 0.9rem; line-height: 1.55; }
@@ -707,9 +761,8 @@ button.nav-link { width: 100%; background: none; border: 0; border-left: 2px sol
 .cl-tag-list { display: flex; flex-wrap: wrap; gap: 6px; }
 .cl-tag {
   display: inline-block;
-  padding: 3px 10px;
-  border: 1px solid var(--line);
-  border-radius: 3px;
+  padding: 4px 11px;
+  border-radius: 99px;
   background: var(--paper);
   color: var(--ink);
   font-size: 0.82rem;
@@ -726,7 +779,7 @@ button.nav-link { width: 100%; background: none; border: 0; border-left: 2px sol
   border-bottom: 1px solid var(--line-soft);
   font-size: 0.8rem;
 }
-.cl-reading-table td { font-family: 'IBM Plex Mono', monospace; }
+.cl-reading-table td { font-family: var(--font-num); }
 
 /* ---------- Forms (editFermentables, and other formset-based pages) ---------- */
 .cl-form { max-width: 100%; }
@@ -752,7 +805,7 @@ button.nav-link { width: 100%; background: none; border: 0; border-left: 2px sol
 .cl-plan-steps { counter-reset: plan-step; }
 .cl-formset-row--plan { grid-template-columns: 28px 1.2fr 1.1fr 1fr 2fr auto; }
 .cl-formset-row--plan .cl-plan-step-errors { grid-column: 1 / -1; margin: 0; }
-.cl-plan-step-num { counter-increment: plan-step; padding-top: 31px; font-family: 'IBM Plex Mono', monospace;
+.cl-plan-step-num { counter-increment: plan-step; padding-top: 31px; font-family: var(--font-num);
                     font-size: 0.85rem; font-weight: 600; color: var(--ink-soft); }
 .cl-plan-step-num::before { content: counter(plan-step); }
 .cl-formset-row--plan:has([name$="-DELETE"]:checked) { opacity: 0.5; }
@@ -763,7 +816,7 @@ button.nav-link { width: 100%; background: none; border: 0; border-left: 2px sol
 .cl-step-move {
   width: 30px; height: 30px; padding: 5px;
   color: var(--ink-soft); background: transparent;
-  border: 1px solid var(--line); border-radius: 3px; cursor: pointer;
+  border: 1px solid var(--line); border-radius: var(--radius-sm); cursor: pointer;
 }
 .cl-step-move svg { width: 100%; height: 100%; display: block; }
 .cl-step-move:hover { color: var(--ink); border-color: var(--ink-soft); }
@@ -794,10 +847,9 @@ button.nav-link { width: 100%; background: none; border: 0; border-left: 2px sol
 
 .cl-field { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
 .cl-field label {
-  font-size: 0.72rem;
+  font-size: 0.78rem;
   font-weight: 600;
   color: var(--ink-soft);
-  letter-spacing: 0.02em;
 }
 .cl-field--check { flex-direction: row; align-items: center; }
 .cl-field--check label { display: flex; align-items: center; gap: 6px; font-size: 0.82rem; white-space: nowrap; }
@@ -809,16 +861,25 @@ button.nav-link { width: 100%; background: none; border: 0; border-left: 2px sol
 .cl-field input[type="datetime-local"],
 .cl-field select,
 .cl-field textarea {
-  font-family: 'IBM Plex Sans', sans-serif;
+  font-family: var(--font-sans);
   font-size: 0.9rem;
   color: var(--ink);
-  background: var(--paper-raised);
+  background: #fff;
   border: 1px solid var(--line);
-  border-radius: 3px;
-  padding: 7px 9px;
+  border-radius: 10px;
+  padding: 8px 11px;
   width: 100%;
+  transition: border-color 0.12s ease, box-shadow 0.12s ease;
 }
 .cl-field textarea { resize: vertical; min-height: 38px; }
+.cl-field select {
+  appearance: none;
+  padding-right: 32px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%235D6356' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 11px center;
+}
+.cl-field select[multiple] { background-image: none; padding-right: 11px; }
 /* Any field Django flags with an error (it adds aria-invalid="true") gets a red border, app-wide. */
 /* Element + attribute selectors so this outranks .cl-field input[type="text"] etc. above. */
 .cl-field input[aria-invalid="true"],
@@ -829,15 +890,16 @@ button.nav-link { width: 100%; background: none; border: 0; border-left: 2px sol
   border-color: var(--brick); box-shadow: 0 0 0 1px var(--brick);
 }
 .cl-field input:focus, .cl-field select:focus, .cl-field textarea:focus {
-  outline: 2px solid var(--focus);
-  outline-offset: 1px;
+  outline: none;
   border-color: var(--focus);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--focus) 22%, transparent);
 }
-.cl-field input[type="file"] { font-family: 'IBM Plex Sans', sans-serif; font-size: 0.85rem; color: var(--ink-soft); padding: 4px 0; }
+.cl-field input[type="file"] { font-family: var(--font-sans); font-size: 0.85rem; color: var(--ink-soft); padding: 4px 0; }
 .cl-field input[type="file"]::file-selector-button {
   font: inherit; font-weight: 600; color: var(--ink);
-  background: var(--paper-raised); border: 1px solid var(--line); border-radius: 3px;
-  padding: 6px 12px; margin-right: 10px; cursor: pointer;
+  background: var(--paper-raised); border: none; border-radius: var(--radius-sm);
+  box-shadow: 0 0 0 1px var(--line);
+  padding: 7px 13px; margin-right: 10px; cursor: pointer;
 }
 .cl-field input[type="checkbox"] { width: 16px; height: 16px; accent-color: var(--honey-line); }
 
@@ -852,30 +914,32 @@ button.nav-link { width: 100%; background: none; border: 0; border-left: 2px sol
 .cl-form-actions {
   display: flex;
   gap: 10px;
-  margin-top: 20px;
-  padding-top: 16px;
-  border-top: 1px solid var(--line);
+  margin-top: 22px;
+  padding-top: 18px;
+  border-top: 1px solid var(--line-soft);
 }
 .cl-btn {
   font: inherit;
   font-size: 0.88rem;
   font-weight: 600;
-  padding: 9px 16px;
-  border-radius: 3px;
+  padding: 10px 17px;
+  border-radius: 11px;
   cursor: pointer;
   border: 1px solid transparent;
+  transition: background 0.12s ease, box-shadow 0.12s ease, transform 0.12s ease;
 }
-.cl-btn--primary { background: var(--honey-line); color: var(--paper-raised); }
-.cl-btn--primary:hover { background: var(--honey); }
-.cl-btn--secondary { background: transparent; color: var(--ink); border-color: var(--line); }
-.cl-btn--secondary:hover { background: var(--paper); border-color: var(--ink-soft); }
+.cl-btn:active { transform: translateY(1px); }
+.cl-btn--primary { background: var(--ink); color: #fff; box-shadow: 0 6px 16px -6px rgba(31, 36, 25, 0.5); }
+.cl-btn--primary:hover { background: #000; color: #fff; }
+.cl-btn--secondary { background: var(--paper-raised); color: var(--ink); box-shadow: 0 0 0 1px var(--line); }
+.cl-btn--secondary:hover { background: var(--paper); color: var(--ink); box-shadow: 0 0 0 1px var(--ink-faint); }
 .cl-btn--danger { background: var(--brick); color: var(--paper-raised); }
 .cl-btn--danger:hover { background: color-mix(in srgb, var(--brick) 85%, black); }
 a.cl-btn { display: inline-block; text-decoration: none; }
 .cl-btn--push-right { margin-left: auto; }
 
 @media (prefers-reduced-motion: reduce) {
-  .cl-sidebar, .cl-rail-btn svg, .cl-collapse-toggle svg { transition: none !important; }
+  .cl-sidebar, .cl-rail-btn svg, .cl-collapse-toggle svg, .cl-btn, .cl-field input, .cl-field select, .cl-field textarea { transition: none !important; }
 }
 
 .cl-link-btn {
@@ -901,19 +965,26 @@ a.cl-btn { display: inline-block; text-decoration: none; }
 .cl-mouse-tooltip .tooltip-inner {
   white-space: pre-line;
   max-width: 400px;
+  background: var(--ink);
+  border-radius: 9px;
+  padding: 6px 10px;
+  text-align: left;
 }
 
 /* ---------- Cellar Ledger modal chrome (e.g. #refractometerModal) ---------- */
 .cl-modal .modal-content {
   background: var(--paper-raised);
   color: var(--ink);
-  border: 1px solid var(--line);
-  border-radius: 3px;
+  border: none;
+  border-radius: 20px;
+  box-shadow: var(--shadow-pop);
 }
 .cl-modal .modal-header,
 .cl-modal .modal-footer {
-  border-color: var(--line);
+  border-color: var(--line-soft);
+  padding: 16px 22px;
 }
+.cl-modal .modal-body { padding: 18px 22px; }
 .cl-modal .modal-title {
   font-family: 'Fraunces', 'Iowan Old Style', Georgia, serif;
   font-weight: 600;
