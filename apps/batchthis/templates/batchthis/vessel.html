@@ -37,9 +37,12 @@
 {% endfor %}
 
 <div class="cl-readouts">
-  <div class="cl-readout">
-    <div class="cl-readout-label">Status</div>
-    <div class="cl-readout-value">{{ vessel.status }}</div>
+  <div class="cl-readout{% if status_icon %} cl-readout--figure{% endif %}">
+    <div>
+      <div class="cl-readout-label">Status</div>
+      <div class="cl-readout-value">{{ vessel.status }}</div>
+    </div>
+    {% if status_icon %}<img class="cl-readout-figure" src="{% static status_icon %}" alt="{{ vessel.vessel_type }} &mdash; {{ vessel.status }}">{% endif %}
   </div>
   <div class="cl-readout">
     <div class="cl-readout-label">In status for</div>
@@ -102,11 +105,6 @@
     </div>
     {% endif %}
 
-    {% if status_icon %}
-    <div class="cl-panel cl-vessel-figure">
-      <img src="{% static status_icon %}" alt="{{ vessel.vessel_type }} &mdash; {{ vessel.status }}">
-    </div>
-    {% endif %}
   </div>
 
   <div>

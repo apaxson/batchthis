@@ -489,8 +489,6 @@ button.nav-link { width: 100%; background: none; border: 0; font-family: inherit
 .cl-kv-label { color: var(--ink-soft); }
 .cl-kv-value { font-weight: 600; }
 
-.cl-vessel-figure { text-align: center; }
-.cl-vessel-figure img { max-height: 280px; width: auto; }
 
 /* ---------- Flagged notifications ---------- */
 .cl-flag {
@@ -608,6 +606,16 @@ button.nav-link { width: 100%; background: none; border: 0; font-family: inherit
 }
 .cl-readout-value small { font-size: 0.85rem; font-weight: 500; color: var(--ink-faint); letter-spacing: 0; margin-left: 2px; }
 .cl-readout-value.cl-readout--fault { color: var(--brick); }
+/* A readout with a picture beside its value, e.g. the vessel page's Status card with the
+   vessel's status image: text left, image right, no taller than the card. */
+.cl-readout--figure { display: flex; align-items: stretch; justify-content: space-between; gap: 12px; }
+.cl-readout--figure > div { min-width: 0; }
+.cl-readout-figure { flex: 0 0 auto; align-self: center; width: auto; max-width: 42%; max-height: 118px; object-fit: contain; }
+/* Phones: a two-word status ("Needs Cleaning") fills the narrow card, so the image goes under it. */
+@media (max-width: 640px) {
+  .cl-readout--figure { flex-direction: column; justify-content: flex-start; gap: 8px; }
+  .cl-readout-figure { align-self: flex-start; max-width: 100%; max-height: 64px; }
+}
 @media (max-width: 640px) { .cl-readouts { grid-template-columns: repeat(2, 1fr); } }
 /* Three readouts in a row (batch.html stage timeline); stacked on phones. */
 .cl-readouts--3 { grid-template-columns: repeat(3, 1fr); }

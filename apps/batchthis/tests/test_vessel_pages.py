@@ -164,6 +164,35 @@ def test_vessel_detail_shows_status_current_batch_and_history_newest_first(clien
     assert reverse("batch", kwargs={"pk": batch.pk}) in html
 
 
+def _status_card(html):
+    """The vessel page's Status readout (the first card in .cl-readouts)."""
+    start = html.index('<div class="cl-readouts">')
+    return html[start:html.index('In status for', start)]
+
+
+@pytest.mark.django_db
+def test_vessel_status_image_sits_inside_the_status_card(client):
+    vessel = FermenterFactory(vessel=VesselFactory(name="Carboy 4", status=Vessel.STATUS_DIRTY)).vessel
+
+    html = client.get(reverse("vessel", kwargs={"pk": vessel.pk})).content.decode()
+
+    card = _status_card(html)
+    assert "cl-readout--figure" in card
+    assert 'src="/static/batchthis/img/wine-tank-dirty.svg"' in card
+    assert html.count("wine-tank-dirty.svg") == 1          # no separate image panel any more
+    assert "cl-vessel-figure" not in html
+
+
+@pytest.mark.django_db
+def test_a_vessel_without_a_status_image_keeps_a_plain_status_card(client):
+    vessel = Barrel.objects.create(vessel=VesselFactory(name="Oak 1", status=Vessel.STATUS_READY)).vessel
+
+    html = client.get(reverse("vessel", kwargs={"pk": vessel.pk})).content.decode()
+
+    card = _status_card(html)
+    assert "<img" not in card and "cl-readout--figure" not in card
+
+
 @pytest.mark.django_db
 def test_vessel_detail_404s_for_a_missing_vessel(client):
     response = client.get(reverse("vessel", kwargs={"pk": 9999}))
