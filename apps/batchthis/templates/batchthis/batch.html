@@ -13,7 +13,7 @@
         <span>{% if batch.category %}{{ batch.category }}{% elif batch.recipe.category %}{{ batch.recipe.category }}{% else %}Style not set{% endif %}</span>
         {% with v=batch.current_vessel %}{% if v %}<span>Vessel <b><a href="{% url 'vessel' v.pk %}">{{ v.name }}</a></b></span>{% else %}<span>Packaged in <b>{{ batch.get_packaging_display }}</b></span>{% endif %}{% endwith %}
         <span>Started <b class="cl-num">{{ batch.startdate|date:"M j, Y" }}</b></span>
-        {% if batch.recipe %}<span>Recipe <b><a href="{% url 'recipe' batch.recipe.pk %}">{{ batch.recipe.name }}</a></b></span>{% endif %}
+        {% if batch.recipe %}<span>Recipe <b><a href="{% url 'recipe' batch.recipe.pk %}">{{ batch.recipe.name }}</a></b> &middot; <a href="{% url 'batchRecipe' batch.pk %}">Batch recipe</a></span>{% endif %}
         <span><span class="cl-stage {% if batch.active %}cl-stage--active{% else %}cl-stage--complete{% endif %}">{% if batch.active %}Active{% else %}Complete{% endif %}</span></span>
       </div>
       <div class="cl-menu" data-cl-menu>

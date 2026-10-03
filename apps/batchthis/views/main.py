@@ -12,7 +12,7 @@ from django.utils import timezone
 from django.db.models import Count, Prefetch
 from django.utils.safestring import mark_safe
 import json
-from apps.batchthis.models import PlanStep, WorkflowTemplate
+from apps.batchthis.models import BatchIngredient, PlanStep, WorkflowTemplate
 from apps.batchthis.models import Batch, BatchStage, BatchStageEvent, Fermenter, BatchTestType, BatchNoteType, Vessel, Unit, Recipe, Fermentable, AdjunctUsage, RecipeYeasts,RecipeFermentable,RecipeAdjunct
 from django.shortcuts import get_object_or_404
 from apps.batchthis.forms import BatchTestForm, BatchNoteForm, BatchAdditionForm, RefractometerCorrectionForm, BatchAddForm, BatchEditForm, \
@@ -26,7 +26,7 @@ from apps.batchthis.services import (
     OUT_OF_SERVICE_FROM,
     transition_stage_event, transfer_batch, create_vessel, update_vessel,
     plan_totals, save_workflow_template, delete_workflow_template, save_recipe_plan, clear_recipe_plan,
-    copy_plan_to_batch, save_batch_plan, batch_plan_locked_reason,
+    copy_plan_to_batch, copy_recipe_ingredients_to_batch, recipe_scale_factor, quantity_label, save_batch_plan, batch_plan_locked_reason,
     plan_progress, batch_schedule_progress, allowed_next_stages, save_batch_edit, set_recipe_pairings,
 )
 from apps.batchthis.lib.faults import get_active_flags, get_rule_for, StagedFaultRule
@@ -220,6 +220,59 @@ def batch(request, pk):
         "plan_editable": plan_locked is None,
     }
     return render(request, 'batchthis/batch.html', context=context)
+
+
+@login_required
+@require_safe
+def batchRecipe(request, pk):
+    """
+    The batch's adjusted "current recipe" (Aaron, 2026-10-03): its own ingredients,
+    scaled to the batch when it was made (BatchIngredient), next to the recipe's
+    amounts. Not a Recipe - it never appears under recipes/.
+    """
+    batch = get_object_or_404(Batch.objects.select_related('recipe'), pk=pk)
+    ingredients = list(batch.ingredients.select_related(
+        'fermentable__type', 'adjunct__type', 'yeast', 'intended_use'))
+    by_kind = {kind: [i for i in ingredients if i.kind == kind] for kind, _label in BatchIngredient.KIND_CHOICES}
+    factor = recipe_scale_factor(batch.recipe, batch.size) if batch.recipe else None
+    logger.debug("batchRecipe: batch=%s %d ingredients, factor=%s", pk, len(ingredients), factor)
+    context = {
+        'batch': batch,
+        'fermentables': by_kind[BatchIngredient.KIND_FERMENTABLE],
+        'adjuncts': by_kind[BatchIngredient.KIND_ADJUNCT],
+        'yeasts': by_kind[BatchIngredient.KIND_YEAST],
+        'has_ingredients': bool(ingredients),
+        'factor': factor,
+        'recipe_size': quantity_label(batch.recipe.batchSize) if batch.recipe else "",
+        'batch_size': quantity_label(batch.size),
+    }
+    return render(request, 'batchthis/batchRecipe.html', context=context)
+
+
+@login_required
+@require_POST
+def copyBatchRecipe(request, pk):
+    """For a batch made before batch recipes existed: copy its recipe, scaled to the batch's size - once."""
+    batch = get_object_or_404(Batch.objects.select_related('recipe'), pk=pk)
+    target = reverse('batchRecipe', kwargs={'pk': pk})
+    if batch.ingredients.exists():
+        logger.error("copyBatchRecipe: rejected for batch %s - it already has %d ingredients",
+                     pk, batch.ingredients.count())
+        messages.error(request, f"'{batch.name}' already has its recipe - correct its size or recipe on Edit batch "
+                                f"to rescale it.")
+        return HttpResponseRedirect(target)
+    if batch.recipe is None:
+        messages.error(request, f"'{batch.name}' has no recipe to copy. Pick one on Edit batch.")
+        return HttpResponseRedirect(target)
+    try:
+        with transaction.atomic():
+            rows = copy_recipe_ingredients_to_batch(batch)
+    except Exception:
+        logger.exception("copyBatchRecipe: failed for batch %s", pk)
+        messages.error(request, "Couldn't copy the recipe. Nothing was saved - please try again.")
+        return HttpResponseRedirect(target)
+    logger.info("copyBatchRecipe: batch %s '%s' got %d ingredients from recipe '%s'", pk, batch.name, len(rows), batch.recipe)
+    return HttpResponseRedirect(target)
 
 
 def recipeListing(request):
@@ -508,6 +561,7 @@ def addBatch(request):
                     batch.save()
                     set_vessel_status(batch.fermenter.vessel, Vessel.STATUS_ACTIVE, batch=batch, notes="Batch created")
                     copy_plan_to_batch(batch, template=form.cleaned_data['workflow_template'])
+                    copy_recipe_ingredients_to_batch(batch)
             except ValidationError as e:
                 # The form already checks for a plan; this covers a race (e.g. plan cleared meanwhile).
                 logger.debug("addBatch: plan copy rejected for %r: %s", batch.name, e.messages)

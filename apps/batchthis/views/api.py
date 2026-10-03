@@ -1,14 +1,28 @@
 import logging
 
+from django.core.exceptions import ValidationError
 from django.db.models import Max
+from django.shortcuts import get_object_or_404
 from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from ..fields import VolumeField
 from ..models import Adjunct, Batch, Fermentable, PairingTag, Recipe, Vessel, Yeast
 from ..serializers import (
-    AdjunctSerializer, BatchSerializer, FermentableSerializer, PairingTagSerializer, RecipeSerializer,
-    VesselSerializer, YeastSerializer,
+    AdjunctSerializer,
+    BatchSerializer,
+    FermentableSerializer,
+    PairingTagSerializer,
+    RecipeSerializer,
+    VesselSerializer,
+    YeastSerializer,
+)
+from ..services import (
+    quantity_label,
+    recipe_scale_factor,
+    scaled_recipe_ingredients,
+    time_to_add_label,
 )
 
 logger = logging.getLogger(__name__)
@@ -90,3 +104,32 @@ class PairingTagListAPIView(APIView):
         serializer = PairingTagSerializer(PairingTag.objects.all(), many=True)
         logger.debug("Listed %d pairing tags for %s", len(serializer.data), request.user)
         return Response(serializer.data)
+
+
+class RecipeScaledAPIView(APIView):
+    """
+    Add batch's ingredient preview: the recipe's ingredients scaled to ?size=
+    (RECIPE SCALING) - the same rows Add batch will copy onto the batch.
+    """
+    def get(self, request: Request, pk: int) -> Response:
+        recipe = get_object_or_404(Recipe, pk=pk)
+        try:
+            size = VolumeField().clean(request.query_params.get('size', ''))
+        except ValidationError as e:
+            logger.debug("RecipeScaled: recipe=%s bad size %r: %s", pk, request.query_params.get('size'), e.messages)
+            return Response({'error': " ".join(e.messages)}, status=400)
+        factor = recipe_scale_factor(recipe, size)
+        rows = scaled_recipe_ingredients(recipe, size)
+        logger.debug("RecipeScaled: recipe=%s size=%s factor=%s rows=%d", pk, size, factor, len(rows))
+        return Response({
+            'factor': factor,
+            'recipe_size': quantity_label(recipe.batchSize),
+            'batch_size': quantity_label(size),
+            'ingredients': [{
+                'kind': row.get_kind_display(),
+                'name': row.name,
+                'recipe_amount': quantity_label(row.recipe_amount),
+                'amount': quantity_label(row.amount),
+                'time_to_add': time_to_add_label(row.time_to_add) if row.kind == row.KIND_ADJUNCT else "",
+            } for row in rows],
+        })

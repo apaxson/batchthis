@@ -621,6 +621,10 @@ button.nav-link { width: 100%; background: none; border: 0; font-family: inherit
 .cl-readouts--3 { grid-template-columns: repeat(3, 1fr); }
 @media (max-width: 640px) { .cl-readouts--3 { grid-template-columns: 1fr; } }
 
+/* Add batch: the recipe's ingredients scaled to the batch size, under the form fields. */
+.cl-scale-preview { margin-top: 22px; }
+.cl-scale-preview .cl-field-error { margin: 0; }
+
 /* ---------- Batch progress bar (includes/_progress_bar.html) ----------
    One segment per stage, sized by expected time (services.schedule_progress);
    left/width/marker are % of the bar, set inline. Done = must green, current =

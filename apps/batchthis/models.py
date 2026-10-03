@@ -1102,6 +1102,48 @@ class BatchAdditionItem(models.Model):
     lotid = models.CharField(max_length=20, blank=True, help_text="The lot or batch id of this item.  Useful when looking for batches made with bad Lot")
 
 
+class BatchIngredient(models.Model):
+    """
+    A batch's own copy of one recipe ingredient, scaled to the batch size when the
+    batch is made (RECIPE SCALING, Aaron 2026-10-03: "all recipe amounts should be
+    accurate at time of batch"). Later recipe edits don't change it; correcting the
+    batch's size or recipe re-copies it (services.copy_recipe_ingredients_to_batch).
+    """
+    KIND_FERMENTABLE = 'fermentable'
+    KIND_ADJUNCT = 'adjunct'
+    KIND_YEAST = 'yeast'
+    KIND_CHOICES = [(KIND_FERMENTABLE, 'Fermentable'), (KIND_ADJUNCT, 'Adjunct'), (KIND_YEAST, 'Yeast')]
+
+    class Meta:
+        ordering = ['sort_order', 'pk']
+
+    batch = models.ForeignKey(Batch, on_delete=models.CASCADE, related_name='ingredients')
+    kind = models.CharField(max_length=12, choices=KIND_CHOICES)
+    # Exactly one of these, matching `kind`. PROTECT: an ingredient a batch used can't be deleted.
+    fermentable = models.ForeignKey(Fermentable, on_delete=models.PROTECT, null=True, blank=True, related_name='+')
+    adjunct = models.ForeignKey(Adjunct, on_delete=models.PROTECT, null=True, blank=True, related_name='+')
+    yeast = models.ForeignKey(Yeast, on_delete=models.PROTECT, null=True, blank=True, related_name='+')
+    intended_use = models.ForeignKey(AdjunctUsage, on_delete=models.SET_NULL, null=True, blank=True, related_name='+')
+    # Weight or volume as entered on the recipe (null when the recipe had none), and scaled.
+    recipe_amount = DescriptiveQuantityField(null=True, blank=True)
+    amount = DescriptiveQuantityField(null=True, blank=True)
+    # Adjuncts: when to add, after Pitch (RecipeAdjunct.time_to_add).
+    time_to_add = DescriptiveQuantityField(base_units='min', null=True, blank=True)
+    notes = models.TextField(blank=True, default='')
+    sort_order = models.PositiveSmallIntegerField(default=0)
+
+    @property
+    def item(self):
+        return self.fermentable or self.adjunct or self.yeast
+
+    @property
+    def name(self) -> str:
+        return self.item.name if self.item else ""
+
+    def __str__(self):
+        return f"{self.batch} - {self.name}"
+
+
 # TODO: Refactor to match Adjuncts/RecipeAdjuncts
 class BatchAddition(models.Model):
     # PROTECT: an adjunct that's been added to a batch can't be deleted, so batch history stays intact.

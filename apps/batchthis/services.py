@@ -14,6 +14,7 @@ from .models import (
     AgingTank,
     Barrel,
     Batch,
+    BatchIngredient,
     BatchPlanStep,
     BatchStage,
     BatchStageEvent,
@@ -219,6 +220,7 @@ def save_batch_edit(
     from pint import Quantity
 
     before = _batch_edit_display(batch)
+    before_recipe_id = batch.recipe_id
     batch.name = name
     batch.recipe = recipe
     batch.size = size
@@ -229,10 +231,14 @@ def save_batch_edit(
                for field, label in BATCH_EDIT_LABELS if before[field] != after[field]]
     logger.debug(f"save_batch_edit: batch={batch.pk} changes={changes}")
 
+    rescale = before_recipe_id != batch.recipe_id or before['size'] != after['size']
     with transaction.atomic():
         batch.save(update_fields=[field for field, _label in BATCH_EDIT_LABELS])
         if changes:
             add_activity_log(batch, "Batch edited :: " + "; ".join(changes))
+        if rescale:
+            # Amounts must stay accurate for the batch (RECIPE SCALING): re-copy at the new size/recipe.
+            copy_recipe_ingredients_to_batch(batch)
     logger.info(f"Batch '{batch.name}' edited: {'; '.join(changes) or 'no changes'}")
     return changes
 
@@ -1354,3 +1360,111 @@ def batch_schedule_progress(stays: list[VesselStay], plan_steps, *, completed_at
     placed, steps = _stays_and_steps(progress, stays, plan_rows, now)
     marks = _marks(progress, stays, notes, tests, flags, now)
     return replace(progress, stays=placed, steps=steps, marks=marks)
+
+
+# ---------- Recipe scaling (TODO.txt RECIPE SCALING, Aaron 2026-10-03) ----------
+
+def _quantity(value):
+    """`value` as a Quantity of the project's unit registry (accepts text or another registry's Quantity)."""
+    ureg = settings.DJANGO_PINT_UNIT_REGISTER
+    if value is None or isinstance(value, ureg.Quantity):
+        return value
+    if isinstance(value, str):
+        return ureg.Quantity(value)
+    return ureg.Quantity(value.magnitude, str(value.units))
+
+
+def recipe_scale_factor(recipe: Recipe, size) -> Optional[float]:
+    """Batch size / recipe size (both volumes), or None when the recipe has no usable size."""
+    recipe_size, size = _quantity(recipe.batchSize), _quantity(size)
+    if recipe_size is None or size is None:
+        return None
+    recipe_liters = recipe_size.to('liter').magnitude
+    if recipe_liters <= 0:
+        logger.debug(f"recipe_scale_factor: recipe={recipe.pk} has no batch size ({recipe_size})")
+        return None
+    return size.to('liter').magnitude / recipe_liters
+
+
+def _recipe_amount(item):
+    """A recipe line's amount (older rows may only have _amount_weight/_amount_volume), or None."""
+    for value in (getattr(item, 'amount', None), getattr(item, '_amount_weight', None),
+                  getattr(item, '_amount_volume', None)):
+        if value is not None and _quantity(value).magnitude:
+            return _quantity(value)
+    return None
+
+
+def scaled_recipe_ingredients(recipe: Recipe, size) -> list[BatchIngredient]:
+    """
+    The recipe's fermentables, adjuncts and yeasts as UNSAVED BatchIngredient rows,
+    every amount scaled linearly by recipe_scale_factor (Aaron, 2026-10-03: all
+    linear; yeast packets / nutrients by YAN come later with their calculators).
+    Amounts keep the units they were entered in. A recipe without a usable size is
+    copied unscaled.
+    """
+    factor = recipe_scale_factor(recipe, size)
+    scale = factor if factor is not None else 1.0
+    rows = []
+    lines = (
+        [(BatchIngredient.KIND_FERMENTABLE, f) for f in recipe.fermentables.select_related('fermentable', 'intended_use').order_by('pk')]
+        + [(BatchIngredient.KIND_ADJUNCT, a) for a in recipe.adjuncts.select_related('adjunct', 'intended_use').order_by('pk')]
+        + [(BatchIngredient.KIND_YEAST, y) for y in recipe.yeasts.select_related('yeast').order_by('pk')]
+    )
+    for order, (kind, line) in enumerate(lines, start=1):
+        recipe_amount = _recipe_amount(line)
+        rows.append(BatchIngredient(
+            kind=kind, sort_order=order,
+            fermentable=getattr(line, 'fermentable', None), adjunct=getattr(line, 'adjunct', None),
+            yeast=getattr(line, 'yeast', None), intended_use=getattr(line, 'intended_use', None),
+            recipe_amount=recipe_amount, amount=recipe_amount * scale if recipe_amount is not None else None,
+            time_to_add=_quantity(getattr(line, 'time_to_add', None)),
+            notes=getattr(line, 'recipe_notes', None) or getattr(line, 'notes', None) or "",
+        ))
+    logger.debug(f"scaled_recipe_ingredients: recipe={recipe.pk} size={size} factor={factor} -> {len(rows)} rows")
+    return rows
+
+
+def copy_recipe_ingredients_to_batch(batch: Batch) -> list[BatchIngredient]:
+    """
+    Give the batch its own scaled copy of its recipe's ingredients, replacing any it
+    had - on Add batch, and when Edit batch changes the size or recipe. Call inside
+    the caller's transaction.
+    """
+    batch.ingredients.all().delete()
+    if batch.recipe is None:
+        return []
+    rows = scaled_recipe_ingredients(batch.recipe, batch.size)
+    for row in rows:
+        row.batch = batch
+    created = BatchIngredient.objects.bulk_create(rows)
+    logger.info(f"Batch '{batch}' ingredients copied from recipe '{batch.recipe}' at {batch.size} ({len(created)} rows)")
+    return created
+
+
+def quantity_label(value) -> str:
+    """A short amount for display: "24 lb", "10 g", "0.01 kg" ("" for none)."""
+    value = _quantity(value)
+    if value is None:
+        return ""
+    # Imported recipes store small amounts in kg/L ("0.005814 kg"); show those as g/ml.
+    smaller = {'kilogram': 'gram', 'liter': 'milliliter'}.get(str(value.units))
+    if smaller and abs(value.magnitude) < 1:
+        value = value.to(smaller)
+    unit = "L" if str(value.units) == 'liter' else f"{value.units:~}"   # "10 L", not "10 l" (reads as 1)
+    return f"{value.magnitude:.4g} {unit}"
+
+
+def time_to_add_label(value) -> str:
+    """When an addition goes in, after Pitch: "At pitch", "Pitch + 24 h", "Pitch + 7 d"."""
+    value = _quantity(value)
+    if value is None:
+        return ""
+    hours = value.to('hour').magnitude
+    if hours <= 0:
+        return "At pitch"
+    if hours < 1:
+        return f"Pitch + {value.to('minute').magnitude:.0f} min"
+    if hours <= 72:
+        return f"Pitch + {hours:.3g} h"
+    return f"Pitch + {value.to('day').magnitude:.3g} d"

@@ -11,6 +11,8 @@ urlpatterns = [
     path('addRecipe/<int:pk>', views.addRecipe, name='editRecipe'),
     path('batch/<int:pk>', views.batch, name='batch'),
     path('batch/<int:pk>/edit', views.editBatch, name="editBatch"),
+    path('batch/<int:pk>/recipe', views.batchRecipe, name="batchRecipe"),
+    path('batch/<int:pk>/recipe/copy', views.copyBatchRecipe, name="copyBatchRecipe"),
     path('recipe/<int:pk>', views.addRecipe), #TODO create views.recipe and update view
     path('recipe/<int:pk>/view', views.recipe, name="recipe"),
     path('recipe/<int:pk>/edit', views.addRecipe, name="editRecipe"),
@@ -53,6 +55,7 @@ urlpatterns = [
     path('api/adjuncts/', views.AdjunctListAPIView.as_view(), name="adjunct-list"),
     path('api/yeasts/', views.YeastListAPIView.as_view(), name="yeast-list"),
     path('api/recipes/', views.RecipeListAPIView.as_view(), name="recipe-list"),
+    path('api/recipes/<int:pk>/scaled/', views.RecipeScaledAPIView.as_view(), name="recipe-scaled"),
     path('api/batches/', views.BatchListAPIView.as_view(), name="batch-list"),
     path('api/vessels/', views.VesselListAPIView.as_view(), name="vessel-list"),
     path('api/pairings/', views.PairingTagListAPIView.as_view(), name="pairing-list"),

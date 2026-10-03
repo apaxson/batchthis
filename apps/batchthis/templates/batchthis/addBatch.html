@@ -68,6 +68,21 @@
       </div>
     </div>
 
+    {# The recipe's ingredients scaled to the batch size - what Save copies onto the batch (RECIPE SCALING). #}
+    <section class="cl-scale-preview" id="scale-preview" data-scaled-url-base="{% url 'recipe-list' %}" hidden>
+      <div class="cl-section-head">
+        <div class="cl-section-title">Ingredients for this batch</div>
+        <div class="cl-section-note" data-scale-note></div>
+      </div>
+      <p class="cl-field-error" data-scale-error hidden></p>
+      <div class="cl-table-scroll" data-scale-table>
+        <table class="cl-ledger">
+          <thead><tr><th>Ingredient</th><th>Type</th><th>Recipe</th><th>This batch</th><th>When</th></tr></thead>
+          <tbody data-scale-rows></tbody>
+        </table>
+      </div>
+    </section>
+
     <div class="cl-form-actions">
       <a href="{% url 'batchListing' %}" class="cl-btn cl-btn--secondary">Cancel</a>
       <button type="submit" class="cl-btn cl-btn--primary">Save</button>
@@ -95,6 +110,57 @@
     }
     updatePlanField();
     $('#id_recipe').change(updatePlanField);
+
+    // Ingredient preview: the recipe scaled to the batch size, refreshed as either changes.
+    var preview = document.getElementById('scale-preview');
+    var previewTimer = null;
+    function cell(row, text) {
+      var td = document.createElement('td');
+      td.textContent = text || '\u2014';
+      row.appendChild(td);
+      return td;
+    }
+    function updatePreview() {
+      var recipeId = $('#id_recipe').val();
+      var size = ($('#id_size').val() || '').trim();
+      var error = preview.querySelector('[data-scale-error]');
+      if (!recipeId || !size) { preview.hidden = true; return; }
+      var url = preview.getAttribute('data-scaled-url-base') + recipeId + '/scaled/?size=' + encodeURIComponent(size);
+      $.getJSON(url).done(function (data) {
+        var note = preview.querySelector('[data-scale-note]');
+        note.textContent = data.factor === null
+          ? 'The recipe has no batch size - amounts are not scaled.'
+          : 'Recipe ' + data.recipe_size + ' \u2192 ' + data.batch_size + ' \u00b7 \u00d7' + (+data.factor.toFixed(3));
+        var body = preview.querySelector('[data-scale-rows]');
+        body.innerHTML = '';
+        data.ingredients.forEach(function (item) {
+          var row = document.createElement('tr');
+          cell(row, item.name); cell(row, item.kind); cell(row, item.recipe_amount);
+          cell(row, item.amount).className = 'cl-num'; cell(row, item.time_to_add);
+          body.appendChild(row);
+        });
+        if (!data.ingredients.length) {
+          var row = document.createElement('tr');
+          cell(row, 'This recipe has no ingredients.').colSpan = 5;
+          body.appendChild(row);
+        }
+        error.hidden = true;
+        preview.querySelector('[data-scale-table]').hidden = false;
+        preview.hidden = false;
+      }).fail(function (xhr) {
+        // A size still being typed ("12", "12 ga") - say what's wrong instead of showing stale amounts.
+        var message = (xhr.responseJSON && xhr.responseJSON.error) || "Couldn't scale the recipe. Try again.";
+        if (window.console) console.debug('[addBatch] scale preview failed', xhr.status, message);
+        error.textContent = message;
+        error.hidden = false;
+        preview.querySelector('[data-scale-table]').hidden = true;
+        preview.hidden = false;
+      });
+    }
+    function queuePreview() { clearTimeout(previewTimer); previewTimer = setTimeout(updatePreview, 350); }
+    $('#id_size').on('input change', queuePreview);
+    $('#id_recipe').change(queuePreview);
+    updatePreview();
 
     $('#id_size').change(updateBatchName);
     $('#id_startdate').change(updateBatchName);
