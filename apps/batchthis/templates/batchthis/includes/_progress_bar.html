@@ -94,6 +94,26 @@
         {% endfor %}
       </div>
       {% endif %}
+
+      {% if schedule.pitched %}
+      {# Notes and the system's flags (users can't raise flags), then readings - each at its date. #}
+      <div class="cl-progress-lane-label">Notes &amp; flags <a href="{% url 'addDetailNote' batch.pk %}" data-cl-form-modal data-modal-title="Add note">Add note</a></div>
+      <div class="cl-progress-marks">
+        {% for mark in schedule.marks %}{% if mark.kind != 'reading' %}
+        <span class="cl-progress-pin cl-progress-pin--{{ mark.kind }} js-mouse-tooltip" data-toggle="tooltip"
+              title="{{ mark.label }} &middot; {{ mark.when|date:'M j, Y' }}{% if mark.text %} &middot; {{ mark.text|truncatechars:200 }}{% endif %}"
+              style="left: {{ mark.at|stringformat:'.3f' }}%;">{% if mark.kind == 'flag' %}!{% endif %}<span class="sr-only">{{ mark.label }}: {{ mark.text }}</span></span>
+        {% endif %}{% endfor %}
+      </div>
+      <div class="cl-progress-lane-label">Readings</div>
+      <div class="cl-progress-marks cl-progress-marks--readings">
+        {% for mark in schedule.marks %}{% if mark.kind == 'reading' %}
+        <span class="cl-progress-pin cl-progress-pin--reading js-mouse-tooltip" data-toggle="tooltip"
+              title="{{ mark.label }} &middot; {{ mark.when|date:'M j, Y' }}{% if mark.text %} &middot; {{ mark.text }}{% endif %}"
+              style="left: {{ mark.at|stringformat:'.3f' }}%;"><span class="sr-only">{{ mark.label }}</span></span>
+        {% endif %}{% endfor %}
+      </div>
+      {% endif %}
       </div>
 
       <div class="cl-progress-axis cl-num">

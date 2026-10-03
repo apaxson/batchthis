@@ -1020,6 +1020,16 @@ class ProgressStep:
 
 
 @dataclass(frozen=True)
+class ProgressMark:
+    """A note, reading or system flag pinned on the bar at its date (build stage 3)."""
+    kind: str                         # note / reading / flag (flags only come from the system)
+    at: float                         # % of the bar
+    when: datetime
+    label: str                        # note type, "Specific Gravity 1.012", or the flag's label
+    text: str = ""                    # the note, the reading's description, or the flag's message
+
+
+@dataclass(frozen=True)
 class ScheduleProgress:
     segments: list
     has_plan: bool
@@ -1035,6 +1045,7 @@ class ScheduleProgress:
     completed_at: Optional[datetime]
     stays: list = field(default_factory=list)   # ProgressStay, from batch_schedule_progress()
     steps: list = field(default_factory=list)   # ProgressStep, in bar order
+    marks: list = field(default_factory=list)   # ProgressMark, in bar order
 
     @property
     def overruns(self) -> list[tuple[str, int]]:
@@ -1268,18 +1279,78 @@ def _stays_and_steps(progress: ScheduleProgress, stays: list[VesselStay], plan_r
     return placed, steps
 
 
+def _time_on_bar(progress: ScheduleProgress, stays: list[VesselStay], now: datetime):
+    """
+    A function placing a date on the bar (% of the bar): inside the stage the
+    batch was in then, linear within that stage's segment. Before Pitch -> 0;
+    after Complete Batch -> 100; later than now -> today.
+    """
+    segments = {segment.stage.name: segment for segment in progress.segments}
+    spans = [(stay.state, stay.start, stay.end or now) for stay in stays if stay.state in segments]
+    stage_start: dict = {}
+    for state, start, _end in spans:
+        stage_start.setdefault(state, start)
+
+    def at(when: datetime) -> float:
+        if not spans or when < spans[0][1]:
+            return 0.0
+        if progress.completed and when >= spans[-1][2]:
+            return 100.0
+        state, _start, _end = next((span for span in spans if span[1] <= when < span[2]), spans[-1])
+        when = min(when, now)
+        return _bar_at(segments[state], (when - stage_start[state]).total_seconds() / 86400)
+    return at
+
+
+def _marks(progress: ScheduleProgress, stays: list[VesselStay], notes, tests, flags,
+           now: datetime) -> list[ProgressMark]:
+    """
+    Build stage 3 (TODO.txt PROGRESS BAR): batch notes and test readings at their
+    dates, plus the SYSTEM's flags - a fault rule's flag at the reading that
+    tripped it (lib/faults.py), an overrun where the stage passed its plan.
+    Users can't raise flags (Aaron, 2026-10-02). Nothing before Pitch is drawn
+    on an unpitched batch - there's no time axis yet.
+    """
+    if not progress.pitched:
+        return []
+    at = _time_on_bar(progress, stays, now)
+    marks = [ProgressMark('note', at(note.date), note.date, note.notetype.name, note.text) for note in notes or []]
+    marks += [ProgressMark('reading', at(test.datetime), test.datetime, f"{test.type.name} {test.display_value}",
+                           test.description) for test in tests or []]
+    marks += [ProgressMark('flag', at(flag['test'].datetime), flag['test'].datetime, flag['label'], flag['message'])
+              for flag in flags or [] if flag.get('test') is not None]
+    stage_start = {}
+    for stay in stays:
+        if stay.state is not None:
+            stage_start.setdefault(stay.state, stay.start)
+    for segment in progress.segments:
+        if segment.overrun_days and segment.stage.name in stage_start:
+            label = f"{segment.stage.name}: {segment.overrun_days} day{'s' if segment.overrun_days != 1 else ''} over plan"
+            marks.append(ProgressMark(
+                'flag', segment.left + segment.width * segment.fill / 100,
+                stage_start[segment.stage.name] + timedelta(days=segment.stage.planned_days), label,
+                f"{segment.stage.name} passed its planned {round(segment.stage.planned_days)} days.",
+            ))
+    marks.sort(key=lambda mark: (mark.at, mark.when))
+    logger.debug(f"_marks: {[(m.kind, m.label, round(m.at, 1)) for m in marks]}")
+    return marks
+
+
 def batch_schedule_progress(stays: list[VesselStay], plan_steps, *, completed_at: Optional[datetime] = None,
-                            plan_rows=None, full_aging: Optional[Span] = None,
-                            now: Optional[datetime] = None) -> ScheduleProgress:
+                            plan_rows=None, full_aging: Optional[Span] = None, notes=None, tests=None,
+                            flags=None, now: Optional[datetime] = None) -> ScheduleProgress:
     """
     schedule_progress() for a batch, from data the batch page already loads
-    (Batch.vessel_durations(), the batch plan's steps, plan_progress() rows and
-    Batch.full_aging()) - no queries of its own. The clock starts at Pitch (the
-    first stay in a stage). Adds the vessel stays and steps (build stage 2).
+    (Batch.vessel_durations(), the batch plan's steps, plan_progress() rows,
+    Batch.full_aging(), its notes and tests with their types, and the fault
+    flags from get_active_flags()) - no queries of its own. The clock starts at
+    Pitch (the first stay in a stage). Adds the vessel stays and steps (build
+    stage 2) and the notes, readings and system flags (build stage 3).
     """
     now = now or timezone.now()
     started_at = next((stay.start for stay in stays if stay.state is not None), None)
     progress = schedule_progress(progress_stages(stays, plan_steps, full_aging=full_aging, now=now),
                                  started_at=started_at, completed_at=completed_at)
     placed, steps = _stays_and_steps(progress, stays, plan_rows, now)
-    return replace(progress, stays=placed, steps=steps)
+    marks = _marks(progress, stays, notes, tests, flags, now)
+    return replace(progress, stays=placed, steps=steps, marks=marks)

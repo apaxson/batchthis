@@ -170,3 +170,34 @@ def test_page_for_a_completed_batch_shows_packaging(client):
 
     assert "Tank A 131 d Bottles 9 d" in text
     assert "cl-progress-stay--planned" not in html and "cl-progress-step--ahead" not in html
+
+
+# ---------- Build stage 3: notes, readings and system flags ----------
+
+@pytest.mark.django_db
+def test_page_pins_notes_readings_and_system_flags(client):
+    from ..models import BatchNote, BatchNoteType, BatchTest, BatchTestType
+
+    batch = _batch()
+    _log(batch, "pitch", 162)
+    _log(batch, "racking", 132, dst=_tank("Tank A"))
+    BatchNote.objects.create(batch=batch, date=_ago(100), text="Clearing nicely",
+                             notetype=BatchNoteType.objects.get(name="Fermentation Note"))
+    BatchTest.objects.create(batch=batch, datetime=_ago(90), value="3 ppm",
+                             type=BatchTestType.objects.get(shortid="so2"))
+
+    html = _progress_html(client, batch)
+
+    assert html.count("cl-progress-pin--note") == 1 and "Clearing nicely" in html
+    assert html.count("cl-progress-pin--reading") >= 1 and "3 ppm" in html
+    # System flags: the low-SO2 fault rule and Aging's overrun.
+    assert html.count("cl-progress-pin--flag") == 2
+    assert "Aging: 12 days over plan" in html
+    assert f'href="{reverse("addDetailNote", kwargs={"pk": batch.pk})}" data-cl-form-modal' in html
+
+
+@pytest.mark.django_db
+def test_page_has_no_note_lane_before_pitch(client):
+    html = _progress_html(client, _batch())
+
+    assert "cl-progress-marks" not in html

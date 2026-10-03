@@ -173,10 +173,14 @@ def batch(request, pk):
     plan = _plan_summary(batch.plan_steps.select_related('stage'))
     plan_locked = batch_plan_locked_reason(batch)
     completed_event = last_event if last_event and last_event.stage.to_state == BatchStage.STATE_COMPLETED else None
-    # The progress bar (% of plan, expected total, forecast) from the stays and plan already loaded.
+    flags = get_active_flags([batch])
+    # The progress bar (% of plan, expected total, forecast; vessels, steps; notes, readings and
+    # system flags at their dates) from what this view loads - two queries for notes and readings.
     schedule = batch_schedule_progress(vessel_stays, plan['steps'],
                                        completed_at=completed_event.timestamp if completed_event else None,
-                                       plan_rows=progress, full_aging=full_aging)
+                                       plan_rows=progress, full_aging=full_aging,
+                                       notes=list(batch.notes.select_related('notetype')),
+                                       tests=list(batch.tests.select_related('type')), flags=flags)
 
     current_gravity_value = batch.current_gravity()
     estABV = round(Utils.potentialABV(startSG=batch.startingGravity.magnitude, endSG=current_gravity_value)[0], 1)
@@ -202,7 +206,7 @@ def batch(request, pk):
         "fermnotes": ferm_notes,
         "tastenotes": taste_notes,
         "recipe": recipe,
-        "flags": get_active_flags([batch]),
+        "flags": flags,
         # Stage timeline (TODO-BatchStage.txt step 6)
         "current_state": last_event.stage.to_state if last_event else None,
         "completed_event": completed_event,

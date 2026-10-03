@@ -13,7 +13,17 @@ import pytest
 from django.utils import timezone
 
 from ..factories import BatchFactory, FermenterFactory, RecipeFactory, VesselFactory
-from ..models import ActivityLog, AgingTank, BatchStage, PlanStep, Vessel
+from ..models import (
+    ActivityLog,
+    AgingTank,
+    BatchNote,
+    BatchNoteType,
+    BatchStage,
+    BatchTest,
+    BatchTestType,
+    PlanStep,
+    Vessel,
+)
 from ..services import (
     ProgressStage,
     batch_schedule_progress,
@@ -69,12 +79,14 @@ def _log(batch, shortid, days_ago, dst=None, packaging=""):
                                   packaging=packaging)
 
 
-def _progress(batch):
+def _progress(batch, flags=None):
     completed = next((e for e in batch.stage_events.select_related('stage')
                       if e.stage and e.stage.to_state == BatchStage.STATE_COMPLETED), None)
     return batch_schedule_progress(batch.vessel_durations(), list(batch.plan_steps.select_related('stage')),
                                    completed_at=completed.timestamp if completed else None,
-                                   plan_rows=plan_progress(batch), full_aging=batch.full_aging(), now=NOW)
+                                   plan_rows=plan_progress(batch), full_aging=batch.full_aging(),
+                                   notes=list(batch.notes.select_related('notetype')),
+                                   tests=list(batch.tests.select_related('type')), flags=flags or [], now=NOW)
 
 
 def _summary(progress):
@@ -137,9 +149,12 @@ def test_progress_from_loaded_stays_and_steps_needs_no_queries(django_assert_num
     _log(batch, "racking", 41, dst=_tank("Tank A"))
     stays, steps = batch.vessel_durations(), list(batch.plan_steps.select_related('stage'))
     rows, full_aging = plan_progress(batch), batch.full_aging()
+    _note(batch, 20, "Clearing")
+    notes, tests = list(batch.notes.select_related('notetype')), list(batch.tests.select_related('type'))
 
     with django_assert_num_queries(0):
-        batch_schedule_progress(stays, steps, completed_at=None, plan_rows=rows, full_aging=full_aging, now=NOW)
+        batch_schedule_progress(stays, steps, completed_at=None, plan_rows=rows, full_aging=full_aging,
+                                notes=notes, tests=tests, flags=[], now=NOW)
 
 
 # ---------- A current stage past its plan ----------
@@ -468,3 +483,103 @@ def test_a_packaged_current_stay_shows_its_packaging():
 
     assert (current.kind, current.label, current.vessel, current.step) == \
         ("current", "Bottles", None, "Sterile Filtering")
+
+
+
+# ---------- Build stage 3: notes, readings and system flags on the bar ----------
+
+def _note(batch, days_ago, text, kind="General Note"):
+    return BatchNote.objects.create(batch=batch, date=_ago(days_ago), text=text,
+                                    notetype=BatchNoteType.objects.get(name=kind))
+
+
+def _reading(batch, days_ago, shortid, value):
+    return BatchTest.objects.create(batch=batch, datetime=_ago(days_ago), value=value,
+                                    type=BatchTestType.objects.get(shortid=shortid))
+
+
+def _marks(progress, kind):
+    return [m for m in progress.marks if m.kind == kind]
+
+
+@pytest.mark.django_db
+def test_a_note_is_pinned_at_its_date():
+    batch = _batch()
+    _log(batch, "pitch", 67)
+    _log(batch, "racking", 41, dst=_tank("Tank A"))
+    _note(batch, 31, "Clearing nicely", kind="Fermentation Note")      # 10 days into Aging
+
+    progress = _progress(batch)
+    aging = progress.segments[1]
+    (note,) = _marks(progress, "note")
+
+    assert (note.label, note.text, note.when) == ("Fermentation Note", "Clearing nicely", _ago(31))
+    assert note.at == pytest.approx(aging.left + aging.width * 10 / 120)
+
+
+@pytest.mark.django_db
+def test_readings_are_dots_labelled_with_their_display_value():
+    batch = _batch()
+    _log(batch, "pitch", 67)
+    _reading(batch, 60, "specific-gravity", "1.02 sg")
+
+    progress = _progress(batch)
+    ferm = progress.segments[0]
+    reading = next(m for m in _marks(progress, "reading") if m.when == _ago(60))
+
+    assert reading.label.endswith("1.020")                              # SG always 3 decimals
+    assert reading.at == pytest.approx(ferm.width * 7 / 67)            # Fermentation is current: 67 d of 67
+
+
+@pytest.mark.django_db
+def test_a_system_fault_flag_is_pinned_at_the_reading_that_tripped_it():
+    batch = _batch()
+    _log(batch, "pitch", 67)
+    _log(batch, "racking", 41, dst=_tank("Tank A"))
+    low = _reading(batch, 21, "so2", "4 ppm")
+    flag = {"batch": batch, "test": low, "severity": "warning", "label": "Free SO₂ low", "message": "Too low"}
+
+    progress = _progress(batch, flags=[flag])
+    aging = progress.segments[1]
+    (mark,) = _marks(progress, "flag")
+
+    assert (mark.label, mark.text, mark.when) == ("Free SO₂ low", "Too low", _ago(21))
+    assert mark.at == pytest.approx(aging.left + aging.width * 20 / 120)
+
+
+@pytest.mark.django_db
+def test_an_overrun_is_flagged_where_the_stage_passed_its_plan():
+    batch = _batch()
+    _log(batch, "pitch", 162)
+    _log(batch, "racking", 132, dst=_tank("Tank A"))                   # Aging 132 d of 120
+
+    progress = _progress(batch)
+    aging = progress.segments[1]
+    (mark,) = _marks(progress, "flag")
+
+    assert mark.label == "Aging: 12 days over plan"
+    assert mark.when == _ago(12)                                        # Aging started 132 d ago + 120 planned
+    assert mark.at == pytest.approx(aging.left + aging.width * 120 / 132)
+
+
+@pytest.mark.django_db
+def test_notes_before_pitch_and_after_completion_sit_at_the_ends():
+    batch = _batch()
+    _note(batch, 200, "Ordered honey")
+    _log(batch, "pitch", 168)
+    _log(batch, "racking", 140, dst=_tank("Tank A"))
+    _log(batch, "sterile-filtering", 9, packaging=BOTTLES)
+    _log(batch, "complete-batch", 5)
+    _note(batch, 1, "Tasted a bottle")
+
+    notes = {m.text: m.at for m in _marks(_progress(batch), "note")}
+
+    assert notes == {"Ordered honey": pytest.approx(0), "Tasted a bottle": pytest.approx(100)}
+
+
+@pytest.mark.django_db
+def test_an_unpitched_batch_has_no_marks():
+    batch = _batch()
+    _note(batch, 3, "Honey arrived")
+
+    assert _progress(batch).marks == []
