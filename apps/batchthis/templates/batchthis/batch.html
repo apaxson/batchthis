@@ -77,6 +77,7 @@
   <div class="cl-section-title">Stage timeline</div>
   {% if batch.active %}<div class="cl-section-note"><a href="{% url 'addDetailStage' batch.pk %}">Stage transition</a></div>{% endif %}
 </div>
+{% include 'batchthis/includes/_progress_bar.html' %}
 {% if not vessel_stays %}<p class="cl-timebar-empty">No stages logged yet. Pitch the batch with a Stage transition to start the timeline.</p>{% endif %}
 <div class="cl-timebar-scroll">
   <div class="cl-timebar" style="grid-template-columns: {{ timeline_columns }};" role="group" aria-label="Batch timeline; widths show time spent">

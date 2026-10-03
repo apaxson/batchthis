@@ -1,6 +1,7 @@
 import logging
 from dataclasses import dataclass
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
+from math import floor
 from typing import Optional
 
 from django.conf import settings
@@ -23,6 +24,7 @@ from .models import (
     RecipePlanStep,
     Vessel,
     VesselStatusEvent,
+    VesselStay,
     WorkflowTemplate,
     WorkflowTemplateStep,
 )
@@ -949,3 +951,187 @@ def plan_progress(batch: Batch) -> list[PlanProgressRow]:
     logger.debug(f"plan_progress: batch={batch.pk} {len(steps)} planned steps, {len(events)} stages -> "
                  f"{[(r.stage.shortid, r.status) for r in rows]}")
     return rows
+
+
+# ---------- Schedule progress: the batch page's progress bar (TODO.txt PROGRESS BAR) ----------
+
+PROGRESS_MIN_WIDTH = 6.0  # % of the bar - a short stage stays wide enough to read
+
+
+@dataclass(frozen=True)
+class ProgressStage:
+    """
+    One stage of the progress bar's input. Kept generic (a name, not a BatchStage
+    state) so DYNAMIC WORKFLOWS phase 5 only swaps progress_stages() for the
+    batch's workflow definition. actual_days: time spent (done), so far
+    (current), None (ahead).
+    """
+    name: str
+    status: str                       # done / current / ahead
+    planned_days: Optional[float]     # the plan's timed steps in this stage; None = not planned
+    actual_days: Optional[float]
+
+
+@dataclass(frozen=True)
+class ProgressSegment:
+    """A stage drawn on the bar. left/width are % of the bar; fill/overrun are % of the segment."""
+    stage: ProgressStage
+    expected_days: float
+    left: float
+    width: float
+    fill: float           # current stage: elapsed time, up to its planned time
+    overrun: float        # current stage: time past its planned time
+    overrun_days: int
+
+
+@dataclass(frozen=True)
+class ScheduleProgress:
+    segments: list
+    has_plan: bool
+    pitched: bool
+    completed: bool
+    elapsed_days: int
+    expected_total_days: Optional[int]   # None without a plan
+    remaining_days: Optional[int]
+    percent: Optional[int]               # % of plan; None without a plan
+    marker: Optional[float]              # today, % of the bar; None before Pitch and once completed
+    started_at: Optional[datetime]
+    forecast_end: Optional[datetime]
+    completed_at: Optional[datetime]
+
+    @property
+    def overruns(self) -> list[tuple[str, int]]:
+        """(stage name, whole days over plan) for a current stage past its planned time."""
+        return [(s.stage.name, s.overrun_days) for s in self.segments if s.overrun_days > 0]
+
+
+def progress_stages(stays: list[VesselStay], plan_steps, *, now: Optional[datetime] = None) -> list[ProgressStage]:
+    """
+    The fixed Fermentation -> Aging -> Bottling states as a stage list: planned
+    time from the plan's timed steps (plan_totals), actual time = the stage's
+    vessel stays added up (an open stay measured to `now`). States passed over
+    are left out; states not reached yet are ahead.
+    """
+    now = now or timezone.now()
+    planned = plan_totals(plan_steps).by_state
+    actual: dict = {}
+    current = None
+    for stay in stays:
+        if stay.state is None or stay.state == BatchStage.STATE_COMPLETED:
+            continue  # a transfer before Pitch
+        actual[stay.state] = actual.get(stay.state, 0.0) + ((stay.end or now) - stay.start).total_seconds() / 86400
+        if stay.is_open:
+            current = stay.state
+    states = BatchStage.TIMELINE_STATES
+    last_reached = max((states.index(state) for state in actual), default=-1)
+    stages = []
+    for i, state in enumerate(states):
+        if state in actual:
+            status = 'current' if state == current else 'done'
+        elif i > last_reached:
+            status = 'ahead'
+        else:
+            continue
+        stages.append(ProgressStage(state, status, planned.get(state), actual.get(state)))
+    logger.debug(f"progress_stages: {[(s.name, s.status, s.planned_days, s.actual_days) for s in stages]}")
+    return stages
+
+
+def _segment_widths(days: list[float]) -> list[float]:
+    """% widths in proportion to `days`, summing to 100; a short stage gets PROGRESS_MIN_WIDTH."""
+    count = len(days)
+    if not count:
+        return []
+    fixed: set = set()
+    while len(fixed) < count:
+        free = 100 - PROGRESS_MIN_WIDTH * len(fixed)
+        rest = sum(d for i, d in enumerate(days) if i not in fixed)
+        widths = [PROGRESS_MIN_WIDTH if i in fixed else (d / rest * free if rest else free / (count - len(fixed)))
+                  for i, d in enumerate(days)]
+        short = {i for i, w in enumerate(widths) if w < PROGRESS_MIN_WIDTH} - fixed
+        if not short:
+            return widths
+        fixed |= short
+    return [100 / count] * count
+
+
+def schedule_progress(stages: list[ProgressStage], *, started_at: Optional[datetime],
+                      completed_at: Optional[datetime] = None) -> ScheduleProgress:
+    """
+    The progress bar's numbers and geometry (TODO.txt PROGRESS BAR, Aaron 2026-09-23):
+        expected total = actual time of done stages + max(planned, elapsed) of the
+                         current stage + planned time of the stages ahead
+    % of plan = elapsed / expected total - under 100 until Completed, so a current
+    stage past its plan stretches the total day by day. A calculation only: the
+    stored plan never changes. Without a plan (no timed steps): elapsed time only,
+    no %, remaining or forecast.
+    """
+    has_plan = any(s.planned_days for s in stages)
+    pitched, completed = started_at is not None, completed_at is not None
+    shown = stages if has_plan else [s for s in stages if s.status != 'ahead']
+
+    def expected(stage: ProgressStage) -> float:
+        if stage.status == 'done':
+            return stage.actual_days
+        if stage.status == 'current':
+            return max(stage.planned_days or 0, stage.actual_days) if has_plan else stage.actual_days
+        return stage.planned_days or 0
+
+    days = [expected(s) for s in shown]
+    total = sum(days)
+    elapsed = sum(s.actual_days for s in shown if s.status != 'ahead')
+
+    segments, left = [], 0.0
+    for stage, stage_days, width in zip(shown, days, _segment_widths(days)):
+        fill = overrun = 0.0
+        overrun_days = 0
+        if stage.status == 'current' and stage_days > 0:
+            planned = stage.planned_days or 0
+            if has_plan and planned and stage.actual_days > planned:
+                fill = planned / stage_days * 100
+                overrun, overrun_days = 100 - fill, round(stage.actual_days - planned)
+            else:
+                fill = stage.actual_days / stage_days * 100
+        segments.append(ProgressSegment(stage, stage_days, left, width, fill, overrun, overrun_days))
+        left += width
+
+    marker = None
+    current = next((s for s in segments if s.stage.status == 'current'), None)
+    if pitched and not completed and current:
+        share = min(current.stage.actual_days / current.expected_days, 1.0) if current.expected_days else 0.0
+        marker = current.left + current.width * share
+
+    percent = None
+    if has_plan:
+        if completed:
+            percent = 100
+        elif not pitched or not total:
+            percent = 0
+        else:
+            percent = min(floor(elapsed / total * 100), 99)
+    total_days = round(total) if has_plan else None
+    elapsed_days = round(elapsed)
+    progress = ScheduleProgress(
+        segments=segments, has_plan=has_plan, pitched=pitched, completed=completed,
+        elapsed_days=elapsed_days,
+        expected_total_days=total_days,
+        remaining_days=max(total_days - elapsed_days, 0) if has_plan else None,
+        percent=percent, marker=marker, started_at=started_at,
+        forecast_end=started_at + timedelta(days=total) if has_plan and pitched and not completed else None,
+        completed_at=completed_at,
+    )
+    logger.debug(f"schedule_progress: {[(s.stage.name, s.stage.status, round(s.expected_days, 2)) for s in segments]} "
+                 f"elapsed={elapsed:.2f} total={total:.2f} percent={percent} marker={marker}")
+    return progress
+
+
+def batch_schedule_progress(stays: list[VesselStay], plan_steps, *, completed_at: Optional[datetime] = None,
+                            now: Optional[datetime] = None) -> ScheduleProgress:
+    """
+    schedule_progress() for a batch, from data the batch page already loads
+    (Batch.vessel_durations() and the batch plan's steps) - no queries of its own.
+    The clock starts at Pitch (the first stay in a stage).
+    """
+    started_at = next((stay.start for stay in stays if stay.state is not None), None)
+    return schedule_progress(progress_stages(stays, plan_steps, now=now), started_at=started_at,
+                             completed_at=completed_at)

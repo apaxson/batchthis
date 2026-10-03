@@ -27,7 +27,7 @@ from apps.batchthis.services import (
     transition_stage_event, transfer_batch, create_vessel, update_vessel,
     plan_totals, save_workflow_template, delete_workflow_template, save_recipe_plan, clear_recipe_plan,
     copy_plan_to_batch, save_batch_plan, batch_plan_locked_reason,
-    plan_progress, allowed_next_stages, save_batch_edit, set_recipe_pairings,
+    plan_progress, batch_schedule_progress, allowed_next_stages, save_batch_edit, set_recipe_pairings,
 )
 from apps.batchthis.lib.faults import get_active_flags, get_rule_for, StagedFaultRule
 from django.contrib.auth.decorators import login_required
@@ -174,6 +174,10 @@ def batch(request, pk):
     timeline = batch.timeline_bar(planned_steps=upcoming)
     plan = _plan_summary(batch.plan_steps.select_related('stage'))
     plan_locked = batch_plan_locked_reason(batch)
+    completed_event = last_event if last_event and last_event.stage.to_state == BatchStage.STATE_COMPLETED else None
+    # The progress bar (% of plan, expected total, forecast) from the stays and plan already loaded.
+    schedule = batch_schedule_progress(vessel_stays, plan['steps'],
+                                       completed_at=completed_event.timestamp if completed_event else None)
 
     current_gravity_value = batch.current_gravity()
     estABV = round(Utils.potentialABV(startSG=batch.startingGravity.magnitude, endSG=current_gravity_value)[0], 1)
@@ -202,7 +206,8 @@ def batch(request, pk):
         "flags": get_active_flags([batch]),
         # Stage timeline (TODO-BatchStage.txt step 6)
         "current_state": last_event.stage.to_state if last_event else None,
-        "completed_event": last_event if last_event and last_event.stage.to_state == BatchStage.STATE_COMPLETED else None,
+        "completed_event": completed_event,
+        "schedule": schedule,
         "vessel_stays": vessel_stays,
         "current_stay": vessel_stays[-1] if vessel_stays and vessel_stays[-1].is_open else None,
         "full_aging": full_aging,

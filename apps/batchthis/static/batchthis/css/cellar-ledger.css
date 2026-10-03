@@ -690,6 +690,79 @@ button.nav-link { width: 100%; background: none; border: 0; font-family: inherit
 .cl-timebar-end.cl-timebar-tick--now { border-left: none; }
 .cl-timebar-empty { margin: 0 0 10px; font-size: 0.85rem; color: var(--ink-soft); }
 
+/* ---------- Batch progress bar (includes/_progress_bar.html) ----------
+   One segment per stage, sized by expected time (services.schedule_progress);
+   left/width/marker are % of the bar, set inline. Done = must green, current =
+   honey filled to today, ahead = dashed outline, overrun = brick hatching. */
+.cl-progress { margin-bottom: 26px; }
+.cl-progress-totals { display: flex; flex-wrap: wrap; gap: 6px 26px; margin-bottom: 16px; }
+.cl-progress-total { display: grid; gap: 1px; }
+.cl-progress-total b { font-size: 1.05rem; font-weight: 600; }
+.cl-progress-total span { font-size: 0.68rem; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-faint); }
+.cl-progress-total--pct b { color: var(--honey-ink); }
+
+.cl-progress-scroll { overflow-x: auto; padding-bottom: 2px; }
+.cl-progress-bar { position: relative; min-width: 640px; }
+
+.cl-progress-stages { position: relative; height: 44px; }
+.cl-progress-stage {
+  position: absolute; top: 0;
+  display: flex; align-items: flex-start; gap: 7px;
+  padding-right: 8px; overflow: hidden;
+}
+.cl-progress-stage--last { padding-right: 0; text-align: right; overflow: visible; }
+.cl-progress-stage svg { flex: 0 0 18px; width: 18px; height: 18px; margin-top: 1px; color: var(--ink-soft); }
+.cl-progress-stage-name { font-size: 0.85rem; font-weight: 600; white-space: nowrap; }
+.cl-progress-stage-time { font-size: 0.74rem; color: var(--ink-soft); white-space: nowrap; }
+.cl-progress-stage--current svg,
+.cl-progress-stage--current .cl-progress-stage-name { color: var(--honey-ink); }
+.cl-progress-stage--ahead svg,
+.cl-progress-stage--ahead .cl-progress-stage-name { color: var(--ink-faint); }
+.cl-progress-over { color: var(--brick); font-weight: 600; }
+
+.cl-progress-track { position: relative; height: 22px; }
+/* A 3px gap between segments: each one but the first gives up its left edge. */
+.cl-progress-seg { position: absolute; top: 0; bottom: 0; border-radius: 5px; overflow: hidden; }
+.cl-progress-seg + .cl-progress-seg { border-left: 3px solid var(--paper-raised); background-clip: padding-box; }
+.cl-progress-seg--done { background-color: var(--must); }
+.cl-progress-seg--current { background-color: var(--honey-soft); box-shadow: inset 0 0 0 1.5px var(--honey-line); }
+.cl-progress-seg--ahead { background-color: var(--line-soft); box-shadow: inset 0 0 0 1.5px var(--line); }
+.cl-progress-fill { position: absolute; top: 0; bottom: 0; left: 0; background: var(--honey); }
+.cl-progress-overrun {
+  position: absolute; top: 0; bottom: 0; right: 0;
+  background: repeating-linear-gradient(135deg, var(--brick) 0 5px, var(--brick-soft) 5px 9px);
+}
+
+/* Today: a line through the track and a pill under it. */
+.cl-progress-marker {
+  position: absolute; top: 38px; height: 34px; width: 0;
+  border-left: 2px solid var(--ink); pointer-events: none;
+}
+.cl-progress-marker::before {
+  content: ''; position: absolute; top: 0; left: -6px;
+  width: 10px; height: 10px; background: var(--ink); transform: rotate(45deg);
+}
+.cl-progress-tag {
+  position: relative; display: inline-block; margin-top: 8px;
+  transform: translateX(-50%);
+  padding: 3px 10px; border-radius: 99px;
+  background: var(--ink); color: var(--paper-raised);
+  font-size: 0.74rem; font-weight: 600; white-space: nowrap;
+}
+.cl-progress-tag small { font-size: inherit; font-weight: 400; opacity: 0.8; margin-left: 6px; }
+.cl-progress-tag--start { transform: translateX(-12px); }
+.cl-progress-tag--end { transform: translateX(-100%); }
+
+.cl-progress-axis {
+  position: relative; height: 22px; margin-top: 6px;
+  border-top: 1px solid var(--line-soft);
+  font-size: 0.72rem; color: var(--ink-faint);
+}
+.cl-progress-axis span { position: absolute; top: 4px; white-space: nowrap; }
+.cl-progress-axis--center { transform: translateX(-50%); }
+.cl-progress-axis--end { transform: translateX(-100%); }
+.cl-progress-flag { margin-top: 12px; }
+
 /* ---------- Chart panels ---------- */
 .cl-instrument-grid {
   display: grid;

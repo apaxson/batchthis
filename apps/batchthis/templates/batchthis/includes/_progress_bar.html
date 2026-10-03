@@ -1,0 +1,82 @@
+{% comment %}
+  The batch progress bar (TODO.txt PROGRESS BAR, build stage 1): one segment per stage,
+  today's marker with % of plan, and the totals. `schedule` = services.ScheduleProgress.
+  Positions are % of the bar, computed in Python; stringformat keeps them locale-free.
+{% endcomment %}
+{% if schedule.segments %}
+<div class="cl-progress">
+  <div class="cl-progress-totals">
+    {% if schedule.has_plan %}<div class="cl-progress-total cl-progress-total--pct"><b class="cl-num">{{ schedule.percent }}%</b><span>of plan</span></div>{% endif %}
+    {% if schedule.pitched %}<div class="cl-progress-total"><b class="cl-num">{{ schedule.elapsed_days }} d</b><span>elapsed</span></div>{% endif %}
+    {% if schedule.completed %}
+    <div class="cl-progress-total"><b class="cl-num">{{ schedule.completed_at|date:"M j, Y" }}</b><span>completed</span></div>
+    {% elif schedule.has_plan %}
+    <div class="cl-progress-total"><b class="cl-num">{{ schedule.expected_total_days }} d</b><span>{% if schedule.pitched %}expected total{% else %}planned{% endif %}</span></div>
+    {% if schedule.pitched %}
+    <div class="cl-progress-total"><b class="cl-num">{{ schedule.remaining_days }} d</b><span>remaining</span></div>
+    <div class="cl-progress-total"><b class="cl-num">{{ schedule.forecast_end|date:"M j, Y" }}</b><span>forecast done</span></div>
+    {% else %}
+    <div class="cl-progress-total"><b>Not pitched</b><span>the whole plan is ahead</span></div>
+    {% endif %}
+    {% endif %}
+  </div>
+
+  <div class="cl-progress-scroll">
+    <div class="cl-progress-bar" role="img" aria-label="{% if schedule.has_plan %}{{ schedule.percent }}% of plan{% if schedule.pitched and not schedule.completed %}, {{ schedule.remaining_days }} days remaining{% endif %}{% else %}{{ schedule.elapsed_days }} days elapsed, no plan{% endif %}">
+      <div class="cl-progress-stages">
+        {% for seg in schedule.segments %}
+        {# The last stage's label sits against the bar's right end, so a short last stage isn't cut off. #}
+        <div class="cl-progress-stage cl-progress-stage--{{ seg.stage.status }}{% if forloop.last and not forloop.first %} cl-progress-stage--last{% endif %}" style="{% if forloop.last and not forloop.first %}right: 0;{% else %}left: {{ seg.left|stringformat:'.3f' }}%; width: {{ seg.width|stringformat:'.3f' }}%;{% endif %}">
+          {% if seg.stage.name == 'Fermentation' %}
+          <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><circle cx="6" cy="13" r="3"/><circle cx="13" cy="7" r="2.3"/><circle cx="14.5" cy="14.5" r="1.6"/><circle cx="7" cy="5" r="1.2"/></svg>
+          {% elif seg.stage.name == 'Aging' %}
+          <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M5 2.5h10c1.4 2.3 2 4.8 2 7.5s-.6 5.2-2 7.5H5C3.6 15.2 3 12.7 3 10s.6-5.2 2-7.5z"/><path d="M3.4 6.5h13.2M3.4 13.5h13.2"/></svg>
+          {% elif seg.stage.name == 'Bottling' %}
+          <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M8.2 1.8h3.6v4.1c1.7.9 2.7 2.3 2.7 4.2v7.2c0 .6-.4 1-1 1h-7c-.6 0-1-.4-1-1v-7.2c0-1.9 1-3.3 2.7-4.2z"/><path d="M5.5 11h9"/></svg>
+          {% else %}
+          <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><circle cx="10" cy="10" r="4"/></svg>
+          {% endif %}
+          <div>
+            <div class="cl-progress-stage-name">{{ seg.stage.name }}</div>
+            <div class="cl-progress-stage-time cl-num">
+              {% if seg.stage.status == 'done' %}{{ seg.stage.actual_days|floatformat:0 }} d{% if schedule.has_plan %} &middot; {% if seg.stage.planned_days %}plan {{ seg.stage.planned_days|floatformat:0 }}{% else %}not planned{% endif %}{% endif %}
+              {% elif seg.stage.status == 'current' %}{% if schedule.has_plan and seg.stage.planned_days %}{{ seg.stage.actual_days|floatformat:0 }} of {{ seg.stage.planned_days|floatformat:0 }} d{% else %}{{ seg.stage.actual_days|floatformat:0 }} d so far{% endif %}{% if seg.overrun_days %} &middot; <span class="cl-progress-over">+{{ seg.overrun_days }} over</span>{% endif %}
+              {% elif seg.stage.planned_days %}{{ seg.stage.planned_days|floatformat:0 }} d planned{% else %}Not planned{% endif %}
+            </div>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+
+      <div class="cl-progress-track">
+        {% for seg in schedule.segments %}
+        <div class="cl-progress-seg cl-progress-seg--{{ seg.stage.status }}" style="left: {{ seg.left|stringformat:'.3f' }}%; width: {{ seg.width|stringformat:'.3f' }}%;">
+          {% if seg.fill %}<div class="cl-progress-fill" style="width: {{ seg.fill|stringformat:'.3f' }}%;"></div>{% endif %}
+          {% if seg.overrun %}<div class="cl-progress-overrun" style="width: {{ seg.overrun|stringformat:'.3f' }}%;"></div>{% endif %}
+        </div>
+        {% endfor %}
+      </div>
+
+      {% if schedule.marker != None %}
+      <div class="cl-progress-marker" style="left: {{ schedule.marker|stringformat:'.3f' }}%;"></div>
+      <div class="cl-progress-tag{% if schedule.marker > 85 %} cl-progress-tag--end{% elif schedule.marker < 15 %} cl-progress-tag--start{% endif %}" style="left: {{ schedule.marker|stringformat:'.3f' }}%;">
+        Today{% if schedule.has_plan %} &middot; {{ schedule.percent }}% of plan <small>{{ schedule.remaining_days }} d left</small>{% else %} &middot; day {{ schedule.elapsed_days }}{% endif %}
+      </div>
+      {% elif schedule.completed %}
+      <div class="cl-progress-tag cl-progress-tag--end" style="left: 100%;">Completed &middot; {{ schedule.elapsed_days }} d</div>
+      {% endif %}
+
+      <div class="cl-progress-axis cl-num">
+        {% if schedule.started_at %}<span style="left: 0;">Pitch {{ schedule.started_at|date:"M j, Y" }}</span>{% endif %}
+        {% if schedule.marker != None and schedule.marker > 22 and schedule.marker < 78 %}<span class="cl-progress-axis--center" style="left: {{ schedule.marker|stringformat:'.3f' }}%;">{% now "M j" %}</span>{% endif %}
+        {% if schedule.completed %}<span class="cl-progress-axis--end" style="left: 100%;">Completed {{ schedule.completed_at|date:"M j, Y" }}</span>
+        {% elif schedule.forecast_end %}<span class="cl-progress-axis--end" style="left: 100%;">Forecast {{ schedule.forecast_end|date:"M j, Y" }}</span>{% endif %}
+      </div>
+    </div>
+  </div>
+
+  {% for name, days in schedule.overruns %}
+  <div class="cl-flag cl-progress-flag" role="status"><span class="cl-flag-mark">!</span><div>{{ name }}: {{ days }} day{{ days|pluralize }} over plan</div></div>
+  {% endfor %}
+</div><!-- end progress -->
+{% endif %}
