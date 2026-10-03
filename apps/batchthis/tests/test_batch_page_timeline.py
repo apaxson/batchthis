@@ -50,6 +50,12 @@ def _page(client, batch):
     return client.get(reverse("batch", kwargs={"pk": batch.pk}))
 
 
+def _aging_note(response):
+    """The note under the progress bar's Aging stage, e.g. "Full aging 30 d"."""
+    return re.search(r'<span class="cl-progress-stage-note"[^>]*>(.*?)</span>',
+                     response.content.decode(), re.DOTALL).group(1)
+
+
 # ---------- "Stage transition" link ----------
 
 @pytest.mark.django_db
@@ -104,7 +110,8 @@ def test_time_in_vessel_table_lists_each_stay_with_the_current_one_marked(client
         ("Pitch", "Carboy 1"), ("Racking", "Tank A"), ("Racking", "Tank B"),
     ]
     page = response.content.decode()
-    assert page.count('class="cl-stage cl-stage--active">Current</span>') == 1
+    # On the progress bar's Vessels row (the old time bar was retired - build stage 2c).
+    assert page.count('cl-progress-stay cl-progress-stay--current') == 1
     for vessel in (s.vessel for s in stays):
         assert reverse("vessel", kwargs={"pk": vessel.pk}) in page
 
@@ -131,10 +138,8 @@ def test_full_aging_is_ongoing_until_a_filtering(client):
     response = _page(client, batch)
 
     assert response.context["full_aging"].is_open
-    # Shown on the time bar's Aging band heading (the Stage timeline box grid was removed).
-    band = re.search(r'<div class="cl-timebar-band[^"]*"[^>]*>\s*<span>Aging</span>(.*?)</div>',
-                     response.content.decode(), re.DOTALL).group(1)
-    assert "Full aging" in band and "(ongoing)" in band
+    # Shown under the progress bar's Aging stage.
+    assert "Full aging 86 d so far" in _aging_note(response)
 
 
 @pytest.mark.django_db
@@ -149,9 +154,8 @@ def test_full_aging_is_closed_by_the_first_filtering(client):
     aging = response.context["full_aging"]
     assert not aging.is_open
     assert aging.duration.days == 30
-    band = re.search(r'<div class="cl-timebar-band[^"]*"[^>]*>\s*<span>Aging</span>(.*?)</div>',
-                     response.content.decode(), re.DOTALL).group(1)
-    assert "Full aging" in band and "(ongoing)" not in band
+    note = _aging_note(response)
+    assert "Full aging 30 d" in note and "so far" not in note
 
 
 # ---------- Queries ----------

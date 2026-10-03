@@ -427,3 +427,44 @@ def test_after_an_unplanned_racking_the_current_stay_runs_on_through_the_stages_
 
     assert tank_b.kind == "current" and tank_b.label == "Tank B"
     assert tank_b.right + tank_b.tail == pytest.approx(aging.left + aging.width)   # to Aging's planned 120 days
+
+
+# Ported from test_timeline_plan.py when the old time bar was retired (build stage 2c).
+WITH_COARSE = [("pitch", "14 days", FERMENTER), ("racking", "30 days", AGING_TANK),
+               ("coarse-filtering", None, AGING_TANK), ("sterile-filtering", "5 days", BOTTLES),
+               ("complete-batch", None, CURRENT)]
+
+
+@pytest.mark.django_db
+def test_a_planned_step_with_no_planned_time_is_a_marker_only():
+    progress = _progress(_batch(plan=WITH_COARSE))
+
+    assert ("Coarse Filtering", "ahead") in _steps(progress)
+    assert "Coarse Filtering" not in [s.step for s in progress.stays]
+
+
+@pytest.mark.django_db
+def test_skipped_steps_are_not_drawn_ahead():
+    batch = _batch(plan=WITH_COARSE)
+    _log(batch, "pitch", 60)
+    _log(batch, "racking", 40, dst=_tank("Tank A"))
+    _log(batch, "sterile-filtering", 10, dst=_tank("Tank B"))     # Coarse Filtering skipped
+
+    progress = _progress(batch)
+
+    assert "Coarse Filtering" not in [s.name for s in progress.steps]
+    assert [s for s in progress.stays if s.kind == "planned"] == []
+    assert _steps(progress)[-1] == ("Complete Batch", "ahead")
+
+
+@pytest.mark.django_db
+def test_a_packaged_current_stay_shows_its_packaging():
+    batch = _batch(plan=WITH_COARSE)
+    _log(batch, "pitch", 60)
+    _log(batch, "racking", 40, dst=_tank("Tank A"))
+    _log(batch, "sterile-filtering", 10, packaging=BOTTLES)
+
+    current = _progress(batch).stays[-1]
+
+    assert (current.kind, current.label, current.vessel, current.step) == \
+        ("current", "Bottles", None, "Sterile Filtering")

@@ -389,13 +389,14 @@ CellarLedger.renderChart = function (svg, cfg) {
   });
 })(window.jQuery);
 
-// Batch time bar (batch.html): on narrow screens the bar scrolls sideways, and the
-// current stay is usually off to the right - bring it into view on load.
+// Batch progress bar (includes/_progress_bar.html): on narrow screens the bar scrolls
+// sideways, and today is usually off to the right - bring today's marker into view on load.
 document.addEventListener('DOMContentLoaded', function () {
-  document.querySelectorAll('.cl-timebar-scroll').forEach(function (scroller) {
-    var current = scroller.querySelector('.cl-timebar-seg--current');
-    if (!current || scroller.scrollWidth <= scroller.clientWidth) return;
-    scroller.scrollLeft = Math.max(0, current.offsetLeft - scroller.offsetLeft - 16);
+  document.querySelectorAll('.cl-progress-scroll').forEach(function (scroller) {
+    var today = scroller.querySelector('.cl-progress-marker');
+    if (!today || scroller.scrollWidth <= scroller.clientWidth) return;
+    var offset = today.getBoundingClientRect().left - scroller.getBoundingClientRect().left;
+    scroller.scrollLeft = Math.max(0, scroller.scrollLeft + offset - scroller.clientWidth / 2);
   });
 });
 

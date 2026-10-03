@@ -168,10 +168,8 @@ def batch(request, pk):
     logger.debug("batch: pk=%s %d stage events, %d vessel stays, full_aging=%s",
                  pk, len(stage_events), len(vessel_stays), full_aging)
 
-    # The plan's upcoming steps draw the time bar's future (step 11c); no plan -> placeholders.
+    # Plan vs actual; also draws the progress bar's planned stays and steps.
     progress = plan_progress(batch)
-    upcoming = [row.step for row in progress if row.status == 'upcoming'] if progress else None
-    timeline = batch.timeline_bar(planned_steps=upcoming)
     plan = _plan_summary(batch.plan_steps.select_related('stage'))
     plan_locked = batch_plan_locked_reason(batch)
     completed_event = last_event if last_event and last_event.stage.to_state == BatchStage.STATE_COMPLETED else None
@@ -212,13 +210,10 @@ def batch(request, pk):
         "vessel_stays": vessel_stays,
         "current_stay": vessel_stays[-1] if vessel_stays and vessel_stays[-1].is_open else None,
         "full_aging": full_aging,
-        "timeline": timeline,
         # The batch's own plan (step 10): editable until Pitch; plan vs actual after (11e).
         "plan": plan,
         "plan_vs_actual": _plan_vs_actual(batch, progress) if progress and batch.current_state else None,
         "plan_editable": plan_locked is None,
-        # One grid column per timeline segment, sized by its time; bands span their segments.
-        "timeline_columns": " ".join(f"minmax(9rem, {seg.weight:.1f}fr)" for seg in timeline.segments),
     }
     return render(request, 'batchthis/batch.html', context=context)
 
