@@ -232,7 +232,7 @@ class VesselStatusEvent(models.Model):
 
     def __str__(self):
         fmt = "%m/%d/%y-%H:%M"
-        return f"{self.vessel} -> {self.status} ({self.timestamp.strftime(fmt)})"
+        return f"{self.vessel} -> {self.status} ({timezone.localtime(self.timestamp).strftime(fmt)})"
 
     vessel = models.ForeignKey(Vessel, on_delete=models.CASCADE, related_name='status_events')
     status = models.CharField(max_length=15, choices=Vessel.STATUS_CHOICES)
@@ -884,7 +884,7 @@ class BatchStageEvent(models.Model):
 
     def __str__(self):
         fmt = "%m/%d/%y-%H:%M"
-        return f"{self.batch} - {self.label} ({self.timestamp.strftime(fmt)})"
+        return f"{self.batch} - {self.label} ({timezone.localtime(self.timestamp).strftime(fmt)})"
 
     @property
     def label(self) -> str:
@@ -1037,7 +1037,7 @@ READING_SPECS = {
 class BatchTest(models.Model):
     def __str__(self):
         fmt = "%m/%d/%y-%H:%M"
-        return self.datetime.strftime(fmt) + " " + self.type.name
+        return timezone.localtime(self.datetime).strftime(fmt) + " " + self.type.name
 
     datetime = models.DateTimeField(auto_now=False)
     type = models.ForeignKey(BatchTestType, on_delete=models.SET("_del"))
@@ -1157,7 +1157,7 @@ class BatchAddition(models.Model):
 class BatchNote(models.Model):
     def __str__(self):
         fmt = "%m/%d/%y-%H:%M"
-        return self.date.strftime(fmt) + " " + self.text[:50]
+        return timezone.localtime(self.date).strftime(fmt) + " " + self.text[:50]
 
     text = models.TextField()
     date = models.DateTimeField(auto_now_add=False)

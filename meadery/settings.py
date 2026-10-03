@@ -86,6 +86,8 @@ MIDDLEWARE = [
     # Every view needs a logged-in user unless marked @login_not_required (the auth
     # login/logout/password-reset views already are). Sends others to LOGIN_URL.
     'django.contrib.auth.middleware.LoginRequiredMiddleware',
+    # Dates/times in the viewer's browser time zone (the "tz" cookie); UTC when unknown.
+    'apps.batchthis.middleware.BrowserTimezoneMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
@@ -204,6 +206,8 @@ AUTH_PASSWORD_VALIDATORS = [
 
 LANGUAGE_CODE = 'en-us'
 
+# Stored times are UTC. Pages show the viewer's browser zone (BrowserTimezoneMiddleware);
+# UTC is the fallback when it can't be determined (Aaron, 2026-10-03).
 TIME_ZONE = 'UTC'
 
 USE_I18N = True

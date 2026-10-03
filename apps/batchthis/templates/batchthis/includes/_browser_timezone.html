@@ -1,0 +1,20 @@
+{# BROWSER TIME ZONE: report the browser's IANA zone in the "tz" cookie; BrowserTimezoneMiddleware shows times in it. #}
+<script data-tz-reload="{% if request.method == 'GET' %}1{% else %}0{% endif %}">
+(function (script) {
+  try {
+    var tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    var read = function () { var m = document.cookie.match(/(?:^|;\s*)tz=([^;]*)/); return m ? decodeURIComponent(m[1]) : ''; };
+    if (!tz || read() === tz) return;
+    document.cookie = 'tz=' + tz + '; path=/; max-age=31536000; SameSite=Lax';
+    // Re-render this page in the browser's zone: only once per zone (blocked cookies can't loop)
+    // and never for a POST response (reloading would resubmit the form).
+    if (read() === tz && script && script.getAttribute('data-tz-reload') === '1'
+        && sessionStorage.getItem('cl-tz-reloaded') !== tz) {
+      sessionStorage.setItem('cl-tz-reloaded', tz);
+      location.reload();
+    }
+  } catch (e) {
+    if (window.console) console.debug('[timezone] could not report the browser time zone', e);
+  }
+})(document.currentScript);
+</script>

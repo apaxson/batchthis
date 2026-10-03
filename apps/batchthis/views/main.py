@@ -73,7 +73,7 @@ def _build_series(batch, shortid, rule=None):
         series["bandMax"] = []
     strfmt = "%m/%d/%y"
     for test in tests:
-        date_str = test.datetime.strftime(strfmt)
+        date_str = timezone.localtime(test.datetime).strftime(strfmt)   # the viewer's zone, not UTC
         series["dates"].append(date_str)
         series["values"].append(test.chart_value)
         series["rows"].append((date_str, test.chart_value))
