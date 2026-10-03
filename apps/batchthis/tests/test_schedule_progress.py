@@ -1,5 +1,5 @@
 """
-PROGRESS BAR build stage 1 (TODO.txt): services.schedule_progress() - the batch page's
+PROGRESS BAR build stages 1-2 (TODO.txt): services.schedule_progress() - the batch page's
 % of plan, expected total, remaining time and forecast, from the stage list
 services.progress_stages() builds out of the vessel stays and the batch plan.
 
@@ -18,9 +18,11 @@ from ..services import (
     ProgressStage,
     batch_schedule_progress,
     copy_plan_to_batch,
+    plan_progress,
     progress_stages,
     save_recipe_plan,
     schedule_progress,
+    transfer_batch,
     transition_stage_event,
 )
 
@@ -71,7 +73,8 @@ def _progress(batch):
     completed = next((e for e in batch.stage_events.select_related('stage')
                       if e.stage and e.stage.to_state == BatchStage.STATE_COMPLETED), None)
     return batch_schedule_progress(batch.vessel_durations(), list(batch.plan_steps.select_related('stage')),
-                                   completed_at=completed.timestamp if completed else None, now=NOW)
+                                   completed_at=completed.timestamp if completed else None,
+                                   plan_rows=plan_progress(batch), full_aging=batch.full_aging(), now=NOW)
 
 
 def _summary(progress):
@@ -133,9 +136,10 @@ def test_progress_from_loaded_stays_and_steps_needs_no_queries(django_assert_num
     _log(batch, "pitch", 67)
     _log(batch, "racking", 41, dst=_tank("Tank A"))
     stays, steps = batch.vessel_durations(), list(batch.plan_steps.select_related('stage'))
+    rows, full_aging = plan_progress(batch), batch.full_aging()
 
     with django_assert_num_queries(0):
-        batch_schedule_progress(stays, steps, completed_at=None, now=NOW)
+        batch_schedule_progress(stays, steps, completed_at=None, plan_rows=rows, full_aging=full_aging, now=NOW)
 
 
 # ---------- A current stage past its plan ----------
@@ -271,3 +275,155 @@ def test_progress_stages_add_up_every_stay_in_a_stage():
 
     assert [(s.name, s.status, s.planned_days, round(s.actual_days or 0)) for s in stages] == [
         ("Fermentation", "done", 30, 30), ("Aging", "current", 120, 70), ("Bottling", "ahead", 14, 0)]
+
+
+# ---------- Build stage 2: vessel stays and steps on the bar ----------
+
+def _stays(progress):
+    return [(s.kind, s.label) for s in progress.stays]
+
+
+def _steps(progress):
+    return [(s.name, s.status) for s in progress.steps]
+
+
+@pytest.mark.django_db
+def test_vessel_stays_sit_inside_their_stage_and_the_plan_draws_whats_ahead():
+    batch = _batch()
+    _log(batch, "pitch", 67)
+    _log(batch, "racking", 41, dst=_tank("Tank A"))
+
+    progress = _progress(batch)
+    ferm, aging, bottling = progress.segments
+    carboy, tank, bottles = progress.stays
+
+    assert _stays(progress) == [("past", "Carboy 1"), ("current", "Tank A"), ("planned", "Bottles")]
+    assert (carboy.left, carboy.width) == (pytest.approx(0), pytest.approx(ferm.width))
+    assert tank.left == pytest.approx(aging.left)
+    assert tank.width == pytest.approx(aging.width * 41 / 120)
+    assert tank.tail == pytest.approx(aging.width * 79 / 120)       # dashed to Racking's planned 120 days
+    assert tank.vessel.name == "Tank A" and tank.step == "Racking"
+    assert (bottles.left, bottles.width) == (pytest.approx(bottling.left), pytest.approx(bottling.width))
+    assert bottles.days == 14
+
+
+@pytest.mark.django_db
+def test_steps_are_markers_done_where_they_happened_and_ahead_where_planned():
+    batch = _batch()
+    _log(batch, "pitch", 67)
+    _log(batch, "racking", 41, dst=_tank("Tank A"))
+
+    progress = _progress(batch)
+    aging, bottling = progress.segments[1:]
+    pitch, racking, sterile, complete = progress.steps
+
+    assert _steps(progress) == [("Pitch", "done"), ("Racking", "done"),
+                                ("Sterile Filtering", "ahead"), ("Complete Batch", "ahead")]
+    assert pitch.at == pytest.approx(0) and pitch.when == _ago(67)
+    assert racking.at == pytest.approx(aging.left) and racking.when == _ago(41)
+    assert sterile.at == pytest.approx(bottling.left) and sterile.when is None
+    assert complete.at == pytest.approx(100)
+
+
+@pytest.mark.django_db
+def test_a_second_racking_starts_a_new_stay_where_it_happened():
+    batch = _batch()
+    _log(batch, "pitch", 100)
+    _log(batch, "racking", 70, dst=_tank("Tank A"))
+    _log(batch, "racking", 40, dst=_tank("Tank B"))
+
+    progress = _progress(batch)
+    aging = progress.segments[1]
+    tank_a, tank_b = progress.stays[1:3]
+
+    assert _stays(progress)[:3] == [("past", "Carboy 1"), ("past", "Tank A"), ("current", "Tank B")]
+    assert tank_a.width == pytest.approx(aging.width * 30 / 120)
+    assert tank_b.left == pytest.approx(aging.left + aging.width * 30 / 120)
+    assert _steps(progress)[:3] == [("Pitch", "done"), ("Racking", "done"), ("Racking", "done")]
+
+
+@pytest.mark.django_db
+def test_an_ad_hoc_transfer_is_a_step_and_a_new_stay():
+    batch = _batch()
+    _log(batch, "pitch", 67)
+    _log(batch, "racking", 41, dst=_tank("Tank A"))
+    transfer_batch(batch, _tank("Tank B"), reason="Tank A leaking", timestamp=_ago(10))
+
+    progress = _progress(batch)
+
+    assert _stays(progress)[1:3] == [("past", "Tank A"), ("current", "Tank B")]
+    assert ("Transfer", "done") in _steps(progress)
+
+
+@pytest.mark.django_db
+def test_a_completed_batch_has_only_what_happened():
+    batch = _batch()
+    _log(batch, "pitch", 168)
+    _log(batch, "racking", 140, dst=_tank("Tank A"))
+    _log(batch, "sterile-filtering", 9, packaging=BOTTLES)
+    _log(batch, "complete-batch", 0)
+
+    progress = _progress(batch)
+
+    assert _stays(progress) == [("past", "Carboy 1"), ("past", "Tank A"), ("past", "Bottles")]
+    assert progress.stays[2].vessel is None
+    assert _steps(progress) == [("Pitch", "done"), ("Racking", "done"), ("Sterile Filtering", "done"),
+                                ("Complete Batch", "done")]
+    assert progress.steps[-1].at == pytest.approx(100)
+
+
+@pytest.mark.django_db
+def test_without_a_plan_only_what_happened_is_drawn():
+    batch = _batch(plan=None)
+    _log(batch, "pitch", 87)
+    _log(batch, "racking", 49, dst=_tank("Tank A"))
+
+    progress = _progress(batch)
+
+    assert _stays(progress) == [("past", "Carboy 1"), ("current", "Tank A")]
+    assert progress.stays[1].tail == 0
+    assert _steps(progress) == [("Pitch", "done"), ("Racking", "done")]
+
+
+@pytest.mark.django_db
+def test_an_unpitched_batch_shows_the_planned_stays_and_steps():
+    progress = _progress(_batch())
+
+    assert _stays(progress) == [("planned", "Any Fermenter"), ("planned", "Any Aging Tank"), ("planned", "Bottles")]
+    assert _steps(progress) == [("Pitch", "ahead"), ("Racking", "ahead"), ("Sterile Filtering", "ahead"),
+                                ("Complete Batch", "ahead")]
+
+
+@pytest.mark.django_db
+def test_full_aging_is_noted_on_the_aging_stage():
+    batch = _batch()
+    _log(batch, "pitch", 67)
+    _log(batch, "racking", 41, dst=_tank("Tank A"))
+
+    aging = _progress(batch).segments[1]
+
+    assert aging.stage.note == "Full aging 41 d so far"
+
+
+def test_step_labels_too_close_together_go_on_the_second_row():
+    stages = [ProgressStage("Fermentation", "done", 30, 30), ProgressStage("Aging", "current", 300, 100)]
+    progress = schedule_progress(stages, started_at=_ago(130))
+    from ..services import _step_label_rows
+
+    assert _step_label_rows([0.0, 3.0, 40.0, 42.0, 44.0]) == [0, 1, 0, 1, 0]
+    assert progress.steps == []          # stage list alone has no stays or steps
+
+
+@pytest.mark.django_db
+def test_after_an_unplanned_racking_the_current_stay_runs_on_through_the_stages_planned_time():
+    batch = _batch()
+    _log(batch, "pitch", 100)
+    _log(batch, "racking", 70, dst=_tank("Tank A"))
+    _log(batch, "racking", 40, dst=_tank("Tank B"))     # not in the plan
+
+    progress = _progress(batch)
+    aging = progress.segments[1]
+    tank_b = progress.stays[2]
+
+    assert tank_b.kind == "current" and tank_b.label == "Tank B"
+    assert tank_b.right + tank_b.tail == pytest.approx(aging.left + aging.width)   # to Aging's planned 120 days

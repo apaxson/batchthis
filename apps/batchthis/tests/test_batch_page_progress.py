@@ -130,3 +130,43 @@ def test_page_for_an_unpitched_batch_with_a_plan(client):
 @pytest.mark.django_db
 def test_no_bar_for_an_unpitched_batch_without_a_plan(client):
     assert _progress_text(client, _batch(plan=None)) == ""
+
+
+# ---------- Build stage 2: vessels and steps on the bar ----------
+
+def _progress_html(client, batch):
+    html = client.get(reverse("batch", kwargs={"pk": batch.pk})).content.decode()
+    return re.search(r'<div class="cl-progress">(.*?)<!-- end progress -->', html, re.DOTALL).group(1)
+
+
+@pytest.mark.django_db
+def test_page_shows_vessel_stays_and_steps_on_the_bar(client):
+    batch = _batch()
+    _log(batch, "pitch", 67)
+    tank = _tank("Tank A")
+    _log(batch, "racking", 41, dst=tank)
+
+    text = _progress_text(client, batch)
+    html = _progress_html(client, batch)
+
+    assert "Vessels Carboy 1 26 d Tank A 41 d Bottles 14 d" in text
+    assert f'href="{reverse("vessel", kwargs={"pk": tank.pk})}"' in html
+    assert "cl-progress-stay-tail" in html                       # Tank A's planned rest, dashed
+    for step in ("Pitch", "Racking", "Sterile Filtering", "Complete Batch"):
+        assert step in text
+    assert "Full aging 41 d so far" in text
+
+
+@pytest.mark.django_db
+def test_page_for_a_completed_batch_shows_packaging(client):
+    batch = _batch()
+    _log(batch, "pitch", 168)
+    _log(batch, "racking", 140, dst=_tank("Tank A"))
+    _log(batch, "sterile-filtering", 9, packaging=PlanStep.VESSEL_BOTTLES)
+    _log(batch, "complete-batch", 0)
+
+    text = _progress_text(client, batch)
+    html = _progress_html(client, batch)
+
+    assert "Tank A 131 d Bottles 9 d" in text
+    assert "cl-progress-stay--planned" not in html and "cl-progress-step--ahead" not in html

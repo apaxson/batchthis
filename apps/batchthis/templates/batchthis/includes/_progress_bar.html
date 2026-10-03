@@ -42,12 +42,16 @@
               {% if seg.stage.status == 'done' %}{{ seg.stage.actual_days|floatformat:0 }} d{% if schedule.has_plan %} &middot; {% if seg.stage.planned_days %}plan {{ seg.stage.planned_days|floatformat:0 }}{% else %}not planned{% endif %}{% endif %}
               {% elif seg.stage.status == 'current' %}{% if schedule.has_plan and seg.stage.planned_days %}{{ seg.stage.actual_days|floatformat:0 }} of {{ seg.stage.planned_days|floatformat:0 }} d{% else %}{{ seg.stage.actual_days|floatformat:0 }} d so far{% endif %}{% if seg.overrun_days %} &middot; <span class="cl-progress-over">+{{ seg.overrun_days }} over</span>{% endif %}
               {% elif seg.stage.planned_days %}{{ seg.stage.planned_days|floatformat:0 }} d planned{% else %}Not planned{% endif %}
+              {% if seg.stage.note %}<span class="cl-progress-stage-note" title="First Racking to first Filtering">&middot; {{ seg.stage.note }}</span>{% endif %}
             </div>
           </div>
         </div>
         {% endfor %}
       </div>
 
+      {# Track, today, vessels and steps share one box so today's line runs through all of them. #}
+      <div class="cl-progress-body">
+      {% if schedule.marker != None %}<div class="cl-progress-marker" style="left: {{ schedule.marker|stringformat:'.3f' }}%;"></div>{% endif %}
       <div class="cl-progress-track">
         {% for seg in schedule.segments %}
         <div class="cl-progress-seg cl-progress-seg--{{ seg.stage.status }}" style="left: {{ seg.left|stringformat:'.3f' }}%; width: {{ seg.width|stringformat:'.3f' }}%;">
@@ -58,13 +62,39 @@
       </div>
 
       {% if schedule.marker != None %}
-      <div class="cl-progress-marker" style="left: {{ schedule.marker|stringformat:'.3f' }}%;"></div>
       <div class="cl-progress-tag{% if schedule.marker > 85 %} cl-progress-tag--end{% elif schedule.marker < 15 %} cl-progress-tag--start{% endif %}" style="left: {{ schedule.marker|stringformat:'.3f' }}%;">
         Today{% if schedule.has_plan %} &middot; {{ schedule.percent }}% of plan <small>{{ schedule.remaining_days }} d left</small>{% else %} &middot; day {{ schedule.elapsed_days }}{% endif %}
       </div>
       {% elif schedule.completed %}
       <div class="cl-progress-tag cl-progress-tag--end" style="left: 100%;">Completed &middot; {{ schedule.elapsed_days }} d</div>
       {% endif %}
+
+      {% if schedule.stays %}
+      <div class="cl-progress-lane-label">Vessels</div>
+      <div class="cl-progress-stays">
+        {% for stay in schedule.stays %}
+        <div class="cl-progress-stay cl-progress-stay--{{ stay.kind }} js-mouse-tooltip" data-toggle="tooltip"
+             title="{{ stay.step }}{% if stay.start %} &middot; {{ stay.start|date:'M j, Y' }} &ndash; {% if stay.end %}{{ stay.end|date:'M j, Y' }}{% else %}now{% endif %}{% elif stay.days %} &middot; {{ stay.days }} d planned{% endif %}{% if stay.notes %} &middot; {{ stay.notes }}{% endif %}"
+             style="left: {{ stay.left|stringformat:'.3f' }}%; width: {{ stay.width|stringformat:'.3f' }}%;">
+          {% if stay.vessel %}<a href="{% url 'vessel' stay.vessel.pk %}">{{ stay.label }}</a>{% else %}<span class="cl-progress-stay-name">{{ stay.label }}</span>{% endif %}
+          {% if stay.days != None %}<span class="cl-progress-stay-days cl-num">{{ stay.days }} d</span>{% endif %}
+        </div>
+        {% if stay.tail %}<div class="cl-progress-stay-tail" style="left: {{ stay.right|stringformat:'.3f' }}%; width: {{ stay.tail|stringformat:'.3f' }}%;" title="Planned rest of this step"></div>{% endif %}
+        {% endfor %}
+      </div>
+      {% endif %}
+
+      {% if schedule.steps %}
+      <div class="cl-progress-steps">
+        {% for step in schedule.steps %}
+        <div class="cl-progress-step cl-progress-step--{{ step.status }}{% if step.at > 85 %} cl-progress-step--end{% endif %}{% if step.notes %} js-mouse-tooltip" data-toggle="tooltip" title="{{ step.notes }}{% endif %}"
+             style="left: {{ step.at|stringformat:'.3f' }}%; top: {% if step.row %}20px{% else %}0{% endif %};">
+          <b>{{ step.name }}</b>{% if step.when %} <span class="cl-num">{{ step.when|date:"M j" }}</span>{% endif %}
+        </div>
+        {% endfor %}
+      </div>
+      {% endif %}
+      </div>
 
       <div class="cl-progress-axis cl-num">
         {% if schedule.started_at %}<span style="left: 0;">Pitch {{ schedule.started_at|date:"M j, Y" }}</span>{% endif %}

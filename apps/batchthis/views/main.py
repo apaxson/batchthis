@@ -177,7 +177,8 @@ def batch(request, pk):
     completed_event = last_event if last_event and last_event.stage.to_state == BatchStage.STATE_COMPLETED else None
     # The progress bar (% of plan, expected total, forecast) from the stays and plan already loaded.
     schedule = batch_schedule_progress(vessel_stays, plan['steps'],
-                                       completed_at=completed_event.timestamp if completed_event else None)
+                                       completed_at=completed_event.timestamp if completed_event else None,
+                                       plan_rows=progress, full_aging=full_aging)
 
     current_gravity_value = batch.current_gravity()
     estABV = round(Utils.potentialABV(startSG=batch.startingGravity.magnitude, endSG=current_gravity_value)[0], 1)
@@ -251,7 +252,7 @@ PROGRESS_STATUS = {   # plan_progress() status -> (label, badge class)
 def _difference_label(days: float | None) -> str:
     if days is None:
         return "—"
-    if days == 0:
+    if round(days) == 0:
         return "On plan"
     return ("+" if days > 0 else "−") + _days_label(abs(days))
 
@@ -269,13 +270,13 @@ def _plan_vs_actual(batch, progress) -> dict:
             'stage': row.stage, 'status': label, 'badge': badge,
             'planned_vessel': row.step.vessel_type_hint if row.step else "—",
             'actual_vessel': row.actual_vessel or "—",
-            'planned_day': "—" if row.planned_day is None else f"Day {row.planned_day:g}",
-            'actual_day': "—" if row.actual_day is None else f"Day {row.actual_day:g}",
+            'planned_day': "—" if row.planned_day is None else f"Day {round(row.planned_day)}",
+            'actual_day': "—" if row.actual_day is None else f"Day {round(row.actual_day)}",
             'planned_time': "—" if row.planned_days is None else _days_label(row.planned_days),
             'actual_time': actual_time,
             # A step still in progress hasn't finished early - show the time left until it runs over.
             'difference': (f"{_days_label(-row.difference_days)} left"
-                           if row.status == 'current' and row.difference_days is not None and row.difference_days < 0
+                           if row.status == 'current' and row.difference_days is not None and round(row.difference_days) < 0
                            else _difference_label(row.difference_days)),
             'notes': row.event.notes if row.event else (row.step.notes if row.step else ""),
         })
@@ -1046,8 +1047,11 @@ def editBatchPlan(request, pk):
 # ---------- Workflow templates (Settings > Workflows) ----------
 
 def _days_label(days: float) -> str:
-    days = round(days, 1)
-    return f"{days:g} day" if days == 1 else f"{days:g} days"
+    """Whole days (Aaron, 2026-10-02: no decimals in plan displays); a part day reads "under 1 day"."""
+    whole = round(days)
+    if whole == 0 and days:
+        return "under 1 day"
+    return f"{whole} day" if whole == 1 else f"{whole} days"
 
 
 @login_required

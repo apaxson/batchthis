@@ -1,7 +1,7 @@
 import logging
-from dataclasses import dataclass
+from dataclasses import dataclass, field, replace
 from datetime import date, datetime, timedelta
-from math import floor
+from math import floor, inf
 from typing import Optional
 
 from django.conf import settings
@@ -23,6 +23,7 @@ from .models import (
     Recipe,
     RecipePlanStep,
     Vessel,
+    Span,
     VesselStatusEvent,
     VesselStay,
     WorkflowTemplate,
@@ -956,6 +957,7 @@ def plan_progress(batch: Batch) -> list[PlanProgressRow]:
 # ---------- Schedule progress: the batch page's progress bar (TODO.txt PROGRESS BAR) ----------
 
 PROGRESS_MIN_WIDTH = 6.0  # % of the bar - a short stage stays wide enough to read
+PROGRESS_STEP_GAP = 14.0  # % of the bar a step label needs before the next one on its row
 
 
 @dataclass(frozen=True)
@@ -970,6 +972,7 @@ class ProgressStage:
     status: str                       # done / current / ahead
     planned_days: Optional[float]     # the plan's timed steps in this stage; None = not planned
     actual_days: Optional[float]
+    note: str = ""                    # an extra figure under the stage, e.g. "Full aging 38 d"
 
 
 @dataclass(frozen=True)
@@ -982,6 +985,38 @@ class ProgressSegment:
     fill: float           # current stage: elapsed time, up to its planned time
     overrun: float        # current stage: time past its planned time
     overrun_days: int
+
+
+@dataclass(frozen=True)
+class ProgressStay:
+    """Time in one vessel (or Bottles/Kegs) on the bar; left/width/tail are % of the bar."""
+    kind: str                         # past / current / planned
+    label: str                        # vessel name, Bottles/Kegs, or the plan's vessel type ("Any Aging Tank")
+    vessel: Optional[Vessel]
+    step: str                         # the step that started it (Pitch, Racking, Transfer, ...)
+    left: float
+    width: float
+    tail: float = 0.0                 # current stay: from today to its planned end (drawn dashed)
+    start: Optional[datetime] = None
+    end: Optional[datetime] = None
+    days: Optional[int] = None        # whole days in the vessel (so far), or planned
+    notes: str = ""
+
+    @property
+    def right(self) -> float:
+        """Where the stay ends on the bar (% of the bar) - and its dashed tail starts."""
+        return self.left + self.width
+
+
+@dataclass(frozen=True)
+class ProgressStep:
+    """A point-in-time step (Pitch, Racking, a Filtering, Transfer, Complete Batch) as a marker on the bar."""
+    name: str
+    status: str                       # done / ahead
+    at: float                         # % of the bar
+    when: Optional[datetime] = None   # when it happened; None ahead
+    notes: str = ""
+    row: int = 0                      # label row, so labels close together don't overlap
 
 
 @dataclass(frozen=True)
@@ -998,6 +1033,8 @@ class ScheduleProgress:
     started_at: Optional[datetime]
     forecast_end: Optional[datetime]
     completed_at: Optional[datetime]
+    stays: list = field(default_factory=list)   # ProgressStay, from batch_schedule_progress()
+    steps: list = field(default_factory=list)   # ProgressStep, in bar order
 
     @property
     def overruns(self) -> list[tuple[str, int]]:
@@ -1005,12 +1042,13 @@ class ScheduleProgress:
         return [(s.stage.name, s.overrun_days) for s in self.segments if s.overrun_days > 0]
 
 
-def progress_stages(stays: list[VesselStay], plan_steps, *, now: Optional[datetime] = None) -> list[ProgressStage]:
+def progress_stages(stays: list[VesselStay], plan_steps, *, full_aging: Optional[Span] = None,
+                    now: Optional[datetime] = None) -> list[ProgressStage]:
     """
     The fixed Fermentation -> Aging -> Bottling states as a stage list: planned
     time from the plan's timed steps (plan_totals), actual time = the stage's
     vessel stays added up (an open stay measured to `now`). States passed over
-    are left out; states not reached yet are ahead.
+    are left out; states not reached yet are ahead. Aging notes Batch.full_aging().
     """
     now = now or timezone.now()
     planned = plan_totals(plan_steps).by_state
@@ -1032,7 +1070,11 @@ def progress_stages(stays: list[VesselStay], plan_steps, *, now: Optional[dateti
             status = 'ahead'
         else:
             continue
-        stages.append(ProgressStage(state, status, planned.get(state), actual.get(state)))
+        note = ""
+        if state == BatchStage.STATE_AGING and full_aging is not None:
+            note = f"Full aging {round(full_aging.duration.total_seconds() / 86400)} d" + (
+                " so far" if full_aging.is_open else "")
+        stages.append(ProgressStage(state, status, planned.get(state), actual.get(state), note))
     logger.debug(f"progress_stages: {[(s.name, s.status, s.planned_days, s.actual_days) for s in stages]}")
     return stages
 
@@ -1125,13 +1167,119 @@ def schedule_progress(stages: list[ProgressStage], *, started_at: Optional[datet
     return progress
 
 
+def _step_label_rows(positions: list[float]) -> list[int]:
+    """A label row (0/1) per step position: the first row with room, else the roomier one."""
+    last: list = [None, None]
+    rows = []
+    for at in positions:
+        gaps = [inf if previous is None else at - previous for previous in last]
+        row = 0 if gaps[0] >= PROGRESS_STEP_GAP else 1 if gaps[1] >= PROGRESS_STEP_GAP else int(gaps[1] > gaps[0])
+        last[row] = at
+        rows.append(row)
+    return rows
+
+
+def _bar_at(segment: ProgressSegment, days_in: float) -> float:
+    """Where `days_in` days into a stage falls on the bar (% of the bar), kept inside the segment."""
+    if not segment.expected_days:
+        return segment.left
+    return segment.left + segment.width * min(max(days_in / segment.expected_days, 0.0), 1.0)
+
+
+def _stays_and_steps(progress: ScheduleProgress, stays: list[VesselStay], plan_rows,
+                     now: datetime) -> tuple[list[ProgressStay], list[ProgressStep]]:
+    """
+    Build stage 2 (TODO.txt PROGRESS BAR): each vessel stay inside its stage and
+    each step as a marker where it happened; then, from the plan (plan_progress
+    rows), the current stay's planned rest and the stays and steps still ahead.
+    Time maps linearly inside each stage's segment.
+    """
+    segments = {segment.stage.name: segment for segment in progress.segments}
+    stage_start: dict = {}
+    for stay in stays:
+        if stay.state in segments:
+            stage_start.setdefault(stay.state, stay.start)
+
+    def days_in(state: str, when: datetime) -> float:
+        return (when - stage_start[state]).total_seconds() / 86400
+
+    placed: list[ProgressStay] = []
+    steps: list[ProgressStep] = []
+    for stay in stays:
+        if stay.state not in segments:
+            continue                                  # a transfer before Pitch
+        segment, end = segments[stay.state], stay.end or now
+        left, right = _bar_at(segment, days_in(stay.state, stay.start)), _bar_at(segment, days_in(stay.state, end))
+        placed.append(ProgressStay(
+            kind='current' if stay.is_open else 'past',
+            label=stay.vessel.name if stay.vessel else (stay.event.get_packaging_display() or "—"),
+            vessel=stay.vessel, step=stay.label, left=left, width=right - left, start=stay.start, end=stay.end,
+            days=round((end - stay.start).total_seconds() / 86400), notes=stay.event.notes,
+        ))
+        steps.append(ProgressStep(stay.label, 'done', left, when=stay.start, notes=stay.event.notes))
+    if progress.completed:
+        steps.append(ProgressStep("Complete Batch", 'done', 100.0, when=progress.completed_at))
+
+    if progress.has_plan and not progress.completed:
+        rows = plan_rows or []
+        cursor: dict = {}                              # per stage: days in where the next planned step starts
+        current = next((seg for seg in progress.segments if seg.stage.status == 'current'), None)
+        if current is not None:
+            name = current.stage.name
+            cursor[name] = days_in(name, now)
+            row = next((r for r in rows if r.status == 'current'), None)
+            open_at = next((i for i, stay in enumerate(placed) if stay.kind == 'current'), None)
+            if row and row.planned_days and row.event and row.stage.to_state == name:
+                planned_end = days_in(name, row.event.timestamp) + row.planned_days
+            else:
+                # The latest step isn't a timed planned step (e.g. an extra Racking, a Transfer):
+                # the stay runs on through the stage's planned time not taken by steps still ahead.
+                planned_end = current.expected_days - sum(
+                    r.planned_days or 0 for r in rows if r.status == 'upcoming' and r.stage.to_state == name)
+            if open_at is not None and planned_end > cursor[name]:
+                stay = placed[open_at]
+                placed[open_at] = replace(stay, tail=_bar_at(current, planned_end) - stay.right)
+                cursor[name] = planned_end
+        for row in rows:
+            if row.status != 'upcoming':
+                continue
+            state = row.stage.to_state
+            if state == BatchStage.STATE_COMPLETED:
+                steps.append(ProgressStep(row.stage.name, 'ahead', 100.0, notes=row.step.notes))
+                continue
+            segment = segments.get(state)
+            if segment is None or segment.stage.status == 'done':
+                continue
+            start = cursor.get(state, 0.0)
+            at = _bar_at(segment, start)
+            steps.append(ProgressStep(row.stage.name, 'ahead', at, notes=row.step.notes))
+            if row.planned_days:
+                cursor[state] = start + row.planned_days
+                placed.append(ProgressStay(
+                    kind='planned', label=row.step.vessel_type_hint, vessel=None, step=row.stage.name,
+                    left=at, width=_bar_at(segment, cursor[state]) - at, days=round(row.planned_days),
+                    notes=row.step.notes,
+                ))
+
+    steps.sort(key=lambda step: step.at)
+    steps = [replace(step, row=row) for step, row in zip(steps, _step_label_rows([step.at for step in steps]))]
+    logger.debug(f"_stays_and_steps: stays={[(s.kind, s.label, round(s.left, 1), round(s.width, 1)) for s in placed]} "
+                 f"steps={[(s.name, s.status, round(s.at, 1)) for s in steps]}")
+    return placed, steps
+
+
 def batch_schedule_progress(stays: list[VesselStay], plan_steps, *, completed_at: Optional[datetime] = None,
+                            plan_rows=None, full_aging: Optional[Span] = None,
                             now: Optional[datetime] = None) -> ScheduleProgress:
     """
     schedule_progress() for a batch, from data the batch page already loads
-    (Batch.vessel_durations() and the batch plan's steps) - no queries of its own.
-    The clock starts at Pitch (the first stay in a stage).
+    (Batch.vessel_durations(), the batch plan's steps, plan_progress() rows and
+    Batch.full_aging()) - no queries of its own. The clock starts at Pitch (the
+    first stay in a stage). Adds the vessel stays and steps (build stage 2).
     """
+    now = now or timezone.now()
     started_at = next((stay.start for stay in stays if stay.state is not None), None)
-    return schedule_progress(progress_stages(stays, plan_steps, now=now), started_at=started_at,
-                             completed_at=completed_at)
+    progress = schedule_progress(progress_stages(stays, plan_steps, full_aging=full_aging, now=now),
+                                 started_at=started_at, completed_at=completed_at)
+    placed, steps = _stays_and_steps(progress, stays, plan_rows, now)
+    return replace(progress, stays=placed, steps=steps)
