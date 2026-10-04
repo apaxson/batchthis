@@ -10,7 +10,7 @@ from django.core.exceptions import ValidationError
 import apps.batchthis.models
 from .models import BatchTest, BatchNote, BatchAddition, Batch, Unit, Fermenter, Vessel, BatchCategory, BatchStyle
 from .models import BatchStage, BatchTestType, READING_SPECS
-from .models import PlanStep
+from .models import BatchIngredient, PlanStep
 from .services import allowed_next_stages, allowed_vessel_types, plan_step_problems, vessel_name_problem, \
     workflow_name_problem, VESSEL_TYPES
 from .models import Fermentable, Adjunct, Yeast, Recipe, AdjunctUsage, RecipeFermentable
@@ -531,3 +531,51 @@ class BasePlanStepFormSet(forms.BaseFormSet):
 
 PlanStepFormSet = forms.formset_factory(PlanStepForm, formset=BasePlanStepFormSet, extra=0,
                                         can_delete=True, can_delete_extra=True)
+
+
+class BatchIngredientForm(forms.Form):
+    """
+    One row of Edit batch recipe (a BatchIngredient of one `kind`). `id` is the row
+    being edited (blank for an added row); the service checks it belongs to the
+    batch. Amounts are weight or volume (AmountField, CLAUDE.md); blank = no amount
+    (imported recipes sometimes have none). Adjuncts also take when to add them,
+    after Pitch ("0 hours" = at pitch).
+    """
+    ITEM_QUERYSETS = {
+        BatchIngredient.KIND_FERMENTABLE: Fermentable.objects.all,
+        BatchIngredient.KIND_ADJUNCT: Adjunct.objects.all,
+        BatchIngredient.KIND_YEAST: Yeast.objects.all,
+    }
+    ITEM_LABELS = {BatchIngredient.KIND_FERMENTABLE: "Fermentable", BatchIngredient.KIND_ADJUNCT: "Adjunct",
+                   BatchIngredient.KIND_YEAST: "Yeast"}
+
+    id = forms.IntegerField(required=False, widget=forms.HiddenInput())
+    item_id = forms.ModelChoiceField(queryset=Fermentable.objects.none(), widget=forms.HiddenInput())
+    amount = AmountField(required=False)
+    intended_use = forms.ModelChoiceField(queryset=AdjunctUsage.objects.all(), required=False, label="Usage")
+    time_to_add = TimeSpanField(required=False, label="Time to add", placeholder="e.g. 24 hours (0 = at pitch)")
+    notes = forms.CharField(widget=forms.Textarea(attrs={'rows': 2}), required=False)
+
+    def __init__(self, *args, kind: str, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.kind = kind
+        self.fields['item_id'].queryset = self.ITEM_QUERYSETS[kind]()
+        self.fields['item_id'].label = self.ITEM_LABELS[kind]
+        self.fields['item_id'].error_messages['required'] = f"Choose a {self.ITEM_LABELS[kind].lower()}."
+        if kind != BatchIngredient.KIND_ADJUNCT:
+            del self.fields['time_to_add']
+        if kind == BatchIngredient.KIND_YEAST:
+            del self.fields['intended_use']
+
+    def row(self) -> dict:
+        """The cleaned row for services.save_batch_recipe()."""
+        data = self.cleaned_data
+        return {'id': data.get('id'), 'kind': self.kind, 'item': data['item_id'], 'amount': data.get('amount'),
+                'intended_use': data.get('intended_use'), 'time_to_add': data.get('time_to_add'),
+                'notes': (data.get('notes') or '').strip()}
+
+
+def batch_ingredient_formset(kind: str, *, data=None, initial=None):
+    """A formset of BatchIngredientForm rows of one kind, prefixed by the kind ("adjunct-0-amount")."""
+    formset_class = forms.formset_factory(BatchIngredientForm, extra=0, can_delete=True, can_delete_extra=True)
+    return formset_class(data=data, initial=initial, prefix=kind, form_kwargs={'kind': kind})

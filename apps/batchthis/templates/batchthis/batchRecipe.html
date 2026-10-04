@@ -20,7 +20,7 @@
   </div>
   <div class="cl-batch-actions">
     <a href="{% url 'batch' batch.pk %}">&larr; Back to batch</a>
-    {% if batch.recipe %}&middot; <a href="{% url 'editBatch' batch.pk %}">Edit batch</a>{% endif %}
+    {% if has_ingredients %}&middot; {% if locked %}<span title="{{ locked }}">Locked after Pitch</span>{% else %}<a href="{% url 'editBatchRecipe' batch.pk %}">Edit batch recipe</a>{% endif %}{% endif %}
   </div>
 </div>
 

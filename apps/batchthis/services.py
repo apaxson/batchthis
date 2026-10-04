@@ -221,6 +221,7 @@ def save_batch_edit(
 
     before = _batch_edit_display(batch)
     before_recipe_id = batch.recipe_id
+    before_size = batch.size
     batch.name = name
     batch.recipe = recipe
     batch.size = size
@@ -236,9 +237,12 @@ def save_batch_edit(
         batch.save(update_fields=[field for field, _label in BATCH_EDIT_LABELS])
         if changes:
             add_activity_log(batch, "Batch edited :: " + "; ".join(changes))
-        if rescale:
-            # Amounts must stay accurate for the batch (RECIPE SCALING): re-copy at the new size/recipe.
+        if before_recipe_id != batch.recipe_id:
+            # A different recipe: the batch's ingredients come from it, at the batch size.
             copy_recipe_ingredients_to_batch(batch)
+        elif rescale:
+            # Same recipe, corrected size: scale the batch's own rows, keeping any edits to them.
+            scale_batch_ingredients(batch, before_size, batch.size)
     logger.info(f"Batch '{batch.name}' edited: {'; '.join(changes) or 'no changes'}")
     return changes
 
@@ -1442,8 +1446,8 @@ def copy_recipe_ingredients_to_batch(batch: Batch) -> list[BatchIngredient]:
     return created
 
 
-def quantity_label(value) -> str:
-    """A short amount for display: "24 lb", "10 g", "0.01 kg" ("" for none)."""
+def quantity_label(value, digits: int = 4) -> str:
+    """A short amount for display: "24 lb", "10 g", "2.5 kg" ("" for none); `digits` significant figures."""
     value = _quantity(value)
     if value is None:
         return ""
@@ -1452,7 +1456,7 @@ def quantity_label(value) -> str:
     if smaller and abs(value.magnitude) < 1:
         value = value.to(smaller)
     unit = "L" if str(value.units) == 'liter' else f"{value.units:~}"   # "10 L", not "10 l" (reads as 1)
-    return f"{value.magnitude:.4g} {unit}"
+    return f"{value.magnitude:.{digits}g} {unit}"
 
 
 def time_to_add_label(value) -> str:
@@ -1468,3 +1472,85 @@ def time_to_add_label(value) -> str:
     if hours <= 72:
         return f"Pitch + {hours:.3g} h"
     return f"Pitch + {value.to('day').magnitude:.3g} d"
+
+
+
+def scale_batch_ingredients(batch: Batch, old_size, new_size) -> int:
+    """
+    Scale the batch's own ingredient amounts by new/old size - Edit batch's size
+    correction - so edits made on Edit batch recipe survive. Call inside the
+    caller's transaction. Returns the rows changed.
+    """
+    old_l, new_l = _quantity(old_size).to('liter').magnitude, _quantity(new_size).to('liter').magnitude
+    if old_l <= 0:
+        logger.error(f"scale_batch_ingredients: batch={batch.pk} had no size ({old_size}); not scaled")
+        return 0
+    factor = new_l / old_l
+    changed = 0
+    for row in batch.ingredients.all():
+        if row.amount is not None:
+            row.amount = _quantity(row.amount) * factor
+            row.save(update_fields=['amount'])
+            changed += 1
+    logger.info(f"Batch '{batch}' ingredients scaled x{factor:.4g} ({old_size} -> {new_size}), {changed} rows")
+    return changed
+
+
+# ---------- Edit batch recipe (Aaron, 2026-10-03: editable until Pitch) ----------
+
+def batch_recipe_locked_reason(batch: Batch) -> str | None:
+    """Why the batch's own recipe can't be edited, or None. Editable until Pitch, like the batch plan."""
+    if batch.current_state is not None:
+        return "The batch recipe can't be changed after Pitch."
+    return None
+
+
+def save_batch_recipe(batch: Batch, rows: list[dict]) -> list[str]:
+    """
+    Save Edit batch recipe: `rows` are every row kept on the page (dicts of id,
+    kind, item, amount, intended_use, time_to_add, notes; id None = added). Rows of
+    the batch not in `rows` are removed. Existing rows are updated IN PLACE, so
+    they keep their recipe_amount (and, later, links to scheduled additions); added
+    rows have no recipe amount. The library Recipe is never touched. One
+    ActivityLog entry lists what changed. Rejected (ValidationError, nothing saved)
+    after Pitch or for a row id that isn't this batch's. Returns the changes.
+    """
+    locked = batch_recipe_locked_reason(batch)
+    if locked:
+        logger.error(f"save_batch_recipe: rejected for batch={batch.pk}: {locked}")
+        raise ValidationError(locked)
+    existing = {row.pk: row for row in batch.ingredients.select_related('fermentable', 'adjunct', 'yeast')}
+    foreign = [row['id'] for row in rows if row['id'] is not None and row['id'] not in existing]
+    if foreign:
+        logger.error(f"save_batch_recipe: batch={batch.pk} posted rows of another batch: {foreign}")
+        raise ValidationError("Those ingredients don't belong to this batch. Reload the page and try again.")
+
+    item_field = {BatchIngredient.KIND_FERMENTABLE: 'fermentable', BatchIngredient.KIND_ADJUNCT: 'adjunct',
+                  BatchIngredient.KIND_YEAST: 'yeast'}
+    kept = {row['id'] for row in rows if row['id'] is not None}
+    changes = [f"Removed {row.name}" for pk, row in existing.items() if pk not in kept]
+    with transaction.atomic():
+        BatchIngredient.objects.filter(pk__in=[pk for pk in existing if pk not in kept]).delete()
+        for order, data in enumerate(rows, start=1):
+            row = existing.get(data['id']) or BatchIngredient(batch=batch, kind=data['kind'])
+            before = (row.name, quantity_label(row.amount), time_to_add_label(row.time_to_add)) if row.pk else None
+            for field in item_field.values():
+                setattr(row, field, data['item'] if field == item_field[data['kind']] else None)
+            row.kind = data['kind']
+            row.amount = data['amount']
+            row.intended_use = data['intended_use']
+            row.time_to_add = data['time_to_add']
+            row.notes = data['notes']
+            row.sort_order = order
+            row.save()
+            after = (row.name, quantity_label(row.amount), time_to_add_label(row.time_to_add))
+            if before is None:
+                changes.append(f"Added {row.name}" + (f" {after[1]}" if after[1] else ""))
+            elif before != after:
+                parts = [f"[{b or '-'}] -> [{a or '-'}]" for b, a in zip(before[1:], after[1:]) if b != a]
+                name = before[0] if before[0] == after[0] else f"{before[0]} -> {after[0]}"
+                changes.append(f"{name} " + "; ".join(parts) if parts else name)
+        if changes:
+            add_activity_log(batch, "Batch recipe edited :: " + "; ".join(changes))
+    logger.info(f"Batch '{batch}' recipe edited: {'; '.join(changes) or 'no changes'}")
+    return changes

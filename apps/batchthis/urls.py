@@ -13,6 +13,7 @@ urlpatterns = [
     path('batch/<int:pk>/edit', views.editBatch, name="editBatch"),
     path('batch/<int:pk>/recipe', views.batchRecipe, name="batchRecipe"),
     path('batch/<int:pk>/recipe/copy', views.copyBatchRecipe, name="copyBatchRecipe"),
+    path('batch/<int:pk>/recipe/edit', views.editBatchRecipe, name="editBatchRecipe"),
     path('recipe/<int:pk>', views.addRecipe), #TODO create views.recipe and update view
     path('recipe/<int:pk>/view', views.recipe, name="recipe"),
     path('recipe/<int:pk>/edit', views.addRecipe, name="editRecipe"),

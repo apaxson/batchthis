@@ -18,7 +18,7 @@ from django.shortcuts import get_object_or_404
 from apps.batchthis.forms import BatchTestForm, BatchNoteForm, BatchAdditionForm, RefractometerCorrectionForm, BatchAddForm, BatchEditForm, \
     BatchCategory
 from apps.batchthis.forms import RecipeAddForm, FermentableForm, AdjunctForm, YeastForm, BatchStageForm, BatchTransferForm, VesselForm
-from apps.batchthis.forms import WorkflowTemplateForm, PlanStepFormSet, RecipePlanForm
+from apps.batchthis.forms import WorkflowTemplateForm, PlanStepFormSet, RecipePlanForm, batch_ingredient_formset
 from django.forms.formsets import formset_factory
 from apps.batchthis.lib.utils import Utils
 from apps.batchthis.services import (
@@ -26,7 +26,8 @@ from apps.batchthis.services import (
     OUT_OF_SERVICE_FROM,
     transition_stage_event, transfer_batch, create_vessel, update_vessel,
     plan_totals, save_workflow_template, delete_workflow_template, save_recipe_plan, clear_recipe_plan,
-    copy_plan_to_batch, copy_recipe_ingredients_to_batch, recipe_scale_factor, quantity_label, save_batch_plan, batch_plan_locked_reason,
+    copy_plan_to_batch, copy_recipe_ingredients_to_batch, recipe_scale_factor, quantity_label, save_batch_plan,
+    batch_recipe_locked_reason, save_batch_recipe, batch_plan_locked_reason,
     plan_progress, batch_schedule_progress, allowed_next_stages, save_batch_edit, set_recipe_pairings,
 )
 from apps.batchthis.lib.faults import get_active_flags, get_rule_for, StagedFaultRule
@@ -245,8 +246,76 @@ def batchRecipe(request, pk):
         'factor': factor,
         'recipe_size': quantity_label(batch.recipe.batchSize) if batch.recipe else "",
         'batch_size': quantity_label(batch.size),
+        'locked': batch_recipe_locked_reason(batch),
     }
     return render(request, 'batchthis/batchRecipe.html', context=context)
+
+
+# Edit batch recipe sections: (kind, heading, react-select endpoint url name, add-button label).
+BATCH_RECIPE_SECTIONS = (
+    (BatchIngredient.KIND_FERMENTABLE, "Fermentables", 'fermentable-list', "Add fermentable"),
+    (BatchIngredient.KIND_ADJUNCT, "Adjuncts", 'adjunct-list', "Add adjunct"),
+    (BatchIngredient.KIND_YEAST, "Yeast", 'yeast-list', "Add yeast"),
+)
+
+
+def _amount_text(value) -> str:
+    """A stored amount as editable text in the display's units ("24 lb", "3.07179 g"), precise enough to re-save unchanged."""
+    return quantity_label(value, digits=6)
+
+
+def _time_to_add_text(value) -> str:
+    """A stored time to add as an editable duration: "24 hours", "7 days" ("0 hours" = at pitch)."""
+    if value is None:
+        return ""
+    hours = value.to('hour').magnitude
+    return f"{hours:g} hours" if hours <= 72 else f"{value.to('day').magnitude:g} days"
+
+
+def _batch_recipe_initial(batch: Batch, kind: str) -> list[dict]:
+    return [{'id': row.pk, 'item_id': row.item.pk if row.item else None, 'amount': _amount_text(row.amount),
+             'intended_use': row.intended_use_id, 'time_to_add': _time_to_add_text(row.time_to_add),
+             'notes': row.notes}
+            for row in batch.ingredients.filter(kind=kind).select_related('fermentable', 'adjunct', 'yeast')]
+
+
+@login_required
+def editBatchRecipe(request, pk):
+    """
+    Edit the batch's own recipe until Pitch (Aaron, 2026-10-03): amounts, timing,
+    notes; add or remove items. Changes only this batch, never the library Recipe.
+    """
+    batch = get_object_or_404(Batch.objects.select_related('recipe'), pk=pk)
+    target = reverse('batchRecipe', kwargs={'pk': pk})
+    locked = batch_recipe_locked_reason(batch)
+    if locked:
+        logger.debug("editBatchRecipe: batch=%s locked: %s", pk, locked)
+        messages.error(request, locked)
+        return HttpResponseRedirect(target)
+    kinds = [kind for kind, *_rest in BATCH_RECIPE_SECTIONS]
+    problem = None
+    if request.method == "POST":
+        formsets = {kind: batch_ingredient_formset(kind, data=request.POST) for kind in kinds}
+        if all(formset.is_valid() for formset in formsets.values()):
+            rows = [form.row() for kind in kinds for form in formsets[kind]
+                    if form.cleaned_data and not form.cleaned_data.get('DELETE')]
+            try:
+                save_batch_recipe(batch, rows)
+                return HttpResponseRedirect(target)
+            except ValidationError as e:
+                problem = " ".join(e.messages)
+            except Exception:
+                logger.exception("editBatchRecipe: failed to save batch %s", pk)
+                problem = "Couldn't save the batch recipe. Nothing was changed - please try again."
+        else:
+            logger.debug("editBatchRecipe: invalid rows for batch %s: %s", pk,
+                         {kind: formset.errors for kind, formset in formsets.items()})
+    else:
+        formsets = {kind: batch_ingredient_formset(kind, initial=_batch_recipe_initial(batch, kind)) for kind in kinds}
+    sections = [{'kind': kind, 'heading': heading, 'endpoint': endpoint, 'add_label': add_label,
+                 'formset': formsets[kind]} for kind, heading, endpoint, add_label in BATCH_RECIPE_SECTIONS]
+    return render(request, 'batchthis/editBatchRecipe.html',
+                  {'batch': batch, 'sections': sections, 'problem': problem})
 
 
 @login_required

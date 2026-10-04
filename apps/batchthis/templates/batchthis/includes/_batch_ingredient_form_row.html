@@ -1,0 +1,44 @@
+{% comment %}
+One BatchIngredientForm row of Edit batch recipe (editBatchRecipe.html) - included for
+each live row and, inside a <template> around formset.empty_form, as the JS-clone
+source for "Add ...". Fields a kind doesn't have (time to add, usage) aren't on its form.
+Expects `form` and `section` (kind, endpoint).
+{% endcomment %}
+<div class="cl-formset-row cl-formset-row--{% if section.kind == 'fermentable' %}batch-fermentable{% else %}{{ section.kind }}{% endif %}" data-formset-row>
+  {{ form.id }}
+  {% if form.non_field_errors %}<div class="cl-field-error">{{ form.non_field_errors }}</div>{% endif %}
+  <div class="cl-field cl-field--grow">
+    <label for="{{ form.item_id.id_for_label }}">{{ form.item_id.label }}</label>
+    {{ form.item_id }}
+    <div data-react-model-select
+         data-endpoint="{% url section.endpoint %}"
+         data-target="#{{ form.item_id.id_for_label }}"
+         data-placeholder="Search {{ section.heading|lower }}&hellip;"></div>
+    {% if form.item_id.errors %}<div class="cl-field-error">{{ form.item_id.errors }}</div>{% endif %}
+  </div>
+  <div class="cl-field">
+    <label for="{{ form.amount.id_for_label }}">Amount</label>
+    {{ form.amount }}
+    {% if form.amount.errors %}<div class="cl-field-error">{{ form.amount.errors }}</div>{% endif %}
+  </div>
+  {% if form.intended_use %}
+  <div class="cl-field">
+    <label for="{{ form.intended_use.id_for_label }}">Usage</label>
+    {{ form.intended_use }}
+  </div>
+  {% endif %}
+  {% if form.time_to_add %}
+  <div class="cl-field">
+    <label for="{{ form.time_to_add.id_for_label }}">Time to add <span class="cl-field-note">after Pitch</span></label>
+    {{ form.time_to_add }}
+    {% if form.time_to_add.errors %}<div class="cl-field-error">{{ form.time_to_add.errors }}</div>{% endif %}
+  </div>
+  {% endif %}
+  <div class="cl-field cl-field--grow">
+    <label for="{{ form.notes.id_for_label }}">Notes</label>
+    {{ form.notes }}
+  </div>
+  <div class="cl-field cl-field--check cl-field--remove">
+    <label>{{ form.DELETE }} Remove</label>
+  </div>
+</div>

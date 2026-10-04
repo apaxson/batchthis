@@ -871,6 +871,8 @@ button.nav-link { width: 100%; background: none; border: 0; font-family: inherit
 }
 .cl-formset-row--adjunct { grid-template-columns: 2fr 1fr 1fr 1fr 1.2fr auto; }
 .cl-formset-row--yeast { grid-template-columns: 2fr 1fr 2fr auto; }
+/* Edit batch recipe fermentable row: item, amount, usage, notes, remove. */
+.cl-formset-row--batch-fermentable { grid-template-columns: 2fr 1fr 1fr 1.6fr auto; }
 .cl-formset-row:first-child { padding-top: 0; }
 @media (max-width: 900px) {
   .cl-formset-row { grid-template-columns: 1fr 1fr; }
