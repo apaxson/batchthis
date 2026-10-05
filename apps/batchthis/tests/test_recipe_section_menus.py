@@ -49,3 +49,17 @@ def test_the_old_link_rows_are_gone(page):
     for section in ("Fermentables", "Adjuncts", "Yeast"):
         head = re.search(r'<div class="cl-section-title">' + section + r'</div>\s*(<div[^>]*>)', html).group(1)
         assert "cl-section-note" not in head
+
+
+@pytest.mark.django_db
+def test_the_plan_section_has_a_kebab_menu_and_keeps_its_copied_from_note(db):
+    from ..factories import WorkflowTemplateFactory
+
+    client = Client()
+    client.force_login(get_user_model().objects.create_user(username="planner", password="pw"))
+    recipe = RecipeFactory(workflow_template=WorkflowTemplateFactory(name="Traditional mead"))
+    html = client.get(reverse("recipe", kwargs={"pk": recipe.pk})).content.decode()
+
+    assert _menu(html, "Plan") == [(reverse("editRecipePlan", kwargs={"pk": recipe.pk}), "Edit plan")]
+    plan_head = re.search(r'<div class="cl-section-title">Plan</div>(.*?)</ul>', html, re.DOTALL).group(1)
+    assert "Copied from Traditional mead" in plan_head

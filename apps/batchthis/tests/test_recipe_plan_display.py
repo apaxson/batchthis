@@ -57,7 +57,7 @@ def test_recipe_page_lists_each_plan_step_in_order(client):
         ["1", "Pitch", "Fermenter"], ["2", "Racking", "Aging Tank"], ["3", "Fine Filtering", "Barrel"],
         ["4", "Sterile Filtering", "Bottles"], ["5", "Complete Batch", "None / Current"],
     ]
-    assert rows[0][3] == "14.00 day" and rows[0][4] == "Keep at 62F"
+    assert rows[0][3] == "14 days" and rows[0][4] == "Keep at 62F"   # whole days (Aaron, 2026-10-05)
     assert rows[2][3] == "—" and rows[4][3] == "—"   # no planned time
 
 

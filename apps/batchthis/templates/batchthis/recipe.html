@@ -151,8 +151,16 @@
     <section class="cl-plan">
       <div class="cl-section-head">
         <div class="cl-section-title">Plan</div>
-        <div class="cl-section-note">
-          {% if recipe.workflow_template %}Copied from {{ recipe.workflow_template.name }} &middot; {% endif %}<a href="{% url 'editRecipePlan' recipe.pk %}">Edit plan</a>
+        <div class="cl-section-tools">
+          {% if recipe.workflow_template %}<div class="cl-section-note">Copied from {{ recipe.workflow_template.name }}</div>{% endif %}
+          <div class="cl-menu cl-menu--kebab" data-cl-menu>
+            <button type="button" class="cl-menu-toggle" id="plan-actions-toggle" aria-haspopup="menu" aria-expanded="false" aria-controls="plan-actions-menu" aria-label="Plan actions">
+              <svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="4" r="1.7"/><circle cx="10" cy="10" r="1.7"/><circle cx="10" cy="16" r="1.7"/></svg>
+            </button>
+            <ul class="cl-menu-list" id="plan-actions-menu" role="menu" aria-labelledby="plan-actions-toggle" hidden>
+              <li role="none"><a role="menuitem" href="{% url 'editRecipePlan' recipe.pk %}">Edit plan</a></li>
+            </ul>
+          </div>
         </div>
       </div>
       {% include 'batchthis/includes/plan_steps.html' with empty_message="No plan yet. Edit the plan to start from a workflow or add steps." %}

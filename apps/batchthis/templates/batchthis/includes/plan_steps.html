@@ -1,3 +1,4 @@
+{% load batch_extras %}
 {% comment %}
 A plan's steps (recipe now, batch later) as a ledger table, with the planned
 time in the footer - only steps with a duration count (services.plan_totals).
@@ -17,7 +18,7 @@ Expects `plan` from views._plan_summary() and an `empty_message`.
         <td class="cl-num">{{ forloop.counter }}</td>
         <td class="js-mouse-tooltip" data-toggle="tooltip" title="{{ step.stage.description|default:'' }}">{{ step.stage.name }}</td>
         <td>{{ step.get_vessel_type_display }}</td>
-        <td class="cl-num">{% if step.has_duration %}{{ step.planned_duration }}{% else %}—{% endif %}</td>
+        <td class="cl-num">{% if step.has_duration %}{{ step.planned_days|days }}{% else %}—{% endif %}</td>
         <td>{{ step.notes|default:"—" }}</td>
       </tr>
       {% endfor %}

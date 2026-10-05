@@ -1452,6 +1452,14 @@ def copy_recipe_ingredients_to_batch(batch: Batch) -> list[BatchIngredient]:
     return created
 
 
+def days_label(days: float) -> str:
+    """Whole days (Aaron, 2026-10-02: no decimals in plan displays); a part day reads "under 1 day"."""
+    whole = round(days)
+    if whole == 0 and days:
+        return "under 1 day"
+    return f"{whole} day" if whole == 1 else f"{whole} days"
+
+
 def quantity_label(value, digits: int = 4) -> str:
     """A short amount for display: "24 lb", "10 g", "2.5 kg" ("" for none); `digits` significant figures."""
     value = _quantity(value)

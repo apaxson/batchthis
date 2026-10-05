@@ -332,6 +332,8 @@ button.nav-link { width: 100%; background: none; border: 0; font-family: inherit
 }
 .cl-section-title { font-size: 1.05rem; font-weight: 600; letter-spacing: -0.01em; }
 .cl-section-note { font-size: 0.82rem; color: var(--ink-soft); }
+/* A section head's note next to its kebab menu, e.g. recipe.html's Plan ("Copied from ..." + actions). */
+.cl-section-tools { display: flex; align-items: center; gap: 10px; }
 
 /* ---------- Ledger table ---------- */
 .cl-ledger {

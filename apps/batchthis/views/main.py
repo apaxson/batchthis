@@ -27,7 +27,7 @@ from apps.batchthis.services import (
     transition_stage_event, transfer_batch, create_vessel, update_vessel,
     plan_totals, save_workflow_template, delete_workflow_template, save_recipe_plan, clear_recipe_plan,
     copy_plan_to_batch, copy_recipe_ingredients_to_batch, recipe_scale_factor, quantity_label, save_batch_plan,
-    batch_recipe_locked_reason, save_batch_recipe, batch_plan_locked_reason,
+    batch_recipe_locked_reason, save_batch_recipe, days_label, batch_plan_locked_reason,
     plan_progress, batch_schedule_progress, allowed_next_stages, save_batch_edit, set_recipe_pairings,
 )
 from apps.batchthis.lib.faults import get_active_flags, get_rule_for, StagedFaultRule
@@ -1168,12 +1168,7 @@ def editBatchPlan(request, pk):
 
 # ---------- Workflow templates (Settings > Workflows) ----------
 
-def _days_label(days: float) -> str:
-    """Whole days (Aaron, 2026-10-02: no decimals in plan displays); a part day reads "under 1 day"."""
-    whole = round(days)
-    if whole == 0 and days:
-        return "under 1 day"
-    return f"{whole} day" if whole == 1 else f"{whole} days"
+_days_label = days_label   # shared with the plan table's |days filter (services.days_label)
 
 
 @login_required
