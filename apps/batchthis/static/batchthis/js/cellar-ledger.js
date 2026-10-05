@@ -444,6 +444,11 @@ document.addEventListener('DOMContentLoaded', function () {
     document.addEventListener('click', function (e) {
       if (!root.contains(e.target)) close(false);
     });
+    // Choosing an item closes the menu - including items that open a modal instead of navigating
+    // (data-cl-form-modal, data-cl-tosna), so the menu isn't left open behind it.
+    list.addEventListener('click', function (e) {
+      if (e.target.closest('[role="menuitem"]')) close(false);
+    });
   });
 });
 

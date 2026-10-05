@@ -44,7 +44,14 @@
   <div>
     <div class="cl-section-head">
       <div class="cl-section-title">Fermentables</div>
-      <div class="cl-section-note"><a href="{% url 'editFermentables' recipe.pk %}">Add/edit fermentables</a></div>
+      <div class="cl-menu cl-menu--kebab" data-cl-menu>
+        <button type="button" class="cl-menu-toggle" id="fermentables-actions-toggle" aria-haspopup="menu" aria-expanded="false" aria-controls="fermentables-actions-menu" aria-label="Fermentable actions">
+          <svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="4" r="1.7"/><circle cx="10" cy="10" r="1.7"/><circle cx="10" cy="16" r="1.7"/></svg>
+        </button>
+        <ul class="cl-menu-list" id="fermentables-actions-menu" role="menu" aria-labelledby="fermentables-actions-toggle" hidden>
+          <li role="none"><a role="menuitem" href="{% url 'editFermentables' recipe.pk %}">Add/edit fermentables</a></li>
+        </ul>
+      </div>
     </div>
     <div class="cl-table-scroll">
       <table class="cl-ledger">
@@ -71,7 +78,15 @@
 
     <div class="cl-section-head">
       <div class="cl-section-title">Adjuncts</div>
-      <div class="cl-section-note"><a href="{% url 'tosnaCalculator' %}" data-cl-tosna data-recipe-url="{% url 'recipe-tosna' recipe.pk %}">TOSNA nutrients</a> &middot; <a href="{% url 'editAdjuncts' recipe.pk %}">Add/edit adjuncts</a></div>
+      <div class="cl-menu cl-menu--kebab" data-cl-menu>
+        <button type="button" class="cl-menu-toggle" id="adjuncts-actions-toggle" aria-haspopup="menu" aria-expanded="false" aria-controls="adjuncts-actions-menu" aria-label="Adjunct actions">
+          <svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="4" r="1.7"/><circle cx="10" cy="10" r="1.7"/><circle cx="10" cy="16" r="1.7"/></svg>
+        </button>
+        <ul class="cl-menu-list" id="adjuncts-actions-menu" role="menu" aria-labelledby="adjuncts-actions-toggle" hidden>
+          <li role="none"><a role="menuitem" href="{% url 'tosnaCalculator' %}" data-cl-tosna data-recipe-url="{% url 'recipe-tosna' recipe.pk %}">TOSNA nutrients&hellip;</a></li>
+          <li role="none"><a role="menuitem" href="{% url 'editAdjuncts' recipe.pk %}">Add/edit adjuncts</a></li>
+        </ul>
+      </div>
     </div>
     <div class="cl-table-scroll">
       <table class="cl-ledger">
@@ -97,7 +112,14 @@
 
     <div class="cl-section-head">
       <div class="cl-section-title">Yeast</div>
-      <div class="cl-section-note"><a href="{% url 'editYeasts' recipe.pk %}">Add/edit yeast</a></div>
+      <div class="cl-menu cl-menu--kebab" data-cl-menu>
+        <button type="button" class="cl-menu-toggle" id="yeast-actions-toggle" aria-haspopup="menu" aria-expanded="false" aria-controls="yeast-actions-menu" aria-label="Yeast actions">
+          <svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="4" r="1.7"/><circle cx="10" cy="10" r="1.7"/><circle cx="10" cy="16" r="1.7"/></svg>
+        </button>
+        <ul class="cl-menu-list" id="yeast-actions-menu" role="menu" aria-labelledby="yeast-actions-toggle" hidden>
+          <li role="none"><a role="menuitem" href="{% url 'editYeasts' recipe.pk %}">Add/edit yeast</a></li>
+        </ul>
+      </div>
     </div>
     <div class="cl-table-scroll">
       <table class="cl-ledger">

@@ -579,6 +579,10 @@ button.nav-link { width: 100%; background: none; border: 0; font-family: inherit
 .cl-menu-list [role="menuitem"]:hover,
 .cl-menu-list [role="menuitem"]:focus { background: var(--paper); outline-offset: -2px; }
 .cl-menu-list [role="separator"] { height: 1px; margin: 6px 4px; background: var(--line-soft); }
+/* Kebab (vertical dots) variant for a section head's actions, e.g. recipe.html's ingredient tables. */
+.cl-menu--kebab .cl-menu-toggle { width: 32px; height: 32px; border-radius: 9px; box-shadow: none; background: transparent; }
+.cl-menu--kebab .cl-menu-toggle:hover,
+.cl-menu--kebab .cl-menu-toggle[aria-expanded="true"] { background: var(--paper-raised); box-shadow: 0 0 0 1px var(--line); }
 
 /* ---------- Readout chips ---------- */
 .cl-readouts {
