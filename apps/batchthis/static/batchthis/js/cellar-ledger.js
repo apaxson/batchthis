@@ -624,3 +624,175 @@ document.addEventListener('DOMContentLoaded', function () {
   document.addEventListener('DOMContentLoaded', function () { initReadingForms(document); });
   document.addEventListener('cl:content-loaded', function (e) { initReadingForms(e.detail.root); });
 })();
+
+
+// TOSNA 2.0 calculator (includes/_tosna_calculator.html) - the Tools page and the shared
+// #tosnaModal (base.html). Each [data-tosna-calculator] recalculates through its data-calc-url
+// (api/tools/tosna/) as the inputs change; the math lives server-side (services.tosna_schedule).
+// A [data-cl-tosna] trigger with data-recipe-url opens the modal pre-filled from that recipe
+// (api/recipes/<pk>/tosna/) and offers "Add to recipe": a summary of the recipe's current
+// Fermaid O rows next to the new four, then Replace / Add alongside. The yeast's nitrogen
+// demand is required, and is saved on the yeast when the doses are added.
+(function ($) {
+  if (!$) return;
+
+  function initTosnaCalculator(root) {
+    if (root.tosna) return root.tosna;
+    var url = root.getAttribute('data-calc-url');
+    var input = function (name) { return root.querySelector('[data-tosna="' + name + '"]'); };
+    var value = function (name) { return (input(name).value || '').trim(); };
+    var error = root.querySelector('[data-tosna-error]');
+    var result = root.querySelector('[data-tosna-result]');
+    var timer = null;
+    var api = { result: null };
+
+    function notify() { root.dispatchEvent(new CustomEvent('cl:tosna-result', { bubbles: true, detail: api.result })); }
+    function fail(message) {
+      api.result = null;
+      result.hidden = true;
+      error.textContent = message || '';
+      error.hidden = !message;
+      notify();
+    }
+    function render(data) {
+      api.result = data;
+      ['brix', 'yan_ppm', 'total_g', 'per_addition_g'].forEach(function (key) {
+        var out = root.querySelector('[data-tosna-out="' + key + '"]');
+        out.textContent = key === 'brix' ? data.brix.toFixed(1) : key === 'yan_ppm' ? data.yan_ppm : data[key].toFixed(2);
+      });
+      var body = root.querySelector('[data-tosna-rows]');
+      body.innerHTML = '';
+      data.additions.forEach(function (a) {
+        var row = document.createElement('tr');
+        [a.number + ' of 4', a.when, a.grams.toFixed(2) + ' g'].forEach(function (text, i) {
+          var td = document.createElement('td');
+          td.textContent = text;
+          if (i === 2) td.className = 'cl-num';
+          row.appendChild(td);
+        });
+        body.appendChild(row);
+      });
+      var brk = root.querySelector('[data-tosna-break]');
+      brk.textContent = data.break_sg ? 'The 1/3 sugar break is at SG ' + data.break_sg + '.' : '';
+      brk.hidden = !data.break_sg;
+      error.hidden = true;
+      result.hidden = false;
+      notify();
+    }
+    function calculate() {
+      var params = { sg: value('sg'), size: value('size'), nitrogen: value('nitrogen'), end_sg: value('end_sg') };
+      if (!params.sg || !params.size) { fail(''); return; }
+      if (!params.nitrogen) { fail("Choose the yeast's nitrogen demand - it's required."); return; }
+      $.getJSON(url, params).done(render).fail(function (xhr) {
+        var message = (xhr.responseJSON && xhr.responseJSON.error) || "Couldn't calculate. Check the inputs and try again.";
+        if (window.console) console.debug('[tosna] calculation failed', xhr.status, message);
+        fail(message);
+      });
+    }
+    function queue() { clearTimeout(timer); timer = setTimeout(calculate, 300); }
+    root.addEventListener('input', queue);
+    root.addEventListener('change', queue);
+
+    api.calculate = calculate;
+    api.set = function (values) {
+      Object.keys(values).forEach(function (name) { if (input(name)) input(name).value = values[name] || ''; });
+      calculate();
+    };
+    api.nitrogen = function () { return value('nitrogen'); };
+    root.tosna = api;
+    return api;
+  }
+
+  document.addEventListener('DOMContentLoaded', function () {
+    document.querySelectorAll('[data-tosna-calculator]').forEach(function (root) {
+      initTosnaCalculator(root).calculate();
+    });
+
+    var $modal = $('#tosnaModal');
+    if (!$modal.length) return;
+    var modal = $modal[0];
+    var calc = initTosnaCalculator(modal.querySelector('[data-tosna-calculator]'));
+    var recipeUrl = null;
+    var recipeData = null;
+    var el = function (selector) { return modal.querySelector(selector); };
+    var action = function (name) { return el('[data-tosna-action="' + name + '"]'); };
+
+    function step(name) {
+      el('[data-tosna-step="calc"]').hidden = name !== 'calc';
+      el('[data-tosna-step="summary"]').hidden = name !== 'summary';
+      action('review').hidden = name !== 'calc' || !recipeUrl;
+      action('back').hidden = name !== 'summary';
+      action('alongside').hidden = name !== 'summary' || !(recipeData && recipeData.current.length);
+      action('replace').hidden = name !== 'summary';
+      el('[data-tosna-save-error]').hidden = true;
+    }
+    function saveError(message) {
+      var box = el('[data-tosna-save-error]');
+      box.querySelector('span:last-child').textContent = message;
+      box.hidden = false;
+    }
+    function updateReview() {
+      action('review').disabled = !(recipeUrl && recipeData && recipeData.yeast && calc.result);
+    }
+    modal.addEventListener('cl:tosna-result', updateReview);
+
+    $(document).on('click', '[data-cl-tosna]', function (event) {
+      event.preventDefault();
+      recipeUrl = this.getAttribute('data-recipe-url');
+      recipeData = null;
+      var yeastLine = el('[data-tosna-yeast]');
+      yeastLine.hidden = true;
+      step('calc');
+      updateReview();
+      $modal.modal('show');
+      if (!recipeUrl) { calc.set({ sg: '', size: '', nitrogen: '', end_sg: '' }); return; }
+      $.getJSON(recipeUrl).done(function (data) {
+        recipeData = data;
+        yeastLine.textContent = data.yeast
+          ? 'Yeast: ' + data.yeast.name + (data.yeast.nitrogen
+              ? ' - its nitrogen demand is filled in below.'
+              : " - choose its nitrogen demand; it's saved on the yeast when you add the doses.")
+          : data.yeast_error;
+        yeastLine.hidden = false;
+        calc.set({ sg: data.sg, size: data.size, nitrogen: data.yeast ? data.yeast.nitrogen : '', end_sg: data.end_sg });
+      }).fail(function (xhr) {
+        if (window.console) console.error('[tosna] could not load the recipe', xhr.status);
+        saveError("Couldn't load the recipe. Close this and try again.");
+      });
+    });
+
+    function cell(row, text) { var td = document.createElement('td'); td.textContent = text || '\u2014'; row.appendChild(td); return td; }
+    // Imported notes can be paragraphs long - one short line here, the whole note on hover.
+    function noteCell(row, text) {
+      var td = cell(row, text && text.length > 70 ? text.slice(0, 68).trim() + '\u2026' : text);
+      if (text && text.length > 70) td.title = text;
+    }
+    action('review').addEventListener('click', function () {
+      var current = el('[data-tosna-current]'), fresh = el('[data-tosna-new]');
+      current.innerHTML = ''; fresh.innerHTML = '';
+      recipeData.current.forEach(function (r) { var row = document.createElement('tr'); cell(row, r.amount); cell(row, r.when); noteCell(row, r.notes); current.appendChild(row); });
+      if (!recipeData.current.length) { var none = document.createElement('tr'); cell(none, 'None yet.'); none.firstChild.colSpan = 3; current.appendChild(none); }
+      calc.result.additions.forEach(function (a) { var row = document.createElement('tr'); cell(row, a.grams.toFixed(2) + ' g'); cell(row, a.when); cell(row, a.note); fresh.appendChild(row); });
+      el('[data-tosna-question]').textContent = recipeData.current.length
+        ? 'Replace the recipe\'s ' + recipeData.current.length + ' current Fermaid O addition' + (recipeData.current.length === 1 ? '' : 's') + ' with these four?'
+        : 'Add these four Fermaid O additions to the recipe?';
+      action('replace').textContent = recipeData.current.length ? 'Replace' : 'Add to recipe';
+      step('summary');
+    });
+    action('back').addEventListener('click', function () { step('calc'); });
+
+    function save(replace) {
+      var token = modal.querySelector('[name=csrfmiddlewaretoken]').value;
+      $.ajax({ url: recipeUrl, method: 'POST', headers: { 'X-CSRFToken': token },
+               data: { nitrogen: calc.nitrogen(), replace: replace ? 'true' : 'false' } })
+        .done(function () { window.location.reload(); })
+        .fail(function (xhr) {
+          var message = (xhr.responseJSON && xhr.responseJSON.error) || "Couldn't add the doses. Nothing was saved - please try again.";
+          if (window.console) console.error('[tosna] save failed', xhr.status, message);
+          saveError(message);
+        });
+    }
+    action('replace').addEventListener('click', function () { save(true); });
+    action('alongside').addEventListener('click', function () { save(false); });
+  });
+})(window.jQuery);

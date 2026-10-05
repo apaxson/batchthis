@@ -1264,6 +1264,12 @@ def workflowDelete(request, pk):
     return render(request, 'batchthis/workflowDelete.html', {'template': template, 'recipes': recipes})
 
 
+@require_safe
+def tosnaCalculator(request):
+    """Tools > TOSNA: the standalone TOSNA 2.0 calculator (includes/_tosna_calculator.html; math in the API)."""
+    return render(request, 'batchthis/tosnaCalculator.html')
+
+
 def refractometerCorrection(request):
     form = RefractometerCorrectionForm(initial={'startUnit': 'bx', 'currentUnit': 'bx'})
     result = (0, 0)

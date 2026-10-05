@@ -315,6 +315,13 @@ class Fermentable(InventoryItem):
 
 
 class Yeast(InventoryItem):
+    # TOSNA 2.0 nitrogen demand (services.tosna_schedule): blank = unknown - set in the TOSNA calculator.
+    NITROGEN_LOW = 'low'
+    NITROGEN_MEDIUM = 'medium'
+    NITROGEN_HIGH = 'high'
+    NITROGEN_CHOICES = [(NITROGEN_LOW, 'Low'), (NITROGEN_MEDIUM, 'Medium'), (NITROGEN_HIGH, 'High')]
+    NITROGEN_FACTORS = {NITROGEN_LOW: 0.75, NITROGEN_MEDIUM: 0.90, NITROGEN_HIGH: 1.25}
+
     type = models.CharField(max_length=20) # Ale, Champagne, Wine, Lager, etc
     # Blank = unknown (464 yeasts from an old import bug had no real value).
     form = models.CharField(max_length=20, choices=(('dry','Dry'),('liquid','Liquid')), blank=True, verbose_name="Format")
@@ -326,6 +333,8 @@ class Yeast(InventoryItem):
     flocculation = models.CharField(max_length=20)  # BeerSmith uses "Very High"
     attenuation = models.FloatField()
     notes = models.TextField(null=True, blank=True)
+    nitrogen_requirement = models.CharField(max_length=6, choices=NITROGEN_CHOICES, blank=True, default='',
+                                            verbose_name="Nitrogen demand")
 
     @property
     def display_name(self):

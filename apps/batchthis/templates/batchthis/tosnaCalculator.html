@@ -1,0 +1,15 @@
+{% extends 'batchthis/base.html' %}
+{% block content %}
+
+<div class="cl-page-head">
+  <div class="cl-wordmark font-display">TOSNA nutrients</div>
+  <div class="cl-batch-sub" style="margin-top:6px;">
+    <span>TOSNA 2.0 Fermaid O schedule from the starting gravity, batch size and the yeast's nitrogen demand. To add the doses to a recipe, use &ldquo;TOSNA nutrients&rdquo; on the recipe page.</span>
+  </div>
+</div>
+
+<div class="cl-panel">
+  {% include 'batchthis/includes/_tosna_calculator.html' with p='tosna-page' %}
+</div>
+
+{% endblock %}

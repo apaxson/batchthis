@@ -621,6 +621,17 @@ button.nav-link { width: 100%; background: none; border: 0; font-family: inherit
 .cl-readouts--3 { grid-template-columns: repeat(3, 1fr); }
 @media (max-width: 640px) { .cl-readouts--3 { grid-template-columns: 1fr; } }
 
+/* TOSNA 2.0 calculator (includes/_tosna_calculator.html) - Tools page and #tosnaModal. */
+.cl-tosna-error { margin: 10px 0 0; }
+.cl-tosna-result { margin-top: 18px; }
+.cl-tosna-result .cl-readouts { margin-bottom: 14px; }
+.cl-modal .cl-tosna-result .cl-readout { background: var(--paper); box-shadow: none; border-radius: 14px; }
+.cl-tosna-source { margin: 10px 0 0; font-size: 0.8rem; color: var(--ink-soft); }
+.cl-tosna-question { margin: 0 0 12px; font-weight: 600; }
+.cl-tosna-compare { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.cl-tosna-compare .cl-section-title { font-size: 0.9rem; margin-bottom: 6px; }
+@media (max-width: 760px) { .cl-tosna-compare { grid-template-columns: 1fr; } }
+
 /* Add batch: the recipe's ingredients scaled to the batch size, under the form fields. */
 .cl-scale-preview { margin-top: 22px; }
 .cl-scale-preview .cl-field-error { margin: 0; }

@@ -19,10 +19,14 @@ from ..serializers import (
     YeastSerializer,
 )
 from ..services import (
+    TOSNA_FERMAID,
+    apply_tosna_to_recipe,
     quantity_label,
+    recipe_primary_yeast,
     recipe_scale_factor,
     scaled_recipe_ingredients,
     time_to_add_label,
+    tosna_schedule,
 )
 
 logger = logging.getLogger(__name__)
@@ -133,3 +137,72 @@ class RecipeScaledAPIView(APIView):
                 'time_to_add': time_to_add_label(row.time_to_add) if row.kind == row.KIND_ADJUNCT else "",
             } for row in rows],
         })
+
+
+def _tosna_json(schedule) -> dict:
+    return {
+        'brix': round(schedule.brix, 1),
+        'yan_ppm': round(schedule.yan_ppm),
+        'gallons': round(schedule.gallons, 3),
+        'total_g': round(schedule.total_g, 2),
+        'per_addition_g': round(schedule.per_addition_g, 2),
+        'break_sg': f"{schedule.break_sg:.3f}" if schedule.break_sg is not None else None,
+        'additions': [{'number': a.number, 'when': a.when, 'grams': round(a.grams, 2), 'note': a.note}
+                      for a in schedule.additions],
+    }
+
+
+class TosnaCalcAPIView(APIView):
+    """The TOSNA 2.0 calculator's live result (Tools page and #tosnaModal): ?sg=&size=&nitrogen=[&end_sg=]."""
+    def get(self, request: Request) -> Response:
+        params = request.query_params
+        try:
+            size = VolumeField().clean(params.get('size', ''))
+            schedule = tosna_schedule(params.get('sg'), size, params.get('nitrogen', ''), end_sg=params.get('end_sg'))
+        except ValidationError as e:
+            logger.debug("TosnaCalc: rejected %s: %s", dict(params), e.messages)
+            return Response({'error': " ".join(e.messages)}, status=400)
+        return Response(_tosna_json(schedule))
+
+
+class RecipeTosnaAPIView(APIView):
+    """
+    TOSNA on the recipe page: GET = the recipe's inputs (OG, FG, size, its one
+    yeast + nitrogen demand) and its current Fermaid O rows, for the pop-up and
+    its replace summary; POST nitrogen=&replace=true|false = add the four doses.
+    """
+    def get(self, request: Request, pk: int) -> Response:
+        recipe = get_object_or_404(Recipe, pk=pk)
+        try:
+            yeast = recipe_primary_yeast(recipe).yeast
+            yeast_json, yeast_error = {'name': yeast.name, 'nitrogen': yeast.nitrogen_requirement}, ""
+        except ValidationError as e:
+            yeast_json, yeast_error = None, " ".join(e.messages)
+        current = [{'amount': quantity_label(row.amount), 'when': time_to_add_label(row.time_to_add),
+                    'notes': row.recipe_notes or ""}
+                   for row in recipe.adjuncts.filter(adjunct__name__iexact=TOSNA_FERMAID).order_by('pk')]
+        logger.debug("RecipeTosna: recipe=%s yeast=%s current=%d", pk, yeast_json, len(current))
+        return Response({
+            'sg': f"{recipe.estOG.magnitude:.3f}" if recipe.estOG is not None else "",
+            'end_sg': f"{recipe.estFG.magnitude:.3f}" if recipe.estFG is not None else "",
+            'size': quantity_label(recipe.batchSize),
+            'yeast': yeast_json, 'yeast_error': yeast_error,
+            'current': current,
+        })
+
+    def post(self, request: Request, pk: int) -> Response:
+        recipe = get_object_or_404(Recipe, pk=pk)
+        nitrogen = request.data.get('nitrogen', '')
+        replace = str(request.data.get('replace', '')).lower() in ('true', '1', 'yes', 'on')
+        try:
+            schedule = tosna_schedule(recipe.estOG.magnitude if recipe.estOG is not None else None, recipe.batchSize,
+                                      nitrogen, end_sg=recipe.estFG.magnitude if recipe.estFG is not None else None)
+            apply_tosna_to_recipe(recipe, schedule, nitrogen, replace=replace)
+        except ValidationError as e:
+            logger.debug("RecipeTosna: recipe=%s rejected: %s", pk, e.messages)
+            return Response({'error': " ".join(e.messages)}, status=400)
+        except Exception:
+            logger.exception("RecipeTosna: failed to apply TOSNA to recipe %s", pk)
+            return Response({'error': "Couldn't add the TOSNA additions. Nothing was saved - please try again."},
+                            status=500)
+        return Response({'saved': True})

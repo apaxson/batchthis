@@ -68,6 +68,10 @@
           <svg viewBox="0 0 20 20" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="10" cy="10" r="6.5"/><line x1="10" y1="10" x2="13.5" y2="6.5"/><line x1="10" y1="3.5" x2="10" y2="5"/><line x1="3.5" y1="10" x2="5" y2="10"/><line x1="15" y1="10" x2="16.5" y2="10"/></svg>
           <span class="nav-label">Utils</span>
         </a>
+        <a class="sub-link" href="{% url 'tosnaCalculator' %}" title="TOSNA 2.0 nutrient calculator" {% if request.resolver_match.url_name == 'tosnaCalculator' %}aria-current="page"{% endif %}>
+          <svg viewBox="0 0 20 20" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3h4M9 3v4.5L4.5 15a1.5 1.5 0 0 0 1.3 2.2h8.4a1.5 1.5 0 0 0 1.3-2.2L11 7.5V3"/><line x1="6.5" y1="12" x2="13.5" y2="12"/></svg>
+          <span class="nav-label">TOSNA</span>
+        </a>
         <a class="sub-link" href="{% url 'importData' %}" title="Import BeerSmith files" {% if request.resolver_match.url_name == 'importData' %}aria-current="page"{% endif %}>
           <svg viewBox="0 0 20 20" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><line x1="10" y1="3" x2="10" y2="12"/><polyline points="6.5,8.5 10,12 13.5,8.5"/><path d="M4 13v3h12v-3"/></svg>
           <span class="nav-label">Import</span>

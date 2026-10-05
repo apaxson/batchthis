@@ -1,4 +1,5 @@
 {% extends 'batchthis/base.html' %}
+{% load batch_extras %}
 {% block content %}
 
 <div class="cl-batch-head">
@@ -70,7 +71,7 @@
 
     <div class="cl-section-head">
       <div class="cl-section-title">Adjuncts</div>
-      <div class="cl-section-note"><a href="{% url 'editAdjuncts' recipe.pk %}">Add/edit adjuncts</a></div>
+      <div class="cl-section-note"><a href="{% url 'tosnaCalculator' %}" data-cl-tosna data-recipe-url="{% url 'recipe-tosna' recipe.pk %}">TOSNA nutrients</a> &middot; <a href="{% url 'editAdjuncts' recipe.pk %}">Add/edit adjuncts</a></div>
     </div>
     <div class="cl-table-scroll">
       <table class="cl-ledger">
@@ -85,8 +86,8 @@
           <tr>
             <td class="cl-row-link js-mouse-tooltip" data-toggle="tooltip" title="{% if item.recipe_notes %}{{ item.recipe_notes }}{% if item.adjunct.notes %}&#10;{% endif %}{% endif %}{{ item.adjunct.notes|default:'' }}">{{ item.adjunct.name }}</td>
             <td>{{ item.adjunct.type }}</td>
-            <td class="cl-num">{{ item.amount }}</td>
-            <td class="cl-num">{{ item.time_to_add }}</td>
+            <td class="cl-num">{{ item.amount|amount|default:"&mdash;" }}</td>
+            <td class="cl-num">{{ item.time_to_add|time_to_add|default:"&mdash;" }}</td>
           </tr>
           {% endfor %}
           {% endif %}
@@ -101,11 +102,11 @@
     <div class="cl-table-scroll">
       <table class="cl-ledger">
         <thead>
-          <tr><th>Strain</th><th>Type</th><th>Temp (F)</th><th>Tolerance</th><th>Amount</th></tr>
+          <tr><th>Strain</th><th>Type</th><th>Temp (F)</th><th>Tolerance</th><th>N demand</th><th>Amount</th></tr>
         </thead>
         <tbody>
           {% if not yeasts %}
-          <tr><td class="cl-empty" colspan="5">No yeast yet.</td></tr>
+          <tr><td class="cl-empty" colspan="6">No yeast yet.</td></tr>
           {% else %}
           {% for item in yeasts %}
           <tr>
@@ -116,6 +117,7 @@
             <td>{{ item.yeast.type }} &middot; {{ item.yeast.get_form_display|default:"—" }}</td>
             <td class="cl-num">{{ item.yeast.min_temp_f.magnitude|floatformat:0 }}&ndash;{{ item.yeast.max_temp_f.magnitude|floatformat:0 }}</td>
             <td class="cl-num">{{ item.yeast.alc_tolerance }} %</td>
+            <td>{{ item.yeast.get_nitrogen_requirement_display|default:"&mdash;" }}</td>
             <td class="cl-num">{{ item.amount }}</td>
           </tr>
           {% endfor %}

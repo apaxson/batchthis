@@ -172,6 +172,48 @@
     </div>
   </div>
 
+  <!-- TOSNA 2.0 nutrient modal - reusable site-wide, like the refractometer. Open it with a link
+       carrying data-cl-tosna (and data-recipe-url = the recipe's api/recipes/PK/tosna/ URL, to pre-fill
+       from that recipe and offer "Add to recipe"). Behavior: cellar-ledger.js "TOSNA 2.0 calculator". -->
+  <div class="modal fade cl-modal" id="tosnaModal" tabindex="-1" role="dialog" aria-labelledby="tosnaModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="tosnaModalLabel">TOSNA nutrients</h5>
+          <button class="close" type="button" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">×</span></button>
+        </div>
+        <div class="modal-body">
+          {% csrf_token %}
+          <p class="cl-field-note" data-tosna-yeast hidden></p>
+          <div data-tosna-step="calc">
+            {% include 'batchthis/includes/_tosna_calculator.html' with p='tosna-modal' %}
+          </div>
+          <div data-tosna-step="summary" hidden>
+            <p class="cl-tosna-question" data-tosna-question></p>
+            <div class="cl-tosna-compare">
+              <div>
+                <div class="cl-section-title">Current Fermaid O</div>
+                <div class="cl-table-scroll"><table class="cl-ledger"><thead><tr><th>Amount</th><th>When</th><th>Notes</th></tr></thead><tbody data-tosna-current></tbody></table></div>
+              </div>
+              <div>
+                <div class="cl-section-title">New TOSNA 2.0</div>
+                <div class="cl-table-scroll"><table class="cl-ledger"><thead><tr><th>Amount</th><th>When</th><th>Notes</th></tr></thead><tbody data-tosna-new></tbody></table></div>
+              </div>
+            </div>
+          </div>
+          <div class="cl-flag" data-tosna-save-error hidden style="margin-top:14px;"><span class="cl-flag-mark">!</span><span></span></div>
+        </div>
+        <div class="modal-footer">
+          <button class="cl-btn cl-btn--secondary" type="button" data-dismiss="modal" data-tosna-action="cancel">Close</button>
+          <button class="cl-btn cl-btn--primary" type="button" data-tosna-action="review" hidden disabled>Add to recipe&hellip;</button>
+          <button class="cl-btn cl-btn--secondary" type="button" data-tosna-action="back" hidden>Back</button>
+          <button class="cl-btn cl-btn--secondary" type="button" data-tosna-action="alongside" hidden>Add alongside</button>
+          <button class="cl-btn cl-btn--primary" type="button" data-tosna-action="replace" hidden>Replace</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- Shared form modal - reusable site-wide. Any link with data-cl-form-modal (and an
        optional data-modal-title) opens its page's form here instead of navigating; the
        view returns just the form for the modal, and a successful save reloads the page.

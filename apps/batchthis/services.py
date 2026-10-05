@@ -9,8 +9,11 @@ from django.core.exceptions import ValidationError
 from django.db import transaction
 from django.utils import timezone
 
+from .lib.utils import Utils
 from .models import (
     ActivityLog,
+    Adjunct,
+    AdjunctUsage,
     AgingTank,
     Barrel,
     Batch,
@@ -22,13 +25,16 @@ from .models import (
     PairingTag,
     PlanStep,
     Recipe,
+    RecipeAdjunct,
     RecipePlanStep,
+    RecipeYeasts,
     Vessel,
     Span,
     VesselStatusEvent,
     VesselStay,
     WorkflowTemplate,
     WorkflowTemplateStep,
+    Yeast,
 )
 
 logger = logging.getLogger(__name__)
@@ -1554,3 +1560,144 @@ def save_batch_recipe(batch: Batch, rows: list[dict]) -> list[str]:
             add_activity_log(batch, "Batch recipe edited :: " + "; ".join(changes))
     logger.info(f"Batch '{batch}' recipe edited: {'; '.join(changes) or 'no changes'}")
     return changes
+
+
+# ---------- TOSNA 2.0 nutrient calculator (TODO.txt "TOSNA 2.0 CALCULATOR", Aaron 2026-10-05) ----------
+# total Fermaid-O (g) = ((Brix x 10) x N factor / 50) x batch gallons; four equal additions at
+# 24 h, 48 h, 72 h after Pitch and at day 7 or the 1/3 sugar break, whichever comes first.
+# Source: https://www.meadmaderight.com/nutrient-additions
+
+TOSNA_FERMAID = "Fermaid O"
+TOSNA_USAGE = "Primary"
+TOSNA_YAN_PER_GRAM = 50          # the formula's "/ 50"
+TOSNA_OFFSETS_HOURS = (24, 48, 72, 168)
+
+
+@dataclass(frozen=True)
+class TosnaAddition:
+    number: int
+    offset: object          # a duration Quantity after Pitch
+    grams: float
+    when: str               # "Pitch + 24 h" ... "Day 7 or 1/3 sugar break"
+    note: str               # the recipe row's notes
+
+
+@dataclass(frozen=True)
+class TosnaSchedule:
+    sg: float
+    brix: float
+    nitrogen: str
+    factor: float
+    gallons: float
+    yan_ppm: float
+    total_g: float
+    per_addition_g: float
+    break_sg: Optional[float]     # the 1/3 sugar break, when an end gravity is known
+    additions: list
+
+
+def tosna_schedule(sg, volume, nitrogen: str, end_sg=None) -> TosnaSchedule:
+    """
+    TOSNA 2.0 Fermaid-O doses for a must of starting gravity `sg` and `volume`
+    (any volume unit), for a yeast of `nitrogen` demand (Yeast.NITROGEN_*).
+    Brix comes from Utils.sgToBrix (never pint - CLAUDE.md). Raises
+    ValidationError with a user-readable message for bad input.
+    """
+    factor = Yeast.NITROGEN_FACTORS.get(nitrogen or "")
+    if factor is None:
+        raise ValidationError("Choose the yeast's nitrogen demand: Low, Medium or High.")
+    try:
+        sg = float(sg)
+    except (TypeError, ValueError):
+        raise ValidationError("Enter the starting gravity, e.g. 1.100.")
+    if not 1.000 < sg < 1.200:
+        raise ValidationError("Enter a starting gravity between 1.001 and 1.199.")
+    brix = Utils.sgToBrix(sg)
+    if brix <= 0:
+        raise ValidationError("Enter a starting gravity between 1.001 and 1.199.")
+    try:
+        volume = _quantity(volume)
+        valid_volume = volume is not None and volume.check('[volume]') and volume.magnitude > 0
+    except Exception:
+        valid_volume = False
+    if not valid_volume:
+        raise ValidationError("Enter the batch size as a volume, e.g. 5 gallons or 20 liters.")
+    gallons = volume.to('gallon').magnitude
+
+    break_sg = None
+    try:
+        end = float(end_sg) if end_sg not in (None, "") else None
+    except (TypeError, ValueError):
+        end = None
+    if end is not None and 0.980 <= end < sg:
+        break_sg = sg - (sg - end) / 3
+
+    yan_ppm = brix * 10 * factor
+    total_g = yan_ppm / TOSNA_YAN_PER_GRAM * gallons
+    per_addition = total_g / 4
+    ureg = settings.DJANGO_PINT_UNIT_REGISTER
+    last = ("TOSNA 2.0 - 4 of 4: day 7 or the 1/3 sugar break"
+            + (f" (SG {break_sg:.3f})" if break_sg is not None else "") + ", whichever comes first")
+    additions = [
+        TosnaAddition(number, ureg.Quantity(hours, 'hour'), per_addition,
+                      when=f"Pitch + {hours} h" if number < 4 else "Day 7 or 1/3 sugar break",
+                      note=f"TOSNA 2.0 - {number} of 4 ({hours} h after pitch)" if number < 4 else last)
+        for number, hours in enumerate(TOSNA_OFFSETS_HOURS, start=1)
+    ]
+    schedule = TosnaSchedule(sg=sg, brix=brix, nitrogen=nitrogen, factor=factor, gallons=gallons, yan_ppm=yan_ppm,
+                             total_g=total_g, per_addition_g=per_addition, break_sg=break_sg, additions=additions)
+    logger.debug(f"tosna_schedule: sg={sg} brix={brix:.2f} {gallons:.3f} gal {nitrogen} -> YAN {yan_ppm:.1f} ppm, "
+                 f"{total_g:.2f} g total, 4 x {per_addition:.2f} g, break_sg={break_sg}")
+    return schedule
+
+
+def recipe_primary_yeast(recipe: Recipe) -> RecipeYeasts:
+    """The recipe's one (primary) yeast line - TOSNA uses it. ValidationError unless there's exactly one."""
+    lines = list(recipe.yeasts.select_related('yeast'))
+    if len(lines) != 1:
+        raise ValidationError(f"TOSNA needs the recipe to have one yeast (its primary yeast) - it has {len(lines)}.")
+    return lines[0]
+
+
+def apply_tosna_to_recipe(recipe: Recipe, schedule: TosnaSchedule, nitrogen: str, *, replace: bool) -> list:
+    """
+    Add the four TOSNA Fermaid O additions to the recipe (usage Primary, timed
+    from Pitch, notes "TOSNA 2.0 - n of 4 ..."), and save `nitrogen` as the
+    recipe yeast's demand. replace=True first removes the recipe's existing
+    Fermaid O rows (after the user saw them in the summary). One transaction;
+    ValidationError and nothing saved when Fermaid O or the Primary usage is
+    missing from the library (never auto-created) or the recipe hasn't exactly
+    one yeast.
+    """
+    if nitrogen not in Yeast.NITROGEN_FACTORS:
+        raise ValidationError("Choose the yeast's nitrogen demand: Low, Medium or High.")
+    line = recipe_primary_yeast(recipe)
+    fermaid = Adjunct.objects.filter(name__iexact=TOSNA_FERMAID).first()
+    if fermaid is None:
+        raise ValidationError(f"Add {TOSNA_FERMAID} to your adjuncts first - TOSNA 2.0 doses {TOSNA_FERMAID}.")
+    usage = AdjunctUsage.objects.filter(name__iexact=TOSNA_USAGE).first()
+    if usage is None:
+        raise ValidationError(f"Add a \"{TOSNA_USAGE}\" adjunct usage first.")
+
+    ureg = settings.DJANGO_PINT_UNIT_REGISTER
+    with transaction.atomic():
+        line.yeast.nitrogen_requirement = nitrogen
+        line.yeast.save(update_fields=['nitrogen_requirement'])
+        removed = 0
+        if replace:
+            old = list(recipe.adjuncts.filter(adjunct=fermaid))
+            recipe.adjuncts.remove(*old)
+            # Recipe lines are many-to-many; delete only the ones no other recipe uses.
+            removed, _ = RecipeAdjunct.objects.filter(pk__in=[r.pk for r in old], recipe__isnull=True).delete()
+        rows = []
+        for addition in schedule.additions:
+            row = RecipeAdjunct.objects.create(
+                adjunct=fermaid, intended_use=usage, amount=ureg.Quantity(round(addition.grams, 2), 'gram'),
+                time_to_add=addition.offset, recipe_notes=addition.note,
+            )
+            rows.append(row)
+        recipe.adjuncts.add(*rows)
+    logger.info(f"apply_tosna_to_recipe: recipe {recipe.pk} '{recipe}' +4 {TOSNA_FERMAID} doses of "
+                f"{schedule.per_addition_g:.2f} g ({'replaced ' + str(removed) if replace else 'added alongside'}); "
+                f"yeast '{line.yeast}' nitrogen={nitrogen}")
+    return rows
