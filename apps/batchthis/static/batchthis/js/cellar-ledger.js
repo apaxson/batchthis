@@ -155,7 +155,9 @@ CellarLedger.renderChart = function (svg, cfg) {
   var bandMin = cfg.bandMin, bandMax = cfg.bandMax;
   var hasBand = Array.isArray(bandMin) && Array.isArray(bandMax) && bandMin.length === values.length;
 
-  var W = 640, H = 176, padL = 44, padR = 12, padT = 12, padB = 22;
+  // Drawn for a half-width card (batch.html Readings: two charts per row), so labels stay
+  // readable when the SVG scales down to fit.
+  var W = 460, H = 210, padL = 52, padR = 12, padT = 14, padB = 28;
   var innerW = W - padL - padR, innerH = H - padT - padB;
 
   var min = Math.min.apply(null, values), max = Math.max.apply(null, values);
@@ -220,9 +222,14 @@ CellarLedger.renderChart = function (svg, cfg) {
     svg.appendChild(tlab);
   }
 
+  // At most ~5 date labels (always the first and last) so they don't run into each other.
+  var every = Math.max(1, Math.ceil(labels.length / 5));
   labels.forEach(function (lab, i) {
-    var anchor = single ? 'middle' : (i === 0 ? 'start' : (i === labels.length - 1 ? 'end' : 'middle'));
-    var lx = el('text', { x: x(i), y: H - 5, class: 'cl-x-label', 'text-anchor': anchor });
+    var last = i === labels.length - 1;
+    var tooCloseToLast = labels.length - 1 - i < every / 2;
+    if (!last && (i % every !== 0 || (i !== 0 && tooCloseToLast))) return;
+    var anchor = single ? 'middle' : (i === 0 ? 'start' : (last ? 'end' : 'middle'));
+    var lx = el('text', { x: x(i), y: H - 7, class: 'cl-x-label', 'text-anchor': anchor });
     lx.textContent = lab;
     svg.appendChild(lx);
   });

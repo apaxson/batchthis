@@ -86,6 +86,31 @@ def _build_series(batch, shortid, rule=None):
     return series
 
 
+def _reading_cards(percent_complete, third_break, gravity, ph, so2, temp, so2_min) -> list[dict]:
+    """The Readings tab's chart cards (includes/_instrument.html): SG, pH, Free SO2, Temperature."""
+    last = lambda series: series["values"][-1] if series["values"] else None   # noqa: E731
+    so2_now = last(so2)
+    return [
+        {'title': "Specific gravity", 'chart_id': "chart-sg", 'data_id': "sg-data", 'series': gravity,
+         # Equal start/end gravities have no % (Batch.percent_complete) - keep the dash, as before the tabs.
+         'current': f"{percent_complete}% to estimated FG" if percent_complete is not None
+                    else mark_safe("&mdash; to estimated FG"),
+         'note': f"1/3 sugar break (time for a nutrient addition) at {third_break:.3f} SG.",
+         'empty': "No gravity readings yet."},
+        {'title': "pH", 'chart_id': "chart-ph", 'data_id': "ph-data", 'series': ph,
+         'current': f"{last(ph):.2f}" if last(ph) is not None else "",
+         'note': "Shaded: the expected pH range for this stage.", 'empty': "No pH readings yet."},
+        {'title': "Free SO\u2082", 'chart_id': "chart-so2", 'data_id': "so2-data", 'series': so2,
+         'current': f"{so2_now:g} ppm" if so2_now is not None else "",
+         'fault': so2_min is not None and so2_now is not None and so2_now < so2_min,
+         'note': f"Keep it at {so2_min:g} ppm or more once the batch is in secondary." if so2_min is not None else "",
+         'empty': "No SO\u2082 readings yet."},
+        {'title': "Temperature", 'chart_id': "chart-temp", 'data_id': "temp-data", 'series': temp,
+         'current': f"{last(temp):g} \u00b0F" if last(temp) is not None else "",
+         'note': "Charted in \u00b0F, whatever unit it was entered in.", 'empty': "No temperature readings yet."},
+    ]
+
+
 def index(request):
     recent_batches = Batch.objects.all()[:5]
     total_batch_count = Batch.objects.all().count()
@@ -160,6 +185,7 @@ def batch(request, pk):
     gravityChart = _build_series(batch, 'specific-gravity')
     phChart = _build_series(batch, 'ph', rule=ph_rule)
     so2Chart = _build_series(batch, 'so2')
+    tempChart = _build_series(batch, 'temperature')
 
     vessel_stays = batch.vessel_durations()
     full_aging = batch.full_aging()
@@ -199,6 +225,9 @@ def batch(request, pk):
         "gravityChart": gravityChart,
         "phChart": phChart,
         "so2Chart": so2Chart,
+        # Readings tab: four equal chart cards, two per row (Aaron, 2026-10-07).
+        "reading_cards": _reading_cards(percent_complete, thirdSugarBreak, gravityChart, phChart, so2Chart, tempChart,
+                                        so2_rule.minimum if so2_rule else None),
         "currentGravity": current_gravity_value,
         "currentPh": phChart["values"][-1] if phChart["values"] else None,
         "currentSo2": so2Chart["values"][-1] if so2Chart["values"] else None,

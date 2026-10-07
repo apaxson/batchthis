@@ -448,6 +448,8 @@ button.nav-link { width: 100%; background: none; border: 0; font-family: inherit
 .cl-cols--aside-left { grid-template-columns: 1fr 2fr; }
 /* Two equal columns (e.g. the Import page's two upload panels). */
 .cl-cols--even { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+/* Notes beside a wider activity log (batch.html Activity tab). */
+.cl-cols--notes-log { grid-template-columns: minmax(0, 1fr) minmax(0, 1.6fr); }
 /* Main column on the left two-thirds, side column on the right third (e.g. the recipe page).
    minmax(0, ...) so a wide table scrolls inside .cl-table-scroll instead of widening its column. */
 .cl-cols--aside-right { grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); }
@@ -844,6 +846,20 @@ a.cl-next-item:hover { box-shadow: 0 0 0 1px var(--line); color: var(--ink); }
   margin-bottom: 14px;
 }
 .cl-instrument-grid .cl-instrument { margin-bottom: 0; }
+/* Two equal charts per row (batch.html Readings), cards stretched to the same height; one per row on phones. */
+.cl-instrument-grid--pairs { grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: stretch; }
+@media (max-width: 760px) { .cl-instrument-grid--pairs { grid-template-columns: minmax(0, 1fr); } }
+.cl-instrument-grid--pairs .cl-instrument { display: flex; flex-direction: column; }
+.cl-instrument-grid--pairs .cl-chart-wrap,
+.cl-instrument-grid--pairs .cl-chart-empty { margin-top: auto; }
+.cl-instrument-current--fault { color: var(--brick); }
+/* A chart with no readings yet: an empty frame the size of a chart, so the grid has no gaps. */
+.cl-chart-empty {
+  aspect-ratio: 460 / 210; display: grid; place-items: center; padding: 16px;
+  border: 1px dashed var(--line); border-radius: 12px;
+  font-size: 0.85rem; color: var(--ink-soft); text-align: center;
+}
+.cl-chart-empty p { margin: 0; }
 .cl-instrument-head {
   display: flex;
   justify-content: space-between;
@@ -863,9 +879,14 @@ a.cl-next-item:hover { box-shadow: 0 0 0 1px var(--line); color: var(--ink); }
 .cl-chart-wrap svg { width: 100%; height: auto; display: block; }
 
 .cl-grid-line { stroke: var(--line-soft); stroke-width: 1; }
-.cl-grid-label, .cl-x-label { fill: var(--ink-faint); font-size: 9.5px; font-family: var(--font-sans); }
+.cl-grid-label, .cl-x-label { fill: var(--ink-soft); font-size: 13px; font-family: var(--font-sans); }
 .cl-threshold-line { stroke: var(--brick); stroke-width: 1; stroke-dasharray: 3 3; opacity: 0.6; }
-.cl-threshold-label { fill: var(--brick); font-size: 9px; font-weight: 600; font-family: var(--font-sans); }
+.cl-threshold-label { fill: var(--brick); font-size: 12px; font-weight: 600; font-family: var(--font-sans); }
+/* Phones: one chart per row at ~320px - the chart scales down more, so the labels start bigger. */
+@media (max-width: 760px) {
+  .cl-grid-label, .cl-x-label { font-size: 17px; }
+  .cl-threshold-label { font-size: 15px; }
+}
 .cl-band-fill { fill: var(--ink-faint); opacity: 0.08; stroke: none; }
 .cl-band-line { fill: none; stroke: var(--ink-faint); stroke-width: 1; stroke-dasharray: 3 3; opacity: 0.7; }
 .cl-area-fill { opacity: 0.14; }

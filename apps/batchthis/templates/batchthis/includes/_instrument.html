@@ -1,0 +1,25 @@
+{% comment %}
+One chart card on the batch page's Readings tab - all four are the same shape (title +
+current value, a one-line note, the chart or an empty frame of the same size) so the 2 x 2
+grid has equal cards. Expects: title, chart_id, data_id, series (views._build_series),
+current, note, fault (bool), empty (the "no readings yet" text). Drawn by the page's script
+with CellarLedger.renderChart.
+{% endcomment %}
+<div class="cl-instrument">
+  <div class="cl-instrument-head">
+    <span class="cl-instrument-title">{{ title }}</span>
+    <span class="cl-instrument-current{% if fault %} cl-instrument-current--fault{% endif %}">{{ current|default:"&mdash;" }}</span>
+  </div>
+  <p class="cl-instrument-note">{{ note }}</p>
+  {% if series.values %}
+  <div class="cl-chart-wrap">
+    <svg class="cl-chart" id="{{ chart_id }}" role="img" aria-label="{{ title }} trend"></svg>
+    <div class="cl-chart-tooltip" hidden><span class="tt-date"></span><span class="tt-val"></span></div>
+  </div>
+  {{ series|json_script:data_id }}
+  {% else %}
+  <div class="cl-chart-empty">
+    <p>{{ empty }} <a href="{% url 'addDetailTest' batch.pk %}" data-cl-form-modal data-modal-title="Add test">Add one</a>.</p>
+  </div>
+  {% endif %}
+</div>

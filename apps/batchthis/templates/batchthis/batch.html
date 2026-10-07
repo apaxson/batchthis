@@ -125,73 +125,10 @@ default. Behavior: cellar-ledger.js "Tabs". Without JavaScript every panel shows
 </section><!-- /tab-overview -->
 
 <section class="cl-tab-panel" role="tabpanel" id="tab-readings" aria-labelledby="tab-link-readings" hidden>
-<div class="cl-instrument-grid">
-    <div class="cl-instrument">
-      <div class="cl-instrument-head">
-        <span class="cl-instrument-title">Specific gravity</span>
-        <span class="cl-instrument-current">{% if percentComplete is not None %}{{ percentComplete }}%{% else %}&mdash;{% endif %} to estimated FG</span>
-      </div>
-      {% if gravityChart.values %}
-        <p class="cl-instrument-note">1/3 sugar break (time for a nutrient addition) at {{ thirdSugarBreak }} SG.</p>
-        <div class="cl-chart-wrap">
-          <svg class="cl-chart" id="chart-sg" role="img" aria-label="Specific gravity trend"></svg>
-          <div class="cl-chart-tooltip" hidden><span class="tt-date"></span><span class="tt-val"></span></div>
-        </div>
-        {{ gravityChart|json_script:"sg-data" }}
-        <details class="cl-table-toggle">
-          <summary>View readings as a table</summary>
-          <table class="cl-reading-table">
-            <thead><tr><th>Date</th><th>SG</th></tr></thead>
-            <tbody>
-              {% for test in gravityTests %}<tr><td>{{ test.datetime|date:"m/d/y" }}</td><td>{{ test.display_value }}</td></tr>{% endfor %}
-            </tbody>
-          </table>
-        </details>
-      {% else %}
-        <p class="cl-empty">No gravity readings yet. <a href="{% url 'addDetailTest' batch.pk %}" data-cl-form-modal data-modal-title="Add test">Add one</a>.</p>
-      {% endif %}
-    </div>
-
-    <!-- pH -->
-    <div class="cl-instrument">
-      <div class="cl-instrument-head"><span class="cl-instrument-title">pH</span></div>
-      {% if phChart.values %}
-        <div class="cl-chart-wrap">
-          <svg class="cl-chart" id="chart-ph" role="img" aria-label="pH trend"></svg>
-          <div class="cl-chart-tooltip" hidden><span class="tt-date"></span><span class="tt-val"></span></div>
-        </div>
-        {{ phChart|json_script:"ph-data" }}
-        <details class="cl-table-toggle">
-          <summary>View readings as a table</summary>
-          <table class="cl-reading-table">
-            <thead><tr><th>Date</th><th>pH</th></tr></thead>
-            <tbody>{% for date, value in phChart.rows %}<tr><td>{{ date }}</td><td>{{ value }}</td></tr>{% endfor %}</tbody>
-          </table>
-        </details>
-      {% else %}
-        <p class="cl-empty">No pH readings yet. <a href="{% url 'addDetailTest' batch.pk %}" data-cl-form-modal data-modal-title="Add test">Add one</a>.</p>
-      {% endif %}
-    </div>
-
-    <!-- SO2 -->
-    <div class="cl-instrument">
-      <div class="cl-instrument-head"><span class="cl-instrument-title">Free SO&#8322;</span></div>
-      {% if so2Chart.values %}
-        <div class="cl-chart-wrap">
-          <svg class="cl-chart" id="chart-so2" role="img" aria-label="Free sulfur dioxide trend"></svg>
-          <div class="cl-chart-tooltip" hidden><span class="tt-date"></span><span class="tt-val"></span></div>
-        </div>
-        {{ so2Chart|json_script:"so2-data" }}
-        <details class="cl-table-toggle">
-          <summary>View readings as a table</summary>
-          <table class="cl-reading-table">
-            <thead><tr><th>Date</th><th>Free SO&#8322; (ppm)</th></tr></thead>
-            <tbody>{% for date, value in so2Chart.rows %}<tr><td>{{ date }}</td><td>{{ value }}</td></tr>{% endfor %}</tbody>
-          </table>
-        </details>
-      {% else %}
-        <p class="cl-empty">No SO&#8322; readings yet. <a href="{% url 'addDetailTest' batch.pk %}" data-cl-form-modal data-modal-title="Add test">Add one</a>.</p>
-      {% endif %}
+<div class="cl-instrument-grid cl-instrument-grid--pairs">
+  {% for card in reading_cards %}
+  {% include 'batchthis/includes/_instrument.html' with title=card.title chart_id=card.chart_id data_id=card.data_id series=card.series current=card.current note=card.note fault=card.fault empty=card.empty %}
+  {% endfor %}
 </div>
 
 <div class="cl-panel cl-panel--stacked">
@@ -283,7 +220,7 @@ default. Behavior: cellar-ledger.js "Tabs". Without JavaScript every panel shows
 </section><!-- /tab-details -->
 
 <section class="cl-tab-panel" role="tabpanel" id="tab-activity" aria-labelledby="tab-link-activity" hidden>
-<div class="cl-cols cl-cols--even">
+<div class="cl-cols cl-cols--notes-log">
   <div class="cl-panel">
     <div class="cl-section-head">
       <div class="cl-section-title">Notes</div>
@@ -332,6 +269,7 @@ default. Behavior: cellar-ledger.js "Tabs". Without JavaScript every panel shows
     }
     chart('chart-sg', 'sg-data', { decimals: 3, unit: '', color: 'var(--honey-line)' });
     chart('chart-ph', 'ph-data', { decimals: 2, unit: '', color: 'var(--must)', bandLabel: 'expected pH range' });
+    chart('chart-temp', 'temp-data', { decimals: 0, unit: ' °F', color: 'var(--rust)' });
     chart('chart-so2', 'so2-data', {
       decimals: 0, unit: ' ppm', color: 'var(--slate)',
       threshold: {{ so2Threshold|default:"null" }}, thresholdLabel: 'min. {{ so2Threshold|default:"10" }} ppm'

@@ -24,8 +24,21 @@ from ..factories import (
     RecipeFactory,
     VesselFactory,
 )
-from ..models import BatchNote, BatchNoteType, BatchStage, BatchTest, BatchTestType, RecipeAdjunct, RecipeFermentable, Vessel
-from ..services import add_activity_log, copy_recipe_ingredients_to_batch, transition_stage_event
+from ..models import (
+    BatchNote,
+    BatchNoteType,
+    BatchStage,
+    BatchTest,
+    BatchTestType,
+    RecipeAdjunct,
+    RecipeFermentable,
+    Vessel,
+)
+from ..services import (
+    add_activity_log,
+    copy_recipe_ingredients_to_batch,
+    transition_stage_event,
+)
 
 TABS = ("overview", "readings", "details", "activity")
 
@@ -179,3 +192,45 @@ def test_no_template_comment_leaks_onto_the_page(client, batch):
     page = _page(client, batch)
 
     assert "{#" not in page and "#}" not in page
+
+
+# ---------- Readings: four equal chart cards, two per row (Aaron, 2026-10-07) ----------
+
+@pytest.mark.django_db
+def test_readings_has_four_chart_cards_including_temperature(client, batch):
+    BatchTest.objects.create(batch=batch, datetime=timezone.now() - datetime.timedelta(days=1), value="64 °F",
+                             type=BatchTestType.objects.get(shortid="temperature"))
+
+    readings, _hidden = _panel(_page(client, batch), "readings")
+
+    assert 'cl-instrument-grid--pairs' in readings
+    titles = re.findall(r'<span class="cl-instrument-title">([^<]+)</span>', readings)
+    assert titles == ["Specific gravity", "pH", "Free SO₂", "Temperature"]
+    assert 'id="chart-temp"' in readings and "64 °F" in _text(readings)
+
+
+@pytest.mark.django_db
+def test_a_chart_with_no_readings_keeps_its_card_as_an_empty_frame(client, batch):
+    readings, _hidden = _panel(_page(client, batch), "readings")
+
+    assert readings.count('class="cl-instrument"') == 4
+    assert readings.count('class="cl-chart-empty"') == 3          # pH, SO2, temperature have no readings
+    assert "No temperature readings yet." in _text(readings)
+
+
+@pytest.mark.django_db
+def test_low_so2_shows_its_current_value_in_red(client, batch):
+    BatchTest.objects.create(batch=batch, datetime=timezone.now(), value="6 ppm", type=BatchTestType.objects.get(shortid="so2"))
+
+    readings, _hidden = _panel(_page(client, batch), "readings")
+
+    assert re.search(r'cl-instrument-current cl-instrument-current--fault">6 ppm<', readings)
+
+
+@pytest.mark.django_db
+def test_the_tests_table_is_outside_the_chart_grid(client, batch):
+    readings, _hidden = _panel(_page(client, batch), "readings")
+
+    grid_end = readings.index('class="cl-section-title">Tests')
+    # Everything before the Tests title is closed except the Tests panel, its head and its title div.
+    assert readings[:grid_end].count("<div") == readings[:grid_end].count("</div>") + 3
