@@ -28,7 +28,7 @@ from apps.batchthis.services import (
     plan_totals, save_workflow_template, delete_workflow_template, save_recipe_plan, clear_recipe_plan,
     copy_plan_to_batch, copy_recipe_ingredients_to_batch, recipe_scale_factor, quantity_label, save_batch_plan,
     batch_recipe_locked_reason, save_batch_recipe, days_label, quantity_input, batch_plan_locked_reason,
-    plan_progress, batch_schedule_progress, allowed_next_stages, save_batch_edit, set_recipe_pairings,
+    plan_progress, batch_schedule_progress, batch_next_steps, allowed_next_stages, save_batch_edit, set_recipe_pairings,
 )
 from apps.batchthis.lib.faults import get_active_flags, get_rule_for, StagedFaultRule
 from django.contrib.auth.decorators import login_required
@@ -182,6 +182,9 @@ def batch(request, pk):
                                        plan_rows=progress, full_aging=full_aging,
                                        notes=list(batch.notes.select_related('notetype')),
                                        tests=list(batch.tests.select_related('type')), flags=flags)
+    # "What's next": the plan's next step and the batch recipe's next timed addition.
+    next_steps = batch_next_steps(progress, list(batch.ingredients.select_related('adjunct')),
+                                  pitched_at=schedule.started_at, completed=completed_event is not None)
 
     current_gravity_value = batch.current_gravity()
     estABV = round(Utils.potentialABV(startSG=batch.startingGravity.magnitude, endSG=current_gravity_value)[0], 1)
@@ -212,6 +215,7 @@ def batch(request, pk):
         "current_state": last_event.stage.to_state if last_event else None,
         "completed_event": completed_event,
         "schedule": schedule,
+        "next_steps": next_steps,
         "vessel_stays": vessel_stays,
         "current_stay": vessel_stays[-1] if vessel_stays and vessel_stays[-1].is_open else None,
         "full_aging": full_aging,

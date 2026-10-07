@@ -51,6 +51,23 @@
   {% endfor %}
 {% endif %}
 
+{# What's next (UI item 2): the plan's next step and the next timed addition (services.batch_next_steps). #}
+{% if next_steps %}
+<div class="cl-next" role="note" aria-label="What's next">
+  <span class="cl-next-label">Next</span>
+  {% with s=next_steps.step %}{% if s %}
+  {% if batch.active %}<a class="cl-next-item{% if s.overdue %} cl-next-item--overdue{% endif %}" href="{% url 'addDetailStage' batch.pk %}" title="Log it with Stage transition">{% else %}<span class="cl-next-item">{% endif %}
+    <b>{{ s.name }}</b>{% if s.due %} <span class="cl-num">~{{ s.due|date:"M j" }}</span>{% endif %}{% if s.when %} <span class="cl-next-when">{{ s.when }}</span>{% endif %}
+  {% if batch.active %}</a>{% else %}</span>{% endif %}
+  {% endif %}{% endwith %}
+  {% with a=next_steps.addition %}{% if a %}
+  <span class="cl-next-item">
+    <b>{{ a.name }}{% if a.amount %} {{ a.amount }}{% endif %}</b>{% if a.due %} <span class="cl-num">{{ a.due|date:"M j, g:i A" }}</span>{% endif %} <span class="cl-next-when">{{ a.when }}</span>
+  </span>
+  {% endif %}{% endwith %}
+</div>
+{% endif %}
+
 <div class="cl-readouts">
   <div class="cl-readout">
     <div class="cl-readout-label">Specific gravity</div>

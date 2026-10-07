@@ -1664,3 +1664,79 @@ def apply_tosna_to_recipe(recipe: Recipe, schedule: TosnaSchedule, nitrogen: str
                 f"{schedule.per_addition_g:.2f} g ({'replaced ' + str(removed) if replace else 'added alongside'}); "
                 f"yeast '{line.yeast}' nitrogen={nitrogen}")
     return rows
+
+
+# ---------- What's next on a batch (UI item 2, Aaron 2026-10-07) ----------
+
+@dataclass(frozen=True)
+class NextItem:
+    name: str
+    due: Optional[datetime]       # None = not timed yet (e.g. before Pitch)
+    when: str                     # "in 21 days", "in 6 h", "overdue by 3 days", "Pitch + 24 h", or ""
+    overdue: bool = False
+    amount: str = ""              # additions: "3.07 g"
+
+
+@dataclass(frozen=True)
+class NextSteps:
+    step: Optional[NextItem]
+    addition: Optional[NextItem]
+
+    def __bool__(self) -> bool:
+        return self.step is not None or self.addition is not None
+
+
+def _relative(delta: timedelta) -> str:
+    """"in 6 h" / "in 21 days" ahead, "overdue by 3 days" behind - hours under two days."""
+    hours = abs(delta.total_seconds()) / 3600
+    if hours < 48:
+        span = f"{round(hours)} h"
+    else:
+        days = round(hours / 24)
+        span = f"{days} day" if days == 1 else f"{days} days"
+    return f"in {span}" if delta.total_seconds() >= 0 else f"overdue by {span}"
+
+
+def batch_next_steps(plan_rows, ingredients, *, pitched_at: Optional[datetime], completed: bool,
+                     now: Optional[datetime] = None) -> NextSteps:
+    """
+    The batch page's "what's next" line:
+      step - the plan's next step not yet logged (plan_progress rows); expected when
+             the current step has run its planned time - overdue once that's passed.
+             Before Pitch it's Pitch (plan or not). None after Pitch without a plan,
+             or when nothing's left.
+      addition - the batch recipe's next timed adjunct (time to add after Pitch) still
+             ahead. Additions aren't marked done yet (SCHEDULED ADDITIONS), so one whose
+             time has passed drops off rather than showing as overdue.
+    Nothing once the batch is completed. No queries of its own.
+    """
+    now = now or timezone.now()
+    if completed:
+        return NextSteps(None, None)
+    rows = list(plan_rows or [])
+    step = None
+    upcoming = next((row for row in rows if row.status == 'upcoming'), None)
+    if pitched_at is None:
+        step = NextItem(rows[0].stage.name if rows else "Pitch", None, "")   # nothing happens before Pitch
+    elif upcoming is not None:
+        current = next((row for row in rows if row.status == 'current'), None)
+        due = None
+        if current is not None and current.event is not None and current.planned_days:
+            due = current.event.timestamp + timedelta(days=current.planned_days)
+        step = NextItem(upcoming.stage.name, due, _relative(due - now) if due else "",
+                        overdue=bool(due and due < now))
+
+    timed = [row for row in ingredients if row.kind == BatchIngredient.KIND_ADJUNCT and row.time_to_add is not None]
+    addition = None
+    if pitched_at is None:
+        first = min(timed, key=lambda row: _quantity(row.time_to_add).to('hour').magnitude, default=None)
+        if first is not None:
+            addition = NextItem(first.name, None, time_to_add_label(first.time_to_add), amount=quantity_label(first.amount))
+    else:
+        ahead = sorted(((pitched_at + timedelta(hours=_quantity(row.time_to_add).to('hour').magnitude), row)
+                        for row in timed), key=lambda pair: pair[0])
+        due, row = next(((d, r) for d, r in ahead if d >= now), (None, None))
+        if row is not None:
+            addition = NextItem(row.name, due, _relative(due - now), amount=quantity_label(row.amount))
+    logger.debug(f"batch_next_steps: step={step} addition={addition}")
+    return NextSteps(step, addition)

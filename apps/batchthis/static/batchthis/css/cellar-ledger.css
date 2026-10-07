@@ -492,6 +492,24 @@ button.nav-link { width: 100%; background: none; border: 0; font-family: inherit
 .cl-kv-value { font-weight: 600; }
 
 
+/* ---------- What's next (batch.html, above the readouts) ---------- */
+.cl-next {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px;
+  margin-bottom: 18px; padding: 10px 14px;
+  background: var(--paper-raised); border-radius: var(--radius); box-shadow: var(--shadow);
+  font-size: 0.86rem;
+}
+.cl-next-label { font-size: 0.7rem; font-weight: 600; letter-spacing: 0.07em; text-transform: uppercase; color: var(--ink-faint); }
+.cl-next-item {
+  display: inline-flex; flex-wrap: wrap; align-items: baseline; gap: 6px;
+  padding: 4px 10px; border-radius: 99px; background: var(--paper); color: var(--ink); text-decoration: none;
+}
+a.cl-next-item:hover { box-shadow: 0 0 0 1px var(--line); color: var(--ink); }
+.cl-next-item b { font-weight: 600; }
+.cl-next-when { color: var(--ink-soft); }
+.cl-next-item--overdue { background: var(--brick-soft); }
+.cl-next-item--overdue .cl-next-when { color: var(--brick); font-weight: 600; }
+
 /* ---------- Flagged notifications ---------- */
 .cl-flag {
   display: flex;
