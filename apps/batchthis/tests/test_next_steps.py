@@ -5,6 +5,7 @@ recipe. Additions aren't tracked as done yet (SCHEDULED ADDITIONS), so only one 
 ahead is shown.
 """
 import datetime
+import re
 
 import pytest
 from django.contrib.auth import get_user_model
@@ -181,7 +182,7 @@ def test_batch_page_shows_whats_next_linked_to_stage_transition():
 
     page = _page(batch)
 
-    strip = page[page.index('class="cl-next"'):page.index('class="cl-readouts"')]
+    strip = re.search(r'<div class="cl-next".*?</div>', page, re.DOTALL).group(0)   # wherever it sits on the page
     assert "Next" in strip and "Racking" in strip and "Fermaid O" in strip and "5 g" in strip
     assert reverse("addDetailStage", kwargs={"pk": batch.pk}) in strip
 

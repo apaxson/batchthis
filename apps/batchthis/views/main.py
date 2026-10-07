@@ -175,18 +175,22 @@ def batch(request, pk):
     plan_locked = batch_plan_locked_reason(batch)
     completed_event = last_event if last_event and last_event.stage.to_state == BatchStage.STATE_COMPLETED else None
     flags = get_active_flags([batch])
+    all_tests = list(batch.tests.select_related('type'))
+    all_notes = list(batch.notes.select_related('notetype').order_by('-date'))
+    activity_entries = list(batch.activity.order_by('-datetime'))
     # The progress bar (% of plan, expected total, forecast; vessels, steps; notes, readings and
     # system flags at their dates) from what this view loads - two queries for notes and readings.
     schedule = batch_schedule_progress(vessel_stays, plan['steps'],
                                        completed_at=completed_event.timestamp if completed_event else None,
                                        plan_rows=progress, full_aging=full_aging,
                                        notes=list(batch.notes.select_related('notetype')),
-                                       tests=list(batch.tests.select_related('type')), flags=flags)
+                                       tests=all_tests, flags=flags)
     # "What's next": the plan's next step and the batch recipe's next timed addition.
     next_steps = batch_next_steps(progress, list(batch.ingredients.select_related('adjunct')),
                                   pitched_at=schedule.started_at, completed=completed_event is not None)
 
-    current_gravity_value = batch.current_gravity()
+    current_gravity_test = batch.current_gravity_test()
+    current_gravity_value = current_gravity_test.chart_value
     estABV = round(Utils.potentialABV(startSG=batch.startingGravity.magnitude, endSG=current_gravity_value)[0], 1)
 
     context = {
@@ -216,6 +220,17 @@ def batch(request, pk):
         "completed_event": completed_event,
         "schedule": schedule,
         "next_steps": next_steps,
+        # Tabs (UI item 3): last-recorded dates under the readouts; every test, note and log entry.
+        "readout_tests": {
+            'sg': current_gravity_test,
+            'ph': max((t for t in all_tests if t.type.shortid == 'ph'), key=lambda t: t.datetime, default=None),
+            'so2': max((t for t in all_tests if t.type.shortid == 'so2'), key=lambda t: t.datetime, default=None),
+        },
+        "all_tests": sorted(all_tests, key=lambda t: t.datetime, reverse=True),
+        "all_notes": all_notes,
+        "activity_entries": activity_entries,
+        "activity_count": len(all_notes) + len(activity_entries),
+        **_batch_ingredients_context(batch),
         "vessel_stays": vessel_stays,
         "current_stay": vessel_stays[-1] if vessel_stays and vessel_stays[-1].is_open else None,
         "full_aging": full_aging,
@@ -227,6 +242,21 @@ def batch(request, pk):
     return render(request, 'batchthis/batch.html', context=context)
 
 
+def _batch_ingredients_context(batch: Batch) -> dict:
+    """The batch recipe's rows by kind + its scale - shared by the batch page's Details tab and the batch recipe page."""
+    ingredients = list(batch.ingredients.select_related('fermentable__type', 'adjunct__type', 'yeast', 'intended_use'))
+    by_kind = {kind: [i for i in ingredients if i.kind == kind] for kind, _label in BatchIngredient.KIND_CHOICES}
+    return {
+        'fermentables': by_kind[BatchIngredient.KIND_FERMENTABLE],
+        'adjuncts': by_kind[BatchIngredient.KIND_ADJUNCT],
+        'yeasts': by_kind[BatchIngredient.KIND_YEAST],
+        'has_ingredients': bool(ingredients),
+        'factor': recipe_scale_factor(batch.recipe, batch.size) if batch.recipe else None,
+        'recipe_size': quantity_label(batch.recipe.batchSize) if batch.recipe else "",
+        'batch_size': quantity_label(batch.size),
+    }
+
+
 @login_required
 @require_safe
 def batchRecipe(request, pk):
@@ -236,22 +266,8 @@ def batchRecipe(request, pk):
     amounts. Not a Recipe - it never appears under recipes/.
     """
     batch = get_object_or_404(Batch.objects.select_related('recipe'), pk=pk)
-    ingredients = list(batch.ingredients.select_related(
-        'fermentable__type', 'adjunct__type', 'yeast', 'intended_use'))
-    by_kind = {kind: [i for i in ingredients if i.kind == kind] for kind, _label in BatchIngredient.KIND_CHOICES}
-    factor = recipe_scale_factor(batch.recipe, batch.size) if batch.recipe else None
-    logger.debug("batchRecipe: batch=%s %d ingredients, factor=%s", pk, len(ingredients), factor)
-    context = {
-        'batch': batch,
-        'fermentables': by_kind[BatchIngredient.KIND_FERMENTABLE],
-        'adjuncts': by_kind[BatchIngredient.KIND_ADJUNCT],
-        'yeasts': by_kind[BatchIngredient.KIND_YEAST],
-        'has_ingredients': bool(ingredients),
-        'factor': factor,
-        'recipe_size': quantity_label(batch.recipe.batchSize) if batch.recipe else "",
-        'batch_size': quantity_label(batch.size),
-        'locked': batch_recipe_locked_reason(batch),
-    }
+    context = {'batch': batch, **_batch_ingredients_context(batch), 'locked': batch_recipe_locked_reason(batch)}
+    logger.debug("batchRecipe: batch=%s factor=%s has_ingredients=%s", pk, context['factor'], context['has_ingredients'])
     return render(request, 'batchthis/batchRecipe.html', context=context)
 
 

@@ -461,6 +461,8 @@ button.nav-link { width: 100%; background: none; border: 0; font-family: inherit
   padding: 20px 22px 22px;
 }
 .cl-panel + .cl-panel { margin-top: 14px; }
+/* ...but not side by side in a grid of columns (e.g. batch.html's Activity tab). */
+.cl-cols > .cl-panel + .cl-panel { margin-top: 0; }
 /* A full-width panel stacked above more content, e.g. the batch page's Stage timeline and Plan. */
 .cl-panel--stacked { margin-bottom: 16px; }
 /* A table ending a panel (e.g. recipe page "Batches brewed") - the panel's padding is the bottom space. */
@@ -491,6 +493,31 @@ button.nav-link { width: 100%; background: none; border: 0; font-family: inherit
 .cl-kv-label { color: var(--ink-soft); }
 .cl-kv-value { font-weight: 600; }
 
+
+/* ---------- Tabs (batch.html; behavior in cellar-ledger.js "Tabs") ---------- */
+.cl-tabs { display: flex; gap: 4px; margin: 4px 0 18px; border-bottom: 1px solid var(--line); overflow-x: auto; }
+.cl-tab {
+  padding: 10px 14px 12px; margin-bottom: -1px;
+  border-bottom: 2px solid transparent;
+  font-size: 0.92rem; font-weight: 600; color: var(--ink-soft); text-decoration: none; white-space: nowrap;
+}
+.cl-tab:hover { color: var(--ink); text-decoration: none; }
+.cl-tab[aria-selected="true"] { color: var(--ink); border-bottom-color: var(--honey-line); }
+.cl-tab:focus-visible { outline-offset: -2px; border-radius: 6px; }
+.cl-tab-count { margin-left: 5px; font-weight: 500; color: var(--ink-faint); font-variant-numeric: tabular-nums; }
+.cl-tab-panel > * + * { margin-top: 16px; }
+.cl-tab-panel > .cl-panel--stacked { margin-bottom: 0; }
+
+/* A readout's last-recorded date, under the value (batch.html Overview). */
+.cl-readout-date { margin-top: 2px; font-size: 0.72rem; color: var(--ink-faint); }
+
+/* Notes list (batch.html Activity): one card per note, its type as a small tag. */
+.cl-note { padding: 10px 12px; border-radius: 12px; background: var(--paper); }
+.cl-note + .cl-note { margin-top: 10px; }
+.cl-note-meta { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 4px; font-size: 0.75rem; color: var(--ink-faint); }
+.cl-note-type { padding: 1px 8px; border-radius: 99px; font-weight: 600; background: var(--line-soft); color: var(--ink-soft); }
+.cl-note-type--fermentation-note { background: var(--honey-soft); color: var(--honey-ink); }
+.cl-note-type--tasting-note { background: var(--brick-soft); color: var(--plum); }
 
 /* ---------- What's next (batch.html, above the readouts) ---------- */
 .cl-next {

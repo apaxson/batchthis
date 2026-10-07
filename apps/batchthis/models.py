@@ -857,11 +857,15 @@ class Batch(models.Model):
         logger.debug(f"full_aging: batch={self.pk} {span}")
         return span
 
-    def current_gravity(self):
+    def current_gravity_test(self) -> "BatchTest | None":
+        """The gravity reading the batch page shows as current (and dates its readout by)."""
         gravity_tests = self.tests.filter(type__shortid='specific-gravity')
         if len(gravity_tests) > 1:
-            return gravity_tests.last().chart_value
-        return gravity_tests[0].chart_value
+            return gravity_tests.last()
+        return gravity_tests[0] if gravity_tests else None
+
+    def current_gravity(self):
+        return self.current_gravity_test().chart_value
 
 
     def percent_complete(self) -> int | None:

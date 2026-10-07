@@ -390,15 +390,82 @@ CellarLedger.renderChart = function (svg, cfg) {
 })(window.jQuery);
 
 // Batch progress bar (includes/_progress_bar.html): on narrow screens the bar scrolls
-// sideways, and today is usually off to the right - bring today's marker into view on load.
-document.addEventListener('DOMContentLoaded', function () {
-  document.querySelectorAll('.cl-progress-scroll').forEach(function (scroller) {
-    var today = scroller.querySelector('.cl-progress-marker');
-    if (!today || scroller.scrollWidth <= scroller.clientWidth) return;
-    var offset = today.getBoundingClientRect().left - scroller.getBoundingClientRect().left;
-    scroller.scrollLeft = Math.max(0, scroller.scrollLeft + offset - scroller.clientWidth / 2);
-  });
-});
+// sideways, and today is usually off to the right - bring today's marker into view on load,
+// and again when a hidden tab holding it is shown (a hidden bar can't be measured).
+(function () {
+  function scrollToToday(root) {
+    root.querySelectorAll('.cl-progress-scroll').forEach(function (scroller) {
+      var today = scroller.querySelector('.cl-progress-marker');
+      if (!today || scroller.scrollWidth <= scroller.clientWidth) return;
+      var offset = today.getBoundingClientRect().left - scroller.getBoundingClientRect().left;
+      scroller.scrollLeft = Math.max(0, scroller.scrollLeft + offset - scroller.clientWidth / 2);
+    });
+  }
+  document.addEventListener('DOMContentLoaded', function () { scrollToToday(document); });
+  document.addEventListener('cl:tab-shown', function (event) { scrollToToday(event.target); });
+})();
+
+// Tabs ([data-cl-tabs], e.g. batch.html): links with role="tab", href="#name" and aria-controls
+// naming their panel. The open tab is part of the page address (#readings); no hash = the first
+// tab (Overview). Clicking a tab pushes the address, so Back/Forward move between tabs, and a
+// hash naming something INSIDE a panel (e.g. #chart-sg) opens that panel. Arrow keys / Home /
+// End move between tabs. The server renders every panel but the first hidden; a <noscript>
+// style shows them all without JavaScript. Fires "cl:tab-shown" on the panel it shows.
+// Runs as soon as this script loads (end of <body>), so a #hash tab opens without a flash.
+(function () {
+  function initTabs(nav) {
+    var tabs = Array.prototype.slice.call(nav.querySelectorAll('[role="tab"]'));
+    if (!tabs.length) return;
+    function panelOf(tab) { return document.getElementById(tab.getAttribute('aria-controls')); }
+    function tabFor(hash) {
+      var name = decodeURIComponent((hash || '').replace(/^#/, ''));
+      if (!name) return tabs[0];
+      var match = tabs.filter(function (t) { return t.getAttribute('data-tab') === name; })[0];
+      if (match) return match;
+      var target = document.getElementById(name);
+      return target ? tabs.filter(function (t) { return panelOf(t) && panelOf(t).contains(target); })[0] || null : null;
+    }
+    function select(tab, focus) {
+      tabs.forEach(function (t) {
+        var on = t === tab;
+        t.setAttribute('aria-selected', on ? 'true' : 'false');
+        t.tabIndex = on ? 0 : -1;
+        if (panelOf(t)) panelOf(t).hidden = !on;
+      });
+      if (focus) tab.focus();
+      if (panelOf(tab)) panelOf(tab).dispatchEvent(new CustomEvent('cl:tab-shown', { bubbles: true, detail: { tab: tab.getAttribute('data-tab') } }));
+    }
+    function addressFor(tab) {
+      return tab === tabs[0] ? location.pathname + location.search : '#' + tab.getAttribute('data-tab');
+    }
+    tabs.forEach(function (tab, i) {
+      tab.addEventListener('click', function (event) {
+        event.preventDefault();
+        if (tab.getAttribute('aria-selected') === 'true') return;
+        history.pushState(null, '', addressFor(tab));
+        select(tab, false);
+      });
+      tab.addEventListener('keydown', function (event) {
+        var next = event.key === 'ArrowRight' ? tabs[(i + 1) % tabs.length]
+          : event.key === 'ArrowLeft' ? tabs[(i - 1 + tabs.length) % tabs.length]
+          : event.key === 'Home' ? tabs[0] : event.key === 'End' ? tabs[tabs.length - 1] : null;
+        if (!next) return;
+        event.preventDefault();
+        history.replaceState(null, '', addressFor(next));
+        select(next, true);
+      });
+    });
+    function fromAddress() {
+      var tab = tabFor(location.hash);
+      if (tab) select(tab, false);
+      else if (window.console) console.debug('[tabs] no tab for address', location.hash);
+    }
+    window.addEventListener('popstate', fromAddress);
+    window.addEventListener('hashchange', fromAddress);
+    fromAddress();
+  }
+  document.querySelectorAll('[data-cl-tabs]').forEach(initTabs);
+})();
 
 // Actions menus ([data-cl-menu], e.g. the batch page's ellipsis menu) - WAI-ARIA menu
 // button: click/Enter/Space or ArrowDown opens and focuses the first item (ArrowUp the

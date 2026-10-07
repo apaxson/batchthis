@@ -51,6 +51,50 @@
   {% endfor %}
 {% endif %}
 
+{% comment %}
+Tabs (UI item 3, Aaron 2026-10-07): each is part of the page address (#readings ...); Overview is the
+default. Behavior: cellar-ledger.js "Tabs". Without JavaScript every panel shows, one after another.
+{% endcomment %}
+<nav class="cl-tabs" role="tablist" aria-label="Batch sections" data-cl-tabs>
+  <a class="cl-tab" role="tab" id="tab-link-overview" href="#overview" aria-controls="tab-overview" aria-selected="true" data-tab="overview">Overview</a>
+  <a class="cl-tab" role="tab" id="tab-link-readings" href="#readings" aria-controls="tab-readings" aria-selected="false" tabindex="-1" data-tab="readings">Readings<span class="cl-tab-count">{{ all_tests|length }}</span></a>
+  <a class="cl-tab" role="tab" id="tab-link-details" href="#details" aria-controls="tab-details" aria-selected="false" tabindex="-1" data-tab="details">Details</a>
+  <a class="cl-tab" role="tab" id="tab-link-activity" href="#activity" aria-controls="tab-activity" aria-selected="false" tabindex="-1" data-tab="activity">Activity<span class="cl-tab-count">{{ activity_count }}</span></a>
+</nav>
+<noscript><style>[role="tabpanel"][hidden] { display: block !important; }</style></noscript>
+
+<section class="cl-tab-panel" role="tabpanel" id="tab-overview" aria-labelledby="tab-link-overview">
+<div class="cl-readouts">
+  {% with t=readout_tests.sg %}
+  <div class="cl-readout">
+    <div class="cl-readout-label">Specific gravity</div>
+    <div class="cl-readout-value">{{ currentGravity|floatformat:3 }}</div>
+    <div class="cl-readout-date cl-num">{% if t %}{{ t.datetime|date:"M j, g:i A" }}{% else %}No reading yet{% endif %}</div>
+  </div>
+  {% endwith %}
+  {% with t=readout_tests.ph %}
+  <div class="cl-readout">
+    <div class="cl-readout-label">pH</div>
+    <div class="cl-readout-value">{% if currentPh != None %}{{ currentPh|floatformat:2 }}{% else %}&mdash;{% endif %}</div>
+    <div class="cl-readout-date cl-num">{% if t %}{{ t.datetime|date:"M j, g:i A" }}{% else %}No reading yet{% endif %}</div>
+  </div>
+  {% endwith %}
+  {% with t=readout_tests.so2 %}
+  <div class="cl-readout">
+    <div class="cl-readout-label">Free SO&#8322;</div>
+    <div class="cl-readout-value{% if so2Threshold != None and currentSo2 != None and currentSo2 < so2Threshold %} cl-readout--fault{% endif %}">
+      {% if currentSo2 != None %}{{ currentSo2|floatformat:0 }} <small>ppm</small>{% else %}&mdash;{% endif %}
+    </div>
+    <div class="cl-readout-date cl-num">{% if t %}{{ t.datetime|date:"M j, g:i A" }}{% else %}No reading yet{% endif %}</div>
+  </div>
+  {% endwith %}
+  <div class="cl-readout">
+    <div class="cl-readout-label">Est. ABV</div>
+    <div class="cl-readout-value">{{ estABV }} <small>%</small></div>
+    <div class="cl-readout-date cl-num">{% if readout_tests.sg %}from SG on {{ readout_tests.sg.datetime|date:"M j" }}{% else %}No reading yet{% endif %}</div>
+  </div>
+</div>
+
 {# What's next (UI item 2): the plan's next step and the next timed addition (services.batch_next_steps). #}
 {% if next_steps %}
 <div class="cl-next" role="note" aria-label="What's next">
@@ -68,26 +112,6 @@
 </div>
 {% endif %}
 
-<div class="cl-readouts">
-  <div class="cl-readout">
-    <div class="cl-readout-label">Specific gravity</div>
-    <div class="cl-readout-value">{{ currentGravity|floatformat:3 }}</div>
-  </div>
-  <div class="cl-readout">
-    <div class="cl-readout-label">pH</div>
-    <div class="cl-readout-value">{% if currentPh != None %}{{ currentPh|floatformat:2 }}{% else %}&mdash;{% endif %}</div>
-  </div>
-  <div class="cl-readout">
-    <div class="cl-readout-label">Free SO&#8322;</div>
-    <div class="cl-readout-value{% if so2Threshold != None and currentSo2 != None and currentSo2 < so2Threshold %} cl-readout--fault{% endif %}">
-      {% if currentSo2 != None %}{{ currentSo2|floatformat:0 }} <small>ppm</small>{% else %}&mdash;{% endif %}
-    </div>
-  </div>
-  <div class="cl-readout">
-    <div class="cl-readout-label">Est. ABV</div>
-    <div class="cl-readout-value">{{ estABV }} <small>%</small></div>
-  </div>
-</div>
 
 <!-- Stage timeline -->
 <div class="cl-panel cl-panel--stacked">
@@ -98,84 +122,10 @@
 {% include 'batchthis/includes/_progress_bar.html' %}
 {% if not schedule.segments %}<p class="cl-progress-empty">No stages logged yet. Pitch the batch with a Stage transition to start the timeline.</p>{% endif %}
 </div>
+</section><!-- /tab-overview -->
 
-{% if plan.steps %}
-<div class="cl-panel cl-panel--stacked">
-<section class="cl-plan">
-  <div class="cl-section-head">
-    <div class="cl-section-title">Plan</div>
-    <div class="cl-section-note">
-      {% if batch.workflow_template %}Copied from {{ batch.workflow_template.name }} &middot; {% endif %}{% if plan_editable %}<a href="{% url 'editBatchPlan' batch.pk %}">Edit plan</a>{% else %}Locked after Pitch{% endif %}
-    </div>
-  </div>
-  {# Collapsed to one line (the current step); open for the full table. #}
-  <details class="cl-table-toggle cl-plan-toggle">
-    <summary>{% if plan_vs_actual %}{{ plan_vs_actual.summary|join:" · " }}{% else %}Not started{% endif %}</summary>
-    {% if plan_vs_actual %}
-    {% include 'batchthis/includes/plan_progress.html' with progress=plan_vs_actual %}
-    {% else %}
-    {% include 'batchthis/includes/plan_steps.html' with empty_message="" %}
-    {% endif %}
-  </details>
-</section>
-</div>
-{% endif %}
-
-<div class="cl-cols cl-cols--aside-left">
-  <div>
-    <div class="cl-panel">
-      <div class="cl-section-head">
-        <div class="cl-section-title">Current Vessel</div>
-        {% if batch.active and not batch.is_packaged %}<div class="cl-section-note"><a href="{% url 'transferBatch' batch.pk %}" title="Only for moves outside the normal workflow - use Stage transition for racking and filtering">Ad-hoc transfer</a></div>{% endif %}
-      </div>
-      {% with v=batch.current_vessel %}
-      {% if v %}
-        <div class="cl-kv-row"><span class="cl-kv-label">Vessel</span><span class="cl-kv-value"><a href="{% url 'vessel' v.pk %}">{{ v.name }}</a></span></div>
-        <div class="cl-kv-row"><span class="cl-kv-label">Status</span><span class="cl-kv-value">{{ v.status }}</span></div>
-        <div class="cl-kv-row"><span class="cl-kv-label">Capacity</span><span class="cl-kv-value">{{ v.capacity|amount }}</span></div>
-        {% if v.fill %}
-        <div class="cl-kv-row"><span class="cl-kv-label">Fill</span><span class="cl-kv-value">{{ v.fill|amount }}</span></div>
-        {% endif %}
-        <div class="cl-kv-row"><span class="cl-kv-label">Intended use</span><span class="cl-kv-value">{{ v.intended_use }}</span></div>
-      {% elif batch.is_packaged %}
-        <div class="cl-kv-row"><span class="cl-kv-label">Packaged in</span><span class="cl-kv-value">{{ batch.get_packaging_display }}</span></div>
-        <div class="cl-empty">The batch has left vessel tracking.</div>
-      {% else %}
-        <div class="cl-empty">No vessel assigned.</div>
-      {% endif %}
-      {% endwith %}
-    </div>
-
-    <div class="cl-panel">
-      <div class="cl-section-head"><div class="cl-section-title">Fermentation log</div><div class="cl-section-note"><a href="{% url 'addDetailNoteType' batch.pk 'Fermentation Note' %}" data-cl-form-modal data-modal-title="Add fermentation log entry">Add entry</a></div></div>
-      {% if fermnotes %}
-        {% for note in fermnotes %}
-        <div style="margin-bottom:10px;">
-          <div class="cl-num" style="font-size:0.8rem;color:var(--ink-soft);">{{ note.date|date:"Y-m-d H:i A" }}</div>
-          <div>{{ note.text }}</div>
-        </div>
-        {% endfor %}
-      {% else %}
-        <div class="cl-empty">No fermentation log entries.</div>
-      {% endif %}
-    </div>
-
-    <div class="cl-panel">
-      <div class="cl-section-head"><div class="cl-section-title">General notes</div><div class="cl-section-note"><a href="{% url 'addDetailNoteType' batch.pk 'General Note' %}" data-cl-form-modal data-modal-title="Add general note">Add note</a></div></div>
-      {% if gennotes %}
-        {% for note in gennotes %}
-        <div style="margin-bottom:10px;">
-          <div class="cl-num" style="font-size:0.8rem;color:var(--ink-soft);">{{ note.date|date:"Y-m-d H:i A" }}</div>
-          <div>{{ note.text }}</div>
-        </div>
-        {% endfor %}
-      {% else %}
-        <div class="cl-empty">No general notes.</div>
-      {% endif %}
-    </div>
-  </div>
-
-  <div>
+<section class="cl-tab-panel" role="tabpanel" id="tab-readings" aria-labelledby="tab-link-readings" hidden>
+<div class="cl-instrument-grid">
     <div class="cl-instrument">
       <div class="cl-instrument-head">
         <span class="cl-instrument-title">Specific gravity</span>
@@ -242,9 +192,134 @@
       {% else %}
         <p class="cl-empty">No SO&#8322; readings yet. <a href="{% url 'addDetailTest' batch.pk %}" data-cl-form-modal data-modal-title="Add test">Add one</a>.</p>
       {% endif %}
+</div>
+
+<div class="cl-panel cl-panel--stacked">
+  <div class="cl-section-head">
+    <div class="cl-section-title">Tests</div>
+    <div class="cl-section-note"><a href="{% url 'addDetailTest' batch.pk %}" data-cl-form-modal data-modal-title="Add test">Add test</a></div>
+  </div>
+  <div class="cl-table-scroll">
+    <table class="cl-ledger">
+      <thead><tr><th>Date</th><th>Test</th><th>Value</th><th>Notes</th></tr></thead>
+      <tbody>
+        {% for test in all_tests %}
+        <tr>
+          <td class="cl-num" style="white-space:nowrap;">{{ test.datetime|date:"M j, Y g:i A" }}</td>
+          <td>{{ test.type.name }}</td>
+          <td class="cl-num">{{ test.display_value }}</td>
+          <td>{{ test.description|default:"&mdash;" }}</td>
+        </tr>
+        {% empty %}
+        <tr><td class="cl-empty" colspan="4">No tests yet.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+</section><!-- /tab-readings -->
+
+<section class="cl-tab-panel" role="tabpanel" id="tab-details" aria-labelledby="tab-link-details" hidden>
+<div class="cl-panel cl-panel--stacked">
+  <div class="cl-section-head">
+    <div class="cl-section-title">Batch recipe</div>
+    <div class="cl-section-note">{% if factor != None %}Recipe {{ recipe_size }} &rarr; {{ batch_size }} &middot; &times;{{ factor|floatformat:"-3" }} &middot; {% endif %}<a href="{% url 'batchRecipe' batch.pk %}">Open batch recipe</a></div>
+  </div>
+  {% if has_ingredients %}
+  {% include 'batchthis/includes/_batch_ingredient_tables.html' %}
+  {% else %}
+  <p class="cl-empty">No batch recipe yet. <a href="{% url 'batchRecipe' batch.pk %}">Open the batch recipe</a> to copy it from the recipe.</p>
+  {% endif %}
+</div>
+
+{% if plan.steps %}
+<div class="cl-panel cl-panel--stacked">
+<section class="cl-plan">
+  <div class="cl-section-head">
+    <div class="cl-section-title">Plan</div>
+    <div class="cl-section-note">
+      {% if batch.workflow_template %}Copied from {{ batch.workflow_template.name }} &middot; {% endif %}{% if plan_editable %}<a href="{% url 'editBatchPlan' batch.pk %}">Edit plan</a>{% else %}Locked after Pitch{% endif %}
+    </div>
+  </div>
+  {# Collapsed to one line (the current step); open for the full table. #}
+  <details class="cl-table-toggle cl-plan-toggle">
+    <summary>{% if plan_vs_actual %}{{ plan_vs_actual.summary|join:" · " }}{% else %}Not started{% endif %}</summary>
+    {% if plan_vs_actual %}
+    {% include 'batchthis/includes/plan_progress.html' with progress=plan_vs_actual %}
+    {% else %}
+    {% include 'batchthis/includes/plan_steps.html' with empty_message="" %}
+    {% endif %}
+  </details>
+</section>
+</div>
+{% endif %}
+
+<div class="cl-cols cl-cols--aside-left">
+  <div>
+    <div class="cl-panel">
+      <div class="cl-section-head">
+        <div class="cl-section-title">Current Vessel</div>
+        {% if batch.active and not batch.is_packaged %}<div class="cl-section-note"><a href="{% url 'transferBatch' batch.pk %}" title="Only for moves outside the normal workflow - use Stage transition for racking and filtering">Ad-hoc transfer</a></div>{% endif %}
+      </div>
+      {% with v=batch.current_vessel %}
+      {% if v %}
+        <div class="cl-kv-row"><span class="cl-kv-label">Vessel</span><span class="cl-kv-value"><a href="{% url 'vessel' v.pk %}">{{ v.name }}</a></span></div>
+        <div class="cl-kv-row"><span class="cl-kv-label">Status</span><span class="cl-kv-value">{{ v.status }}</span></div>
+        <div class="cl-kv-row"><span class="cl-kv-label">Capacity</span><span class="cl-kv-value">{{ v.capacity|amount }}</span></div>
+        {% if v.fill %}
+        <div class="cl-kv-row"><span class="cl-kv-label">Fill</span><span class="cl-kv-value">{{ v.fill|amount }}</span></div>
+        {% endif %}
+        <div class="cl-kv-row"><span class="cl-kv-label">Intended use</span><span class="cl-kv-value">{{ v.intended_use }}</span></div>
+      {% elif batch.is_packaged %}
+        <div class="cl-kv-row"><span class="cl-kv-label">Packaged in</span><span class="cl-kv-value">{{ batch.get_packaging_display }}</span></div>
+        <div class="cl-empty">The batch has left vessel tracking.</div>
+      {% else %}
+        <div class="cl-empty">No vessel assigned.</div>
+      {% endif %}
+      {% endwith %}
     </div>
   </div>
 </div>
+</section><!-- /tab-details -->
+
+<section class="cl-tab-panel" role="tabpanel" id="tab-activity" aria-labelledby="tab-link-activity" hidden>
+<div class="cl-cols cl-cols--even">
+  <div class="cl-panel">
+    <div class="cl-section-head">
+      <div class="cl-section-title">Notes</div>
+      <div class="cl-section-note">
+        <a href="{% url 'addDetailNoteType' batch.pk 'Fermentation Note' %}" data-cl-form-modal data-modal-title="Add fermentation log entry">Add fermentation entry</a>
+        &middot; <a href="{% url 'addDetailNoteType' batch.pk 'General Note' %}" data-cl-form-modal data-modal-title="Add general note">Add note</a>
+        &middot; <a href="{% url 'addDetailNoteType' batch.pk 'Tasting Note' %}" data-cl-form-modal data-modal-title="Add tasting note">Add tasting note</a>
+      </div>
+    </div>
+    {% for note in all_notes %}
+    <div class="cl-note">
+      <div class="cl-note-meta"><span class="cl-note-type cl-note-type--{{ note.notetype.name|slugify }}">{{ note.notetype.name|cut:" Note" }}</span> <span class="cl-num">{{ note.date|date:"M j, Y g:i A" }}</span></div>
+      <div>{{ note.text|linebreaksbr }}</div>
+    </div>
+    {% empty %}
+    <p class="cl-empty">No notes yet.</p>
+    {% endfor %}
+  </div>
+
+  <div class="cl-panel">
+    <div class="cl-section-head"><div class="cl-section-title">Activity log</div><div class="cl-section-note">{{ activity_entries|length }} entr{{ activity_entries|length|pluralize:"y,ies" }}</div></div>
+    <div class="cl-table-scroll">
+      <table class="cl-ledger">
+        <thead><tr><th>When</th><th>What</th></tr></thead>
+        <tbody>
+          {% for entry in activity_entries %}
+          <tr><td class="cl-num" style="white-space:nowrap;">{{ entry.datetime|date:"M j, Y g:i A" }}</td><td>{{ entry.text }}</td></tr>
+          {% empty %}
+          <tr><td class="cl-empty" colspan="2">Nothing logged yet.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+</section><!-- /tab-activity -->
 
 <script>
   document.addEventListener('DOMContentLoaded', function () {

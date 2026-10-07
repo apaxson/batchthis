@@ -67,73 +67,7 @@
 </div>
 {% else %}
 
-<div class="cl-section-head"><div class="cl-section-title">Fermentables</div></div>
-<div class="cl-table-scroll">
-  <table class="cl-ledger">
-    <thead>
-      <tr><th>Ingredient</th><th>Type</th><th>Recipe</th><th>This batch</th><th>Use</th></tr>
-    </thead>
-    <tbody>
-      {% for item in fermentables %}
-      <tr>
-        <td class="cl-row-link js-mouse-tooltip" data-toggle="tooltip" title="{% if item.notes %}{{ item.notes }}{% if item.fermentable.description %}&#10;{% endif %}{% endif %}{{ item.fermentable.description|default:'' }}">{{ item.fermentable.display_name }}</td>
-        <td>{{ item.fermentable.type }}</td>
-        <td class="cl-num">{{ item.recipe_amount|amount|default:"&mdash;" }}</td>
-        <td class="cl-num"><b>{{ item.amount|amount|default:"&mdash;" }}</b></td>
-        <td>{{ item.intended_use|default:"&mdash;" }}</td>
-      </tr>
-      {% empty %}
-      <tr><td class="cl-empty" colspan="5">No fermentables.</td></tr>
-      {% endfor %}
-    </tbody>
-  </table>
-</div>
-
-<div class="cl-section-head"><div class="cl-section-title">Adjuncts</div></div>
-<div class="cl-table-scroll">
-  <table class="cl-ledger">
-    <thead>
-      <tr><th>Ingredient</th><th>Type</th><th>Recipe</th><th>This batch</th><th>Time to add</th></tr>
-    </thead>
-    <tbody>
-      {% for item in adjuncts %}
-      <tr>
-        <td class="cl-row-link js-mouse-tooltip" data-toggle="tooltip" title="{% if item.notes %}{{ item.notes }}{% if item.adjunct.notes %}&#10;{% endif %}{% endif %}{{ item.adjunct.notes|default:'' }}">{{ item.adjunct.name }}</td>
-        <td>{{ item.adjunct.type }}</td>
-        <td class="cl-num">{{ item.recipe_amount|amount|default:"&mdash;" }}</td>
-        <td class="cl-num"><b>{{ item.amount|amount|default:"&mdash;" }}</b></td>
-        <td class="cl-num">{{ item.time_to_add|time_to_add|default:"&mdash;" }}</td>
-      </tr>
-      {% empty %}
-      <tr><td class="cl-empty" colspan="5">No adjuncts.</td></tr>
-      {% endfor %}
-    </tbody>
-  </table>
-</div>
-
-<div class="cl-section-head"><div class="cl-section-title">Yeast</div></div>
-<div class="cl-table-scroll">
-  <table class="cl-ledger">
-    <thead>
-      <tr><th>Strain</th><th>Type</th><th>Recipe</th><th>This batch</th></tr>
-    </thead>
-    <tbody>
-      {% for item in yeasts %}
-      <tr>
-        <td class="js-mouse-tooltip" data-toggle="tooltip" title="{% if item.notes %}{{ item.notes }}{% if item.yeast.notes %}&#10;{% endif %}{% endif %}{{ item.yeast.notes|default:'' }}">
-          <span class="cl-row-link">{{ item.yeast.name }}</span>
-          <span class="cl-batch-style">{{ item.yeast.flocculation }} floc &middot; {{ item.yeast.attenuation|floatformat:0 }}% atten.</span>
-        </td>
-        <td>{{ item.yeast.type }} &middot; {{ item.yeast.get_form_display|default:"—" }}</td>
-        <td class="cl-num">{{ item.recipe_amount|amount|default:"&mdash;" }}</td>
-        <td class="cl-num"><b>{{ item.amount|amount|default:"&mdash;" }}</b></td>
-      </tr>
-      {% empty %}
-      <tr><td class="cl-empty" colspan="4">No yeast.</td></tr>
-      {% endfor %}
-    </tbody>
-  </table>
-</div>
+{% include 'batchthis/includes/_batch_ingredient_tables.html' %}
 {% endif %}
 
 {% endblock %}
