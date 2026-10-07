@@ -27,7 +27,7 @@ from apps.batchthis.services import (
     transition_stage_event, transfer_batch, create_vessel, update_vessel,
     plan_totals, save_workflow_template, delete_workflow_template, save_recipe_plan, clear_recipe_plan,
     copy_plan_to_batch, copy_recipe_ingredients_to_batch, recipe_scale_factor, quantity_label, save_batch_plan,
-    batch_recipe_locked_reason, save_batch_recipe, days_label, batch_plan_locked_reason,
+    batch_recipe_locked_reason, save_batch_recipe, days_label, quantity_input, batch_plan_locked_reason,
     plan_progress, batch_schedule_progress, allowed_next_stages, save_batch_edit, set_recipe_pairings,
 )
 from apps.batchthis.lib.faults import get_active_flags, get_rule_for, StagedFaultRule
@@ -259,9 +259,7 @@ BATCH_RECIPE_SECTIONS = (
 )
 
 
-def _amount_text(value) -> str:
-    """A stored amount as editable text in the display's units ("24 lb", "3.07179 g"), precise enough to re-save unchanged."""
-    return quantity_label(value, digits=6)
+_amount_text = quantity_input   # "24 lb", "3.07179 g" - precise enough to re-save unchanged
 
 
 def _time_to_add_text(value) -> str:
@@ -441,7 +439,9 @@ def addRecipe(request, pk=None):
         if pk:
             # We have a recipe to edit.  Load it up
             recipe = Recipe.objects.get(pk=pk)
-            form = RecipeAddForm(initial=model_to_dict(recipe))
+            initial = model_to_dict(recipe)
+            initial['batchSize'] = quantity_input(recipe.batchSize)   # "6 gal", as the recipe page shows it
+            form = RecipeAddForm(initial=initial)
             form.fields['style'].initial = recipe.category.style.pk #Form was not setting style.  Let's manually set it
             fermentables = recipe.fermentables.all()
             adjuncts = recipe.adjuncts.all()
@@ -660,7 +660,7 @@ def editBatch(request, pk):
     initial = {
         'name': batch.name,
         'recipe': batch.recipe_id,
-        'size': str(batch.size),
+        'size': quantity_input(batch.size),   # "6 gal", as the page shows it
         # Plain strings in the same format the fields post back, so has_changed() is accurate.
         'startingGravity': f"{batch.startingGravity.magnitude:.3f}",
         'estimatedEndGravity': f"{batch.estimatedEndGravity.magnitude:.3f}",

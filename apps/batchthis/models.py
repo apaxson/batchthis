@@ -24,6 +24,8 @@ from django.db.models.functions import Lower
 from django.utils.text import slugify
 from django.core.files.storage import FileSystemStorage
 from django.utils import timezone
+
+from .lib.display import quantity_label
 from pint import Quantity
 from quantityfield.fields import QuantityField
 from .fields import DescriptiveQuantityField
@@ -160,7 +162,7 @@ class Vessel(models.Model):
     )
 
     def __str__(self):
-        return f"{self.name} ({self.capacity})"
+        return f"{self.name} ({quantity_label(self.capacity)})"   # "Carboy 1 (6 gal)" - dropdowns
     name = models.CharField(max_length=25)
     # Stored in liters, returned in the unit entered (see DescriptiveQuantityField).
     capacity = DescriptiveQuantityField(base_units='liters', unit_choices=['liters', 'gallons'])

@@ -1,4 +1,5 @@
 {% extends 'batchthis/base.html' %}
+{% load batch_extras %}
 {% load static %}
 {% block content %}
 
@@ -50,11 +51,11 @@
   </div>
   <div class="cl-readout">
     <div class="cl-readout-label">Capacity</div>
-    <div class="cl-readout-value">{{ vessel.capacity }}</div>
+    <div class="cl-readout-value">{{ vessel.capacity|amount }}</div>
   </div>
   <div class="cl-readout">
     <div class="cl-readout-label">Fill</div>
-    <div class="cl-readout-value">{% if vessel.fill %}{{ vessel.fill }}{% else %}&mdash;{% endif %}</div>
+    <div class="cl-readout-value">{% if vessel.fill %}{{ vessel.fill|amount }}{% else %}&mdash;{% endif %}</div>
   </div>
 </div>
 
@@ -65,7 +66,7 @@
       {% if current_batch %}
         <div class="cl-kv-row"><span class="cl-kv-label">Batch</span><span class="cl-kv-value"><a href="{% url 'batch' current_batch.pk %}">{{ current_batch.name }}</a></span></div>
         <div class="cl-kv-row"><span class="cl-kv-label">Started</span><span class="cl-kv-value cl-num">{{ current_batch.startdate|date:"M j, Y" }}</span></div>
-        <div class="cl-kv-row"><span class="cl-kv-label">Size</span><span class="cl-kv-value">{{ current_batch.size }}</span></div>
+        <div class="cl-kv-row"><span class="cl-kv-label">Size</span><span class="cl-kv-value">{{ current_batch.size|amount }}</span></div>
       {% else %}
         <div class="cl-empty">No batch in this vessel.</div>
       {% endif %}

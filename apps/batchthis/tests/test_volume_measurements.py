@@ -116,7 +116,7 @@ def test_vessel_capacity_is_returned_as_entered():
 
     assert (vessel.capacity.magnitude, str(vessel.capacity.units)) == (pytest.approx(6), "gallon")
     assert vessel.fill is None
-    assert str(vessel) == f"{vessel.name} (6.00 gallon)"
+    assert str(vessel) == f"{vessel.name} (6 gal)"
 
 
 @pytest.mark.django_db
@@ -137,8 +137,8 @@ def test_vessel_page_shows_capacity_and_fill(db):
 
     page = client.get(reverse("vessel", kwargs={"pk": vessel.pk})).content.decode()
 
-    assert "6.00 gallon" in page
-    assert "5.00 gallon" in page
+    assert "6 gal" in page
+    assert "5 gal" in page
 
 
 @pytest.mark.django_db
@@ -150,8 +150,8 @@ def test_vessels_api_reports_capacity_as_entered(db):
 
     entry = api.get(reverse("vessel-list")).json()[0]
 
-    assert entry["capacity"] == "20.00 liter"
-    assert entry["display_name"] == "Tank A (Aging Tank, 20.00 liter)"
+    assert entry["capacity"] == "20 L"
+    assert entry["display_name"] == "Tank A (Aging Tank, 20 L)"
 
 
 # ---------- Add Batch size ----------

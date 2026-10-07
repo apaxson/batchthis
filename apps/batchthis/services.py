@@ -9,6 +9,8 @@ from django.core.exceptions import ValidationError
 from django.db import transaction
 from django.utils import timezone
 
+from .lib.display import as_quantity as _quantity
+from .lib.display import days_label, quantity_input, quantity_label, time_to_add_label  # noqa: F401 (re-exported)
 from .lib.utils import Utils
 from .models import (
     ActivityLog,
@@ -1374,16 +1376,6 @@ def batch_schedule_progress(stays: list[VesselStay], plan_steps, *, completed_at
 
 # ---------- Recipe scaling (TODO.txt RECIPE SCALING, Aaron 2026-10-03) ----------
 
-def _quantity(value):
-    """`value` as a Quantity of the project's unit registry (accepts text or another registry's Quantity)."""
-    ureg = settings.DJANGO_PINT_UNIT_REGISTER
-    if value is None or isinstance(value, ureg.Quantity):
-        return value
-    if isinstance(value, str):
-        return ureg.Quantity(value)
-    return ureg.Quantity(value.magnitude, str(value.units))
-
-
 def recipe_scale_factor(recipe: Recipe, size) -> Optional[float]:
     """Batch size / recipe size (both volumes), or None when the recipe has no usable size."""
     recipe_size, size = _quantity(recipe.batchSize), _quantity(size)
@@ -1450,43 +1442,6 @@ def copy_recipe_ingredients_to_batch(batch: Batch) -> list[BatchIngredient]:
     created = BatchIngredient.objects.bulk_create(rows)
     logger.info(f"Batch '{batch}' ingredients copied from recipe '{batch.recipe}' at {batch.size} ({len(created)} rows)")
     return created
-
-
-def days_label(days: float) -> str:
-    """Whole days (Aaron, 2026-10-02: no decimals in plan displays); a part day reads "under 1 day"."""
-    whole = round(days)
-    if whole == 0 and days:
-        return "under 1 day"
-    return f"{whole} day" if whole == 1 else f"{whole} days"
-
-
-def quantity_label(value, digits: int = 4) -> str:
-    """A short amount for display: "24 lb", "10 g", "2.5 kg" ("" for none); `digits` significant figures."""
-    value = _quantity(value)
-    if value is None:
-        return ""
-    # Imported recipes store small amounts in kg/L ("0.005814 kg"); show those as g/ml.
-    smaller = {'kilogram': 'gram', 'liter': 'milliliter'}.get(str(value.units))
-    if smaller and abs(value.magnitude) < 1:
-        value = value.to(smaller)
-    unit = "L" if str(value.units) == 'liter' else f"{value.units:~}"   # "10 L", not "10 l" (reads as 1)
-    return f"{value.magnitude:.{digits}g} {unit}"
-
-
-def time_to_add_label(value) -> str:
-    """When an addition goes in, after Pitch: "At pitch", "Pitch + 24 h", "Pitch + 7 d"."""
-    value = _quantity(value)
-    if value is None:
-        return ""
-    hours = value.to('hour').magnitude
-    if hours <= 0:
-        return "At pitch"
-    if hours < 1:
-        return f"Pitch + {value.to('minute').magnitude:.0f} min"
-    if hours <= 72:
-        return f"Pitch + {hours:.3g} h"
-    return f"Pitch + {value.to('day').magnitude:.3g} d"
-
 
 
 def scale_batch_ingredients(batch: Batch, old_size, new_size) -> int:

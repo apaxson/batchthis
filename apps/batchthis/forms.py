@@ -22,6 +22,8 @@ from .fields import AmountField, DescriptiveQuantityFormField, PairingTagsField,
     PrecisionTextWidget, ReadingField, TimeSpanField, VolumeField
 import logging
 
+from .lib.display import quantity_label
+
 logger = logging.getLogger(__name__)
 
 class DateTimeWidget(forms.DateTimeInput):
@@ -342,7 +344,7 @@ class VesselForm(forms.Form):
                     self.add_error(field, "Required for a barrel.")
         capacity, fill = cleaned.get('capacity'), cleaned.get('fill')
         if capacity is not None and fill is not None and fill.to(capacity.units) > capacity:
-            self.add_error('fill', f"Fill can't be more than the capacity ({capacity}).")
+            self.add_error('fill', f"Fill can't be more than the capacity ({quantity_label(capacity)}).")
         return cleaned
 
 

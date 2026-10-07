@@ -1,3 +1,4 @@
+{% load batch_extras %}
 <div class="cl-section-head">
   <div class="cl-section-title">Fermentables</div>
   <div class="cl-section-note"><a href="{% url 'editFermentables' recipe.pk %}">Add/edit fermentables</a></div>
@@ -15,7 +16,7 @@
       <tr>
         <td class="cl-row-link">{{ fermentable.display_name }}</td>
         <td>{{ fermentable.fermentable.type }}</td>
-        <td class="cl-num">{{ fermentable.amount }}</td>
+        <td class="cl-num">{{ fermentable.amount|amount|default:"&mdash;" }}</td>
         <td>{{ fermentable.intended_use }}</td>
         <td>{{ fermentable.is_fermentable|yesno:"Yes,No" }}</td>
         <td>{{ fermentable.recipe_notes|default:"—" }}</td>
@@ -43,8 +44,8 @@
       <tr>
         <td class="cl-row-link">{{ adjunct.adjunct.name }}</td>
         <td>{{ adjunct.adjunct.type }}</td>
-        <td class="cl-num">{{ adjunct.amount }}</td>
-        <td class="cl-num">{{ adjunct.time_to_add }}</td>
+        <td class="cl-num">{{ adjunct.amount|amount|default:"&mdash;" }}</td>
+        <td class="cl-num">{{ adjunct.time_to_add|time_to_add|default:"&mdash;" }}</td>
         <td>{{ adjunct.recipe_notes|default:"—" }}</td>
       </tr>
       {% endfor %}
@@ -84,7 +85,7 @@
         <td class="cl-num cl-yeast-metric">{{ yeast.yeast.alc_tolerance }}</td>
         <td class="cl-yeast-metric">{{ yeast.yeast.flocculation }}</td>
         <td class="cl-num cl-yeast-metric">{{ yeast.yeast.attenuation|floatformat:1 }}</td>
-        <td class="cl-num">{{ yeast.amount }}</td>
+        <td class="cl-num">{{ yeast.amount|amount|default:"&mdash;" }}</td>
         <td>{{ yeast.notes|default:"—" }}</td>
       </tr>
       {% endfor %}

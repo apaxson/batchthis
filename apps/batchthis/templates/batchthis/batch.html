@@ -1,4 +1,5 @@
 {% extends 'batchthis/base.html' %}
+{% load batch_extras %}
 {% load static %}
 {% block content %}
 {# react-select pickers inside the shared form modal (e.g. Add addon's adjunct picker) #}
@@ -114,9 +115,9 @@
       {% if v %}
         <div class="cl-kv-row"><span class="cl-kv-label">Vessel</span><span class="cl-kv-value"><a href="{% url 'vessel' v.pk %}">{{ v.name }}</a></span></div>
         <div class="cl-kv-row"><span class="cl-kv-label">Status</span><span class="cl-kv-value">{{ v.status }}</span></div>
-        <div class="cl-kv-row"><span class="cl-kv-label">Capacity</span><span class="cl-kv-value">{{ v.capacity }}</span></div>
+        <div class="cl-kv-row"><span class="cl-kv-label">Capacity</span><span class="cl-kv-value">{{ v.capacity|amount }}</span></div>
         {% if v.fill %}
-        <div class="cl-kv-row"><span class="cl-kv-label">Fill</span><span class="cl-kv-value">{{ v.fill }}</span></div>
+        <div class="cl-kv-row"><span class="cl-kv-label">Fill</span><span class="cl-kv-value">{{ v.fill|amount }}</span></div>
         {% endif %}
         <div class="cl-kv-row"><span class="cl-kv-label">Intended use</span><span class="cl-kv-value">{{ v.intended_use }}</span></div>
       {% elif batch.is_packaged %}

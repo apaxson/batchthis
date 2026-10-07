@@ -36,7 +36,7 @@
   </div>
   <div class="cl-readout">
     <div class="cl-readout-label">Batch size</div>
-    <div class="cl-readout-value">{{ recipe.batchSize }}</div>
+    <div class="cl-readout-value">{{ recipe.batchSize|amount|default:"&mdash;" }}</div>
   </div>
 </div>
 
@@ -66,7 +66,7 @@
           <tr>
             <td class="cl-row-link js-mouse-tooltip" data-toggle="tooltip" title="{% if item.recipe_notes %}{{ item.recipe_notes }}{% if item.fermentable.description %}&#10;{% endif %}{% endif %}{{ item.fermentable.description|default:'' }}">{{ item.display_name }}</td>
             <td>{{ item.fermentable.type }}</td>
-            <td class="cl-num">{{ item.amount }}</td>
+            <td class="cl-num">{{ item.amount|amount|default:"&mdash;" }}</td>
             <td>{{ item.intended_use }}</td>
             <td>{{ item.is_fermentable|yesno:"Yes,No" }}</td>
           </tr>
@@ -140,7 +140,7 @@
             <td class="cl-num">{{ item.yeast.min_temp_f.magnitude|floatformat:0 }}&ndash;{{ item.yeast.max_temp_f.magnitude|floatformat:0 }}</td>
             <td class="cl-num">{{ item.yeast.alc_tolerance }} %</td>
             <td>{{ item.yeast.get_nitrogen_requirement_display|default:"&mdash;" }}</td>
-            <td class="cl-num">{{ item.amount }}</td>
+            <td class="cl-num">{{ item.amount|amount|default:"&mdash;" }}</td>
           </tr>
           {% endfor %}
           {% endif %}

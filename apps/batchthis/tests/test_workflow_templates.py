@@ -285,7 +285,7 @@ def test_edit_page_prefills_the_template_and_its_steps(client):
     assert response.context["form"]["name"].value() == "Traditional mead"
     formset = response.context["formset"]
     assert [f["stage"].value() for f in formset] == [_stage(s).pk for s, _, _ in GOOD]
-    assert str(formset.forms[1]["planned_duration"].value()) == "30.00 day"
+    assert str(formset.forms[1]["planned_duration"].value()) == "30 days"
     assert reverse("deleteWorkflow", kwargs={"pk": template.pk}) in response.content.decode()
 
 

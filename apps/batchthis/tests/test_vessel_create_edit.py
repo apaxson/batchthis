@@ -136,7 +136,7 @@ def test_add_vessel_form_has_no_status_field(client):
     [
         ({"capacity": "6"}, "capacity", "Units are required."),
         ({"capacity": ""}, "capacity", "This field is required."),
-        ({"fill": "7 gallons"}, "fill", "Fill can't be more than the capacity (6.00 gallon)."),
+        ({"fill": "7 gallons"}, "fill", "Fill can't be more than the capacity (6 gal)."),
         ({"fill": "5"}, "fill", "Units are required."),
         ({"name": ""}, "name", "This field is required."),
         ({"vessel_type": "Barrel"}, "serial", "Required for a barrel."),
@@ -172,7 +172,7 @@ def test_edit_vessel_prefills_and_hides_the_type_choice(client):
 
     form = response.context["form"]
     assert "vessel_type" not in form.fields
-    assert (form["name"].value(), str(form["capacity"].value())) == ("Tank A", "20.00 liter")
+    assert (form["name"].value(), str(form["capacity"].value())) == ("Tank A", "20 L")
     assert (form["serial"].value(), form["toast_level"].value()) == ("B-3", "Light")
     assert "Barrel" in response.content.decode()
 

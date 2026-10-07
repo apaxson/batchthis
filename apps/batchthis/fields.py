@@ -264,6 +264,15 @@ class MeasurementField(forms.CharField):
         kwargs.setdefault('widget', TextInput(attrs={'placeholder': placeholder} if placeholder else {}))
         super().__init__(**kwargs)
 
+    def prepare_value(self, value):
+        # A stored Quantity in an edit box reads like the display ("6 gal", "30 days"), not
+        # "6.00 gallon" - and re-saves to the same amount. Typed text is left as typed.
+        from .lib.display import quantity_input
+        ureg = settings.DJANGO_PINT_UNIT_REGISTER
+        if isinstance(value, ureg.Quantity) and any(value.check(d) for d in ('[mass]', '[volume]', '[time]')):
+            return quantity_input(value)
+        return super().prepare_value(value)
+
     def to_python(self, value):
         text = super().to_python(value)
         if text in self.empty_values:

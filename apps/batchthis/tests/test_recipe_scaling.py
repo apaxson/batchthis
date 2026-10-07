@@ -212,3 +212,9 @@ def test_amount_labels_show_small_metric_amounts_in_g_and_ml(value, label):
     from ..services import quantity_label
 
     assert quantity_label(value) == label
+
+
+def test_a_bare_number_is_shown_without_failing():
+    from ..services import quantity_label
+
+    assert quantity_label(0) == "0"

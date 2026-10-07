@@ -2,6 +2,7 @@ from django.urls import reverse
 from django.utils import timezone
 from rest_framework import serializers
 
+from .lib.display import quantity_label
 from .models import Adjunct, Batch, Fermentable, PairingTag, Recipe, Vessel, Yeast
 
 
@@ -96,7 +97,7 @@ class BatchSerializer(serializers.ModelSerializer):
         return obj.fermenter.vessel.name
 
     def get_size(self, obj: Batch) -> str:
-        return str(obj.size)
+        return quantity_label(obj.size)
 
     def get_status(self, obj: Batch) -> str:
         return 'Active' if obj.active else 'Complete'
@@ -129,7 +130,7 @@ class VesselSerializer(serializers.ModelSerializer):
                   'status_since', 'intended_use', 'detail_url', 'display_name']
 
     def get_capacity(self, obj: Vessel) -> str:
-        return str(obj.capacity)
+        return quantity_label(obj.capacity)
 
     def get_current_batch(self, obj: Vessel) -> str:
         return self.context.get('current_batches', {}).get(obj.pk, '')
